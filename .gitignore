@@ -4,7 +4,12 @@ dist
 .mastra
 .env.development
 .env
+
 *.db
 *.db-*
+
+*.duckdb
+*.duckdb.*
+
 .netlify
 .vercel
