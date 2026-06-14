@@ -8,10 +8,25 @@ import { Observability, MastraStorageExporter, MastraPlatformExporter, Sensitive
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer';
+import { emotionAgent } from './agents/emotion-agent';
+import { symptomAgent } from './agents/symptom-agent';
+import { contextAgent } from './agents/context-agent';
+import { referralAgent } from './agents/referral-agent';
+import { anxiosenseWorkflow } from './workflows/anxiosense-workflow';
+import { reportAgent } from './agents/report-agent';
+import { validationAgent } from './agents/validation-agent';
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
-  agents: { weatherAgent },
+  workflows: { weatherWorkflow, anxiosenseWorkflow },
+  agents: {
+    weatherAgent,
+    emotionAgent,
+    symptomAgent,
+    contextAgent,
+    referralAgent,
+    validationAgent,
+    reportAgent,
+  },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
