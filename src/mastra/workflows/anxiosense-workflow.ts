@@ -3,6 +3,7 @@ import { buildClaimsStep } from './build-claims-step';
 import { retrievalStep } from '../agents/retrieval-agent';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { ValidationAgentOutputSchema } from '../../kb/types';
 
 const inputSchema = z.object({
     userText: z.string(),
@@ -118,32 +119,26 @@ Validate the agent outputs. Remove or flag unsupported claims. Return only the v
 
 const reportStep = createStep({
     id: 'assessment-report-step',
-    inputSchema: validatedAnalysisSchema,
+    inputSchema: ValidationAgentOutputSchema,
     outputSchema: finalReportSchema,
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('reportAgent');
         if (!agent) throw new Error('Report agent not found');
 
         const prompt = `
-Original User Text:
-${inputData.userText}
+Evidence-Based Validation Output:
+${JSON.stringify(inputData, null, 2)}
 
-Emotion Analysis Agent Output:
-${inputData.emotionAnalysis}
+Generate the final AnxioSense Screening Support Report using the evidence validation output as the source of truth.
 
-Symptom Extraction Agent Output:
-${inputData.symptomAnalysis}
-
-Context Reasoning Agent Output:
-${inputData.contextAnalysis}
-
-Referral and Safety Agent Output:
-${inputData.referralAnalysis}
-
-Validation Agent Output:
-${inputData.validationAnalysis}
-
-Generate the final AnxioSense Screening Support Report using the validation output as the source of truth. Do not include unsupported claims.
+Rules:
+- Do not diagnose.
+- Do not say the user has anxiety or depression.
+- Only include claims marked supported or partially_supported.
+- Mention unsupported claims only in a brief limitations section.
+- Cite chunk IDs when explaining evidence.
+- Include the differentiation assessment: anxiety, depression, mixed, or unclear.
+- Keep the tone cautious, supportive, and professional.
 `;
 
         const response = await agent.generate(prompt);
