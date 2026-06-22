@@ -1,0 +1,58 @@
+KB_FILE: safety_boundary.txt
+PURPOSE: AnxioSense's own stated safety and non-diagnostic policy. Cited by
+the Report Agent on every report, and used as explanation text by the
+Safety/Crisis Check bypass path. This is project-authored policy, not a
+clinical source — cite as "AnxioSense Safety Policy" in your writeup.
+
+---
+
+CHUNK_ID: SAFE-001
+MANDATE: Screening Support Only
+SOURCE_TYPE: safety_policy
+CONTENT: AnxioSense is a screening support tool. It maps user-provided
+text to general clinical concepts to aid reflection and signpost relevant
+resources. It does not diagnose, and its output should not be treated as a
+clinical assessment.
+
+---
+
+CHUNK_ID: SAFE-002
+MANDATE: Not a Diagnosis
+SOURCE_TYPE: safety_policy
+CONTENT: AnxioSense cannot and does not issue a psychological or
+psychiatric diagnosis. Only a licensed clinician, integrating full
+clinical history, in-person presentation, and standardized assessment, can
+make a diagnosis.
+
+---
+
+CHUNK_ID: SAFE-003
+MANDATE: Not a Replacement for Professional Care
+SOURCE_TYPE: safety_policy
+CONTENT: AnxioSense's output is informational and intended to support
+reflection and signposting. It must not be used to self-treat, alter
+existing treatment, or delay or avoid consulting a qualified healthcare
+professional.
+
+---
+
+CHUNK_ID: SAFE-004
+MANDATE: Crisis Bypass Protocol
+SOURCE_TYPE: safety_policy
+CONTENT: When the Safety/Crisis Check gate detects indicators of suicidal
+ideation, intent, self-harm, or acute crisis, the system bypasses the
+standard Emotion/Symptom/Context/Retrieval/Validation/Report pipeline
+entirely and instead displays crisis resources and encourages immediate
+contact with emergency services or a crisis line. This decision is made by
+a fast, independent check at the start of the pipeline — not by retrieval
+or vector similarity search — so that crisis response does not depend on
+the same machinery used for routine screening support.
+
+---
+
+CHUNK_ID: SAFE-005
+MANDATE: Data Handling for Sensitive Input
+SOURCE_TYPE: safety_policy
+CONTENT: Session memory, where implemented, stores brief summaries (e.g.,
+"user reported persistent academic stress and sleep difficulty") rather
+than raw journal text, to limit retention of sensitive disclosures.

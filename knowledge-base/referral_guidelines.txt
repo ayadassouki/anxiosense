@@ -1,0 +1,63 @@
+KB_FILE: referral_guidelines.txt
+PURPOSE: Referral tier guidance, cited by the Report Agent to explain the
+basis for a recommended action. The Urgent Concern tier's content here is
+used ONLY as citable explanation text shown to the user after the
+Safety/Crisis Check has already triggered escalation through its own
+independent, non-retrieval-dependent logic — never as the mechanism that
+decides whether to escalate.
+SOURCE: Project-authored referral policy, informed by general
+practice-pattern literature on screening tiering. This is AnxioSense's own
+policy framework, not a verbatim clinical source — cite as
+"AnxioSense Referral Policy" in your methodology writeup.
+NON_DIAGNOSTIC_REMINDER: These tiers describe recommended next steps, not
+diagnostic severity levels. They map level of concern to a course of
+action, not to a disorder.
+
+---
+
+CHUNK_ID: REF-001
+TIER: Low Concern
+SOURCE_TYPE: referral_policy
+CRITERIA: Transient symptoms clearly tied to an identifiable, time-limited
+stressor (e.g., an upcoming exam). No reported impact on daily functioning.
+No indicators from the Urgent tier present.
+ACTION: Provide general psychoeducational information and self-monitoring
+suggestions. No referral recommendation needed at this time.
+
+---
+
+CHUNK_ID: REF-002
+TIER: Moderate Concern
+SOURCE_TYPE: referral_policy
+CRITERIA: Symptoms persisting over weeks rather than days; mild-to-moderate
+reported impact on academic, social, or daily functioning; coping
+described as strained but still functioning. No Urgent tier indicators.
+ACTION: Recommend the user consider speaking with a campus counseling
+service, primary care provider, or licensed mental health professional for
+a fuller evaluation. Frame as a suggestion, not an instruction.
+
+---
+
+CHUNK_ID: REF-003
+TIER: High Concern
+SOURCE_TYPE: referral_policy
+CRITERIA: Pronounced, multiple indicators (e.g., marked anhedonia alongside
+severe worry); significant reported impairment across multiple domains
+(e.g., stopped attending classes, substantial social withdrawal). No
+explicit safety risk indicators, but distress is high.
+ACTION: Recommend prompt consultation with a licensed mental health
+professional. State this more directly than the Moderate tier, while
+remaining within informational, non-diagnostic language.
+
+---
+
+CHUNK_ID: REF-004
+TIER: Urgent Concern
+SOURCE_TYPE: referral_policy
+CRITERIA: Any direct or indirect indication of suicidal ideation, intent,
+self-harm, or acute crisis. This tier is detected and acted on exclusively
+by the Safety/Crisis Check gate, before the standard agent pipeline runs —
+see safety_boundary.txt, Mandate 4.
+ACTION: Immediate display of crisis resources and encouragement to contact
+emergency services or a crisis line. Standard report generation is bypassed
+entirely; this tier does not produce a symptom/retrieval-based report.

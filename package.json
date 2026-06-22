@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mastra dev",
     "build": "mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "index-kb": "tsx src/scripts/index-knowledge-base.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -20,17 +22,19 @@
     "@mastra/core": "^1.42.0",
     "@mastra/duckdb": "^1.4.2",
     "@mastra/evals": "^1.3.0",
+    "@mastra/fastembed": "latest",
     "@mastra/libsql": "^1.13.0",
     "@mastra/loggers": "^1.1.2",
     "@mastra/memory": "^1.20.3",
     "@mastra/observability": "^1.14.1",
-    "ollama-ai-provider": "^1.2.0",
+    "ai": "latest",
     "ollama-ai-provider-v2": "^3.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
     "mastra": "^1.13.0",
+    "tsx": "latest",
     "typescript": "^6.0.3"
   }
 }

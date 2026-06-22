@@ -1,0 +1,75 @@
+KB_FILE: shared_symptoms.txt
+PURPOSE: Symptoms that appear in both anxiety and depressive presentations
+under ICD-11, with notes on how presentation typically differs. This file
+is the primary differentiation tool for symptoms that look identical on
+the surface but arise from different mechanisms.
+SOURCE: Synthesized from ICD-11 6B00 and 6A70 descriptions, WHO (2025-01),
+used under CC BY-ND 3.0 IGO.
+NON_DIAGNOSTIC_REMINDER: Overlap between categories is expected and common.
+A user presenting shared symptoms does not require forcing a single
+category; "mixed" or "unclear" is a valid and often more honest output.
+
+---
+
+CHUNK_ID: SHARED-001
+SYMPTOM: Sleep Disturbance
+SOURCE_TYPE: differentiation_guidance
+DESCRIPTION: Disruption to normal sleep, present in both anxiety and
+depressive presentations.
+ANXIETY_PRESENTATION: Typically initial insomnia — difficulty falling
+asleep due to racing thoughts or worry at bedtime.
+DEPRESSION_PRESENTATION: Typically early-morning waking (terminal
+insomnia) or hypersomnia (sleeping excessively, still feeling unrested).
+RETRIEVAL_NOTE: When a claim mentions sleep disturbance, retrieve this
+chunk and check which sub-pattern (onset vs. early-waking vs. hypersomnia)
+the user described, if specified.
+
+---
+
+CHUNK_ID: SHARED-002
+SYMPTOM: Concentration Difficulty
+SOURCE_TYPE: differentiation_guidance
+DESCRIPTION: Reduced ability to focus or make decisions, present in both
+anxiety and depressive presentations.
+ANXIETY_PRESENTATION: Driven by attention being pulled toward worry or
+threat-monitoring; the person is "too busy thinking about problems" to
+focus.
+DEPRESSION_PRESENTATION: Driven by mental slowing, low motivation, or
+reduced cognitive energy; the person describes thinking as "foggy" or
+"slow" rather than "distracted."
+RETRIEVAL_NOTE: The user's own description of *why* focus is difficult
+(worry vs. low energy/motivation) is the key differentiator here, more
+than the symptom itself.
+
+---
+
+CHUNK_ID: SHARED-003
+SYMPTOM: Irritability
+SOURCE_TYPE: differentiation_guidance
+DESCRIPTION: Low frustration tolerance or persistent edgy mood, common to
+both anxiety and depression and especially prevalent in adolescents and
+young adults presenting with either condition.
+ANXIETY_PRESENTATION: Often linked to nervous-system exhaustion from
+sustained worry or hyperarousal.
+DEPRESSION_PRESENTATION: Often a feature of low mood itself, and can be a
+more prominent presentation than sadness in younger people ("irritable
+mood" is recognized as a valid presentation of low mood in younger
+populations).
+RETRIEVAL_NOTE: Irritability alone has low differentiating value; treat as
+a supporting signal, not a primary one.
+
+---
+
+CHUNK_ID: SHARED-004
+SYMPTOM: Fatigue / Low Energy
+SOURCE_TYPE: differentiation_guidance
+DESCRIPTION: Reduced energy or persistent tiredness, common to both
+categories and to many non-psychiatric conditions.
+ANXIETY_PRESENTATION: Often described as "wired but tired" — exhausted yet
+unable to relax or switch off.
+DEPRESSION_PRESENTATION: Often described as heavy, flat fatigue without
+the accompanying restlessness — low drive rather than restless exhaustion.
+RETRIEVAL_NOTE: Fatigue alone is a weak discriminator; always pair with
+at least one more specific indicator (e.g., anhedonia for depression,
+autonomic arousal for anxiety) before drawing any differentiation
+conclusion.

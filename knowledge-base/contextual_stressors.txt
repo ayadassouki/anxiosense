@@ -1,0 +1,73 @@
+KB_FILE: contextual_stressors.txt
+PURPOSE: Descriptive taxonomy of contextual stressors relevant to young
+adults, used by the Context Agent and retrieved by the Retrieval Agent for
+contextual_stressor-category claims. This file is descriptive tagging,
+not clinical diagnostic content, and carries no copyright source
+restriction — it may be edited freely as your project's own taxonomy.
+NON_DIAGNOSTIC_REMINDER: Contextual stressors are descriptive context, not
+evidence of a disorder. Identifying a stressor does not imply the user's
+distress is clinically significant or requires intervention.
+
+---
+
+CHUNK_ID: CTX-001
+STRESSOR: Academic Stress
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Stress related to exams, grades, workload, performance
+expectations, or fear of academic failure.
+KEYWORDS: exam, grades, GPA, assignment, workload, deadline, failing,
+university, class
+
+---
+
+CHUNK_ID: CTX-002
+STRESSOR: Financial Stress
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Difficulty meeting basic living costs, debt, tuition
+pressure, or general financial insecurity.
+KEYWORDS: rent, debt, tuition, bills, money, broke, financial aid
+
+---
+
+CHUNK_ID: CTX-003
+STRESSOR: Relationship Stress
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Conflict, breakups, or isolation involving romantic partners
+or close peer relationships.
+KEYWORDS: breakup, argument, partner, lonely, relationship, isolated
+
+---
+
+CHUNK_ID: CTX-004
+STRESSOR: Family Stress
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Conflict, high expectations, or lack of support within the
+family or household.
+KEYWORDS: parents, family, expectations, arguments at home, mom, dad
+
+---
+
+CHUNK_ID: CTX-005
+STRESSOR: Career Uncertainty
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Anxiety or stress related to job searching, graduation
+transitions, or ambiguity about future career direction.
+KEYWORDS: graduation, job hunt, unemployed, rejection, resume, internship
+
+---
+
+CHUNK_ID: CTX-006
+STRESSOR: Health Concerns
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Distress related to an active medical condition, physical
+symptoms, or preoccupation with health.
+KEYWORDS: sick, chronic pain, diagnosis, doctor, symptoms, illness
+
+---
+
+CHUNK_ID: CTX-007
+STRESSOR: Major Life Transitions
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Relocation, starting a new environment, or adjusting to
+significant change in routine, culture, or social context.
+KEYWORDS: moving, relocation, new environment, transition, adjusting

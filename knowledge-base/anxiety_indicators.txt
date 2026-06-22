@@ -1,0 +1,136 @@
+KB_FILE: anxiety_indicators.txt
+PURPOSE: Anxiety-specific clinical indicators for retrieval and claim-evidence
+matching. Each entry is a self-contained chunk. Source: World Health
+Organization, ICD-11 (2025-01 release), category 6B00 Generalised Anxiety
+Disorder and related anxiety/fear-related disorders. Used under CC BY-ND 3.0
+IGO (WHO ICD-11 license: https://creativecommons.org/licenses/by-nc-nd/3.0/igo/).
+Wording below is lightly adapted for chunking; core clinical content is the
+WHO description, not paraphrased into different claims.
+NON_DIAGNOSTIC_REMINDER: Every entry below describes a symptom pattern, not
+a diagnosis. Presence of one or more of these features does not establish
+that a disorder is present. Duration, pervasiveness, functional impact, and
+exclusion of other causes all require professional clinical assessment.
+
+---
+
+CHUNK_ID: ANX-001
+INDICATOR: Excessive Worry / Apprehensive Expectation
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Marked symptoms of anxiety persisting for at least several
+months, occurring more days than not, manifested as either general
+apprehension ("free-floating anxiety") or excessive worry focused on
+multiple everyday events — most often concerning family, health, finances,
+school, or work.
+PLAIN_LANGUAGE_EXAMPLES: "I can't stop worrying about things that probably
+won't even happen." "My mind keeps jumping to worst-case scenarios about
+school or money."
+NON_DIAGNOSTIC_NOTE: Occasional worry about real stressors is common and
+expected. This indicator describes worry that is pervasive across multiple
+life areas and persists over months, not situational concern about a single
+upcoming event.
+
+---
+
+CHUNK_ID: ANX-002
+INDICATOR: Autonomic / Sympathetic Over-Activity
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Physical symptoms driven by sympathetic nervous system
+activation, including a racing or pounding heart, sweating, trembling,
+dry mouth, dizziness, or gastrointestinal discomfort, often occurring
+alongside anxious thoughts.
+PLAIN_LANGUAGE_EXAMPLES: "My heart starts pounding for no clear reason."
+"I get dizzy and sweaty when I think about it."
+NON_DIAGNOSTIC_NOTE: These physical sensations have many possible causes,
+including medical conditions unrelated to anxiety. Persistent or severe
+physical symptoms warrant evaluation by a physician, not assumption that
+anxiety is the cause.
+
+---
+
+CHUNK_ID: ANX-003
+INDICATOR: Muscle Tension and Motor Restlessness
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Chronic muscular tension, an inability to relax, feeling
+"keyed up" or on edge, or motor restlessness such as pacing or fidgeting.
+PLAIN_LANGUAGE_EXAMPLES: "My shoulders are always tight." "I can't sit
+still, I have to keep moving."
+NON_DIAGNOSTIC_NOTE: Differentiates generalized anxiety presentations from
+purely cognitive worry; physical tension alone is common and not, by
+itself, indicative of a disorder.
+
+---
+
+CHUNK_ID: ANX-004
+INDICATOR: Concentration Difficulty (Anxiety Presentation)
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Difficulty maintaining concentration, often because attention
+is repeatedly pulled toward worry, threat-monitoring, or anticipated
+problems rather than the task at hand.
+PLAIN_LANGUAGE_EXAMPLES: "I read the same paragraph five times because my
+mind keeps wandering to what could go wrong." "I can't focus in class
+because I'm thinking about everything else."
+NON_DIAGNOSTIC_NOTE: See shared_symptoms.txt for how this differs in
+presentation from concentration difficulty associated with depression.
+
+---
+
+CHUNK_ID: ANX-005
+INDICATOR: Irritability (Anxiety Presentation)
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Low frustration tolerance or a persistent edgy, on-edge mood,
+commonly arising from chronic nervous system activation and the strain of
+ongoing worry.
+PLAIN_LANGUAGE_EXAMPLES: "I snap at people more than I used to." "Small
+things set me off lately."
+NON_DIAGNOSTIC_NOTE: Irritability is a non-specific symptom shared with
+depression (see shared_symptoms.txt) and many other states, including
+ordinary stress and sleep deprivation.
+
+---
+
+CHUNK_ID: ANX-006
+INDICATOR: Sleep Disturbance (Anxiety Presentation)
+SOURCE: ICD-11 6B00, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Difficulty falling asleep due to racing thoughts or worry at
+bedtime (initial insomnia), distinct in pattern from the early-morning
+waking more often associated with depressive presentations.
+PLAIN_LANGUAGE_EXAMPLES: "I lie awake for hours because my brain won't
+stop." "I can't fall asleep because I keep thinking about tomorrow."
+NON_DIAGNOSTIC_NOTE: See anxiety_vs_depression.txt for the full
+differentiation between anxiety-type and depression-type sleep disturbance.
+
+---
+
+CHUNK_ID: ANX-007
+INDICATOR: Behavioural Avoidance
+SOURCE: ICD-11, WHO (2025-01), anxiety/fear-related disorders group
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Active avoidance of situations, places, people, or thoughts
+that trigger anxiety or fear, to a degree that restricts daily functioning
+(e.g., avoiding classes, social events, or specific places).
+PLAIN_LANGUAGE_EXAMPLES: "I've stopped going to lectures because I can't
+handle being around that many people." "I avoid speaking up in meetings."
+NON_DIAGNOSTIC_NOTE: Useful for assessing functional impairment and
+relevant to referral_guidelines.txt tiering; avoidance of one specific,
+identifiable trigger differs from pervasive avoidance across many contexts.
+
+---
+
+CHUNK_ID: ANX-008
+INDICATOR: Fear of Negative Social Evaluation
+SOURCE: ICD-11, WHO (2025-01), Social Anxiety Disorder (6B04)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Marked and persistent fear or anxiety about one or more social
+situations in which the person may be scrutinised by others, driven by
+fear of negative evaluation, embarrassment, or rejection.
+PLAIN_LANGUAGE_EXAMPLES: "I freeze up when I have to talk to people I don't
+know well." "I'm terrified of saying something stupid in front of others."
+NON_DIAGNOSTIC_NOTE: Distinguishing situational social discomfort (common
+and not pathological) from pervasive, impairing social fear requires
+professional assessment.

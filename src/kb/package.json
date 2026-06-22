@@ -1,0 +1,21 @@
+{
+  "name": "anxiosense",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "index-kb": "tsx src/scripts/index-knowledge-base.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mastra/core": "latest",
+    "@mastra/libsql": "latest",
+    "@mastra/fastembed": "latest",
+    "ai": "latest",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "tsx": "latest",
+    "@types/node": "latest"
+  }
+}

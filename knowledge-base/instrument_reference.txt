@@ -1,0 +1,154 @@
+KB_FILE: instrument_reference.txt
+PURPOSE: Validated, public-domain screening instrument items, for citation
+as a distinct evidence type from clinical descriptions (ICD-11).
+SOURCE: GAD-7 (Spitzer, Kroenke, Williams, et al., 2006, Archives of
+Internal Medicine 166(10):1092-1097) and PHQ-9 (Kroenke, Spitzer, Williams,
+2001, Journal of General Internal Medicine 16(9):606-613). Originally
+developed with Pfizer educational grant support; in 2010 Pfizer released
+both instruments without copyright restriction — no permission is required
+to reproduce, translate, display, or distribute them.
+LICENSE_NOTE: Public domain / unrestricted use as of 2010. Verify current
+terms at the time of any production deployment, as licensing statements
+can be updated.
+NON_DIAGNOSTIC_REMINDER: These are screening instruments, not diagnostic
+tools. A score above a clinical cutoff indicates a need for further
+professional evaluation, not a diagnosis. AnxioSense does not compute or
+display a GAD-7/PHQ-9 total score as a diagnostic output — items are used
+only as citable, validated indicator language.
+
+---
+
+CHUNK_ID: INST-GAD7-INTRO
+INSTRUMENT: GAD-7
+SOURCE_TYPE: validated_instrument_item
+CONTENT: Over the last two weeks, how often have you been bothered by the
+following problems? Response options: Not at all (0), Several days (1),
+More than half the days (2), Nearly every day (3).
+SCORING_NOTE: Total score range 0-21. Cutoffs: 5 = mild, 10 = moderate,
+15 = severe. A score of 10 or greater is the standard threshold suggesting
+further evaluation is warranted. AnxioSense does not apply this scoring
+directly to free-text input; included for reference only.
+
+---
+
+CHUNK_ID: INST-GAD7-01
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 1
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Feeling nervous, anxious, or on edge.
+
+CHUNK_ID: INST-GAD7-02
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 2
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Not being able to stop or control worrying.
+
+CHUNK_ID: INST-GAD7-03
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 3
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Worrying too much about different things.
+
+CHUNK_ID: INST-GAD7-04
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 4
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Trouble relaxing.
+
+CHUNK_ID: INST-GAD7-05
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 5
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Being so restless that it is hard to sit still.
+
+CHUNK_ID: INST-GAD7-06
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 6
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Becoming easily annoyed or irritable.
+
+CHUNK_ID: INST-GAD7-07
+INSTRUMENT: GAD-7
+ITEM_NUMBER: 7
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Feeling afraid as if something awful might happen.
+
+---
+
+CHUNK_ID: INST-PHQ9-INTRO
+INSTRUMENT: PHQ-9
+SOURCE_TYPE: validated_instrument_item
+CONTENT: Over the last two weeks, how often have you been bothered by any
+of the following problems? Response options: Not at all (0), Several days
+(1), More than half the days (2), Nearly every day (3).
+SCORING_NOTE: Total score range 0-27. Cutoffs: 5 = mild, 10 = moderate,
+15 = moderately severe, 20 = severe. AnxioSense does not apply this
+scoring directly to free-text input; included for reference only.
+SAFETY_NOTE: PHQ-9 item 9 concerns self-harm and suicidal ideation. In
+AnxioSense, this item is NOT used by the Retrieval or Validation agents
+for general symptom matching. It exists here only as part of the
+instrument's documented structure. Any user content suggestive of
+self-harm or suicidal ideation must be handled exclusively by the
+Safety/Crisis Check gate and safety_boundary.txt — never surfaced as a
+retrieved "symptom indicator" in a standard report.
+
+CHUNK_ID: INST-PHQ9-01
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 1
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Little interest or pleasure in doing things.
+
+CHUNK_ID: INST-PHQ9-02
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 2
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Feeling down, depressed, or hopeless.
+
+CHUNK_ID: INST-PHQ9-03
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 3
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Trouble falling or staying asleep, or sleeping too much.
+
+CHUNK_ID: INST-PHQ9-04
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 4
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Feeling tired or having little energy.
+
+CHUNK_ID: INST-PHQ9-05
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 5
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Poor appetite or overeating.
+
+CHUNK_ID: INST-PHQ9-06
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 6
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Feeling bad about yourself, or that you are a failure, or have
+let yourself or your family down.
+
+CHUNK_ID: INST-PHQ9-07
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 7
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Trouble concentrating on things, such as reading or watching
+television.
+
+CHUNK_ID: INST-PHQ9-08
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 8
+SOURCE_TYPE: validated_instrument_item
+ITEM_TEXT: Moving or speaking so slowly that other people could have
+noticed, or the opposite — being so fidgety or restless that you have
+been moving around a lot more than usual.
+
+CHUNK_ID: INST-PHQ9-09
+INSTRUMENT: PHQ-9
+ITEM_NUMBER: 9
+SOURCE_TYPE: validated_instrument_item
+SAFETY_RESTRICTED: true
+ITEM_TEXT: Thoughts that you would be better off dead, or of hurting
+yourself.
+HANDLING: Excluded from standard retrieval indexing. See SAFETY_NOTE above.

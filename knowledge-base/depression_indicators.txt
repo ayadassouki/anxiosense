@@ -1,0 +1,118 @@
+KB_FILE: depression_indicators.txt
+PURPOSE: Depression-specific clinical indicators for retrieval and
+claim-evidence matching. Source: World Health Organization, ICD-11
+(2025-01 release), category 6A70 Single Episode Depressive Disorder /
+Depressive Episode. Used under CC BY-ND 3.0 IGO
+(https://creativecommons.org/licenses/by-nc-nd/3.0/igo/).
+NON_DIAGNOSTIC_REMINDER: These entries describe symptom patterns, not
+diagnoses. AnxioSense does not assess or report on suicidal ideation as a
+"symptom indicator" — any such content is routed exclusively through the
+Safety/Crisis Check gate and safety_boundary.txt, never through this file.
+
+---
+
+CHUNK_ID: DEP-001
+INDICATOR: Depressed Mood
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: A period of depressed mood occurring most of the day, nearly
+every day, for at least two weeks — experienced as persistent sadness,
+emptiness, or a heavy, low feeling.
+PLAIN_LANGUAGE_EXAMPLES: "I just feel empty most of the time." "There's
+this heaviness that doesn't lift, even on good days."
+NON_DIAGNOSTIC_NOTE: Low mood is a normal human experience, especially in
+response to difficult events. This indicator describes mood that is
+persistent (most of most days) and sustained (at least two weeks), not a
+brief or situational dip.
+
+---
+
+CHUNK_ID: DEP-002
+INDICATOR: Anhedonia (Diminished Interest or Pleasure)
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Markedly diminished interest or pleasure in activities that
+were previously enjoyable, occurring most of the day, nearly every day,
+for at least two weeks.
+PLAIN_LANGUAGE_EXAMPLES: "Nothing really feels enjoyable anymore, not even
+things I used to look forward to." "I don't care about hanging out with
+friends the way I used to."
+NON_DIAGNOSTIC_NOTE: This is one of the two core gateway features of a
+depressive episode under ICD-11 (alongside depressed mood) and is
+considered relatively specific to depressive presentations rather than
+anxiety — see anxiety_vs_depression.txt.
+
+---
+
+CHUNK_ID: DEP-003
+INDICATOR: Reduced Energy / Fatigue (Depression Presentation)
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Reduced energy or persistent fatigue, often described as
+effortful even for routine tasks, not substantially relieved by rest.
+PLAIN_LANGUAGE_EXAMPLES: "Even getting out of bed feels like a huge
+effort." "I'm tired no matter how much I sleep."
+NON_DIAGNOSTIC_NOTE: Fatigue is a shared symptom across many conditions,
+including anxiety, and has many non-psychiatric causes (e.g., anemia,
+thyroid conditions, sleep disorders). See shared_symptoms.txt.
+
+---
+
+CHUNK_ID: DEP-004
+INDICATOR: Feelings of Worthlessness or Excessive Guilt
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Persistent feelings of worthlessness, or excessive or
+inappropriate guilt, extending beyond reasonable self-criticism about a
+specific event.
+PLAIN_LANGUAGE_EXAMPLES: "I feel like a burden to everyone around me."
+"Everything that goes wrong feels like it's my fault, even when it
+isn't."
+NON_DIAGNOSTIC_NOTE: Relevant to referral_guidelines.txt severity tiering.
+Profound hopelessness combined with this indicator should be cross-checked
+against safety_boundary.txt escalation criteria.
+
+---
+
+CHUNK_ID: DEP-005
+INDICATOR: Difficulty Concentrating (Depression Presentation)
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Difficulty concentrating or making decisions, often described
+alongside mental slowing or low motivation rather than active worry.
+PLAIN_LANGUAGE_EXAMPLES: "I can't make even small decisions anymore." "My
+thinking feels slow and foggy."
+NON_DIAGNOSTIC_NOTE: Compare to ANX-004 in anxiety_indicators.txt — the
+underlying mechanism (worry-driven vs. energy/motivation-driven) differs
+even though the surface symptom looks similar. See shared_symptoms.txt.
+
+---
+
+CHUNK_ID: DEP-006
+INDICATOR: Sleep and Appetite Changes (Depression Presentation)
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Changes in sleep (commonly early-morning waking or
+hypersomnia) or appetite (increase or decrease), occurring alongside other
+depressive features.
+PLAIN_LANGUAGE_EXAMPLES: "I wake up at 4am and can't get back to sleep."
+"I have no interest in food most days." / "I've been eating a lot more
+than usual without really noticing."
+NON_DIAGNOSTIC_NOTE: See anxiety_vs_depression.txt for how sleep-pattern
+type (onset vs. early-waking) helps differentiate anxiety from depression
+presentations.
+
+---
+
+CHUNK_ID: DEP-007
+INDICATOR: Psychomotor Agitation or Retardation
+SOURCE: ICD-11 6A70, WHO (2025-01)
+SOURCE_TYPE: clinical_description
+DESCRIPTION: Observable slowing of movement and speech (retardation), or
+its opposite, restless agitation, occurring alongside other depressive
+features.
+PLAIN_LANGUAGE_EXAMPLES: "I feel like I'm moving in slow motion." /
+"I can't stop pacing, even though I feel exhausted."
+NON_DIAGNOSTIC_NOTE: Agitated presentations of depression can closely
+resemble anxiety. See anxiety_vs_depression.txt, "Difficult
+Differentiation Situations."

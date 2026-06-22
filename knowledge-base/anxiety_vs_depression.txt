@@ -1,0 +1,88 @@
+KB_FILE: anxiety_vs_depression.txt
+PURPOSE: Direct differentiation guidance for the Validation Agent's
+session-level differentiation assessment. Retrieved once per session
+(not per-claim) whenever both anxiety- and depression-category claims are
+present in a session.
+SOURCE: Synthesized from ICD-11 6B00 / 6A70 descriptions, WHO (2025-01),
+and the ICD-11 category "6A73 Mixed Depressive and Anxiety Disorder."
+Used under CC BY-ND 3.0 IGO.
+NON_DIAGNOSTIC_REMINDER: This file exists to support honest, hedged
+differentiation in the report — never to force a single label onto a
+mixed or ambiguous presentation.
+
+---
+
+CHUNK_ID: DIFF-001
+SECTION: Features More Strongly Associated With Anxiety
+SOURCE_TYPE: differentiation_guidance
+CONTENT:
+- Autonomic/physical arousal: racing heart, sweating, trembling,
+  gastrointestinal discomfort.
+- Future-oriented cognitive content: worry, apprehension, catastrophic
+  anticipation of events that have not happened yet.
+- Specific behavioural avoidance tied to identifiable triggers or
+  situations.
+- Initial insomnia (difficulty falling asleep due to racing thoughts).
+- Muscle tension and motor restlessness rather than slowing.
+
+---
+
+CHUNK_ID: DIFF-002
+SECTION: Features More Strongly Associated With Depression
+SOURCE_TYPE: differentiation_guidance
+CONTENT:
+- Anhedonia: a pervasive, marked loss of interest or pleasure across most
+  activities — considered one of the most specific discriminators.
+- Past/present-oriented cognitive content: hopelessness, worthlessness,
+  guilt, themes of loss or failure rather than anticipated threat.
+- Psychomotor slowing (retardation): slowed speech, movement, or thinking.
+- Early-morning waking or hypersomnia.
+- Pervasive low mood rather than situational worry.
+
+---
+
+CHUNK_ID: DIFF-003
+SECTION: Features Common to Both (Low Differentiating Value Alone)
+SOURCE_TYPE: differentiation_guidance
+CONTENT:
+- Fatigue or low energy.
+- Concentration or decision-making difficulty.
+- Irritability.
+- General distress and some degree of functional impairment.
+These should not be used alone to assign a primary lean; always pair with
+at least one indicator from DIFF-001 or DIFF-002.
+
+---
+
+CHUNK_ID: DIFF-004
+SECTION: Difficult Differentiation Situations
+SOURCE_TYPE: differentiation_guidance
+CONTENT:
+- Mixed Depressive and Anxiety Presentation: ICD-11 explicitly recognises
+  presentations where both anxious and depressive symptoms are present
+  together without either independently reaching a full, distinct
+  threshold. When a user's claims include clear signals from both
+  DIFF-001 and DIFF-002, the appropriate output is "mixed" — not a forced
+  choice between the two.
+- Agitated Depression: Severe psychomotor agitation, pacing, or racing
+  thoughts can occur within a depressive presentation and closely
+  resemble acute anxiety. Presence of agitation alone should not
+  automatically be coded as an anxiety signal if clear depressive features
+  (anhedonia, hopelessness) dominate.
+- Chronic Anxiety Exhaustion: Long-standing anxiety can lead to secondary
+  fatigue, withdrawal, and low mood that superficially resembles primary
+  depression. Consider the apparent sequence the user describes (e.g.,
+  "I've been anxious for months and now I just feel drained") as
+  contextual information, not as proof of either category.
+
+---
+
+CHUNK_ID: DIFF-005
+SECTION: Reporting Guidance for the Differentiation Output
+SOURCE_TYPE: differentiation_guidance
+CONTENT: The differentiation assessment should report a primary lean of
+"anxiety", "depression", "mixed", or "unclear" — "unclear" is valid and
+should be used when available claims are dominated by DIFF-003 (shared,
+low-specificity) signals without a clear DIFF-001 or DIFF-002 anchor. Every
+lean must cite the specific chunk(s) that support it, never asserted
+without citation.
