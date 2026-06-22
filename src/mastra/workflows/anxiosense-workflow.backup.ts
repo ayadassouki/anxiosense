@@ -1,5 +1,3 @@
-import { buildClaimsStep } from './build-claims-step';
-import { retrievalStep } from '../agents/retrieval-agent';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 
@@ -166,16 +164,8 @@ export const anxiosenseWorkflow = createWorkflow({
             contextAnalysis: inputData['context-reasoning-step'].result,
             referralAnalysis: inputData['referral-safety-step'].result,
         };
-        })
-    .then(buildClaimsStep)
-    .map(async ({ inputData }) => {
-        return {
-            sessionId: inputData.sessionId,
-            originalText: inputData.userText,
-            claims: inputData.claims,
-        };
     })
-    .then(retrievalStep)
     .then(validationStep)
     .then(reportStep);
+
 anxiosenseWorkflow.commit();
