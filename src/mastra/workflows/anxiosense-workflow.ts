@@ -1,3 +1,4 @@
+import { evidenceValidationStep } from './evidence-validation-step';
 import { buildClaimsStep } from './build-claims-step';
 import { retrievalStep } from '../agents/retrieval-agent';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
@@ -176,6 +177,6 @@ export const anxiosenseWorkflow = createWorkflow({
         };
     })
     .then(retrievalStep)
-    .then(validationStep)
+    .then(evidenceValidationStep)
     .then(reportStep);
 anxiosenseWorkflow.commit();
