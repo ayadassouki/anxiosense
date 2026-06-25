@@ -1,6 +1,6 @@
 import { LibSQLVector } from "@mastra/libsql";
 
-const DB_URL = process.env.ANXIOSENSE_VECTOR_DB_URL ?? "file:./data/anxiosense-vectors.db";
+const DB_URL = process.env.ANXIOSENSE_VECTOR_DB_URL ?? "file:/Users/ayadassouki/anxiosense/data/anxiosense-vectors.db";
 
 export const KB_INDEX_NAME = "anxiosense_kb";
 export const KB_EMBEDDING_DIMENSION = 384; // fastembed default (bge-small-en-v1.5)
