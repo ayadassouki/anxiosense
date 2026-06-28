@@ -4,6 +4,8 @@ import { retrievalStep } from '../agents/retrieval-agent';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { ValidationAgentOutputSchema } from '../../kb/types';
+import { writeSession, readSession, clearSession } from '../utils/workflow-session-store';
+import { exportWorkflowRun } from '../utils/export-workflow-run';
 
 const inputSchema = z.object({
     userText: z.string(),
@@ -122,13 +124,13 @@ const reportStep = createStep({
     inputSchema: ValidationAgentOutputSchema,
     outputSchema: finalReportSchema,
     execute: async ({ inputData, mastra }) => {
-        // Safety override: if the referral agent flagged urgent risk, bypass the
-        // LLM entirely and return a hardcoded crisis response.  This prevents
-        // the report agent from generating a routine screening report when the
-        // user has described an immediate safety concern.
+        let finalReport: string;
+
         if (inputData.riskLevel === 'urgent') {
-            return {
-                finalReport: `# AnxioSense Screening Support — Urgent Safety Notice
+            // Safety override: bypass the LLM entirely and return a hardcoded crisis
+            // response.  This prevents the report agent from generating a routine
+            // screening report when the user has described an immediate safety concern.
+            finalReport = `# AnxioSense Screening Support — Urgent Safety Notice
 
 ## Important
 
@@ -144,33 +146,31 @@ Based on what you shared, there may be an immediate safety concern that requires
 
 *This report has not been generated. When an immediate safety concern is present, your wellbeing takes priority over a screening summary. Please seek support now.*
 
-*This tool is intended for screening support only and is not a clinical service.*`,
-            };
-        }
+*This tool is intended for screening support only and is not a clinical service.*`;
+        } else {
+            const agent = mastra?.getAgent('reportAgent');
+            if (!agent) throw new Error('Report agent not found');
 
-        const agent = mastra?.getAgent('reportAgent');
-        if (!agent) throw new Error('Report agent not found');
+            // Split validated claims by source agent so the LLM knows exactly which
+            // claims belong in each section (Section 2 = emotion, 3 = symptom, 4 = context).
+            // This prevents the model from misassigning or inventing section content.
+            const confidenceLabel = (status: string) =>
+                status === 'supported' ? 'strong evidence' : 'partial evidence';
 
-        // Split validated claims by source agent so the LLM knows exactly which
-        // claims belong in each section (Section 2 = emotion, 3 = symptom, 4 = context).
-        // This prevents the model from misassigning or inventing section content.
-        const confidenceLabel = (status: string) =>
-            status === 'supported' ? 'strong evidence' : 'partial evidence';
+            const filterAndFormat = (agentName: string) =>
+                inputData.claimValidations
+                    .filter((v) => v.supportStatus !== 'unsupported' && v.sourceAgent === agentName)
+                    .map((v) => `- ${v.claimText} [${confidenceLabel(v.supportStatus)}]`)
+                    .join('\n') || 'None';
 
-        const filterAndFormat = (agentName: string) =>
-            inputData.claimValidations
-                .filter((v) => v.supportStatus !== 'unsupported' && v.sourceAgent === agentName)
-                .map((v) => `- ${v.claimText} [${confidenceLabel(v.supportStatus)}]`)
-                .join('\n') || 'None';
+            const emotionClaimsText   = filterAndFormat('emotion');
+            const symptomClaimsText   = filterAndFormat('symptom');
+            const contextClaimsText   = filterAndFormat('context');
 
-        const emotionClaimsText   = filterAndFormat('emotion');
-        const symptomClaimsText   = filterAndFormat('symptom');
-        const contextClaimsText   = filterAndFormat('context');
+            const unsupportedCount = inputData.claimValidations
+                .filter((v) => v.supportStatus === 'unsupported').length;
 
-        const unsupportedCount = inputData.claimValidations
-            .filter((v) => v.supportStatus === 'unsupported').length;
-
-        const prompt = `
+            const prompt = `
 Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
 
 EMOTIONAL INDICATORS (for Section 2):
@@ -201,8 +201,37 @@ CRITICAL RULES — violation of any rule makes the report unusable:
 - End with exactly this sentence: "This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment."
 `;
 
-        const response = await agent.generate(prompt);
-        return { finalReport: response.text };
+            const response = await agent.generate(prompt);
+            finalReport = response.text;
+        }
+
+        // ── Evaluation export ─────────────────────────────────────────────────
+        // Write the full run snapshot to evaluation/prompt-experiments/runs/.
+        // Wrapped in try/catch so a write error never breaks the workflow output.
+        // Set ANXIOSENSE_TEST_CASE and ANXIOSENSE_PROMPT_VERSION in your env
+        // before running to label the file (defaults are provided below).
+        try {
+            const session = readSession(inputData.sessionId);
+            const filePath = exportWorkflowRun({
+                testCaseName:     process.env.ANXIOSENSE_TEST_CASE    ?? 'manual-run',
+                promptVersion:    process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
+                userText:         session?.userText          ?? '',
+                emotionAnalysis:  session?.emotionAnalysis   ?? '{}',
+                symptomAnalysis:  session?.symptomAnalysis   ?? '{}',
+                contextAnalysis:  session?.contextAnalysis   ?? '{}',
+                referralAnalysis: session?.referralAnalysis  ?? '{}',
+                buildClaimsOutput: session?.buildClaimsOutput ?? {},
+                retrievalOutput:  session?.retrievalOutput   ?? {},
+                validationOutput: inputData,
+                finalReport,
+            });
+            clearSession(inputData.sessionId);
+            console.log(`[AnxioSense] Evaluation run saved → ${filePath}`);
+        } catch (e) {
+            console.warn('[AnxioSense] Export failed (non-fatal):', e);
+        }
+
+        return { finalReport };
     },
 });
 
@@ -236,14 +265,32 @@ export const anxiosenseWorkflow = createWorkflow({
         } catch {
             // referral JSON parse failed — default to 'low' (safe fallback)
         }
+
+        // Deposit intermediate outputs into the session store so the report step
+        // can include them in the evaluation export without schema changes.
+        writeSession(inputData.sessionId, {
+            userText:          inputData.userText,
+            emotionAnalysis:   inputData.emotionAnalysis,
+            symptomAnalysis:   inputData.symptomAnalysis,
+            contextAnalysis:   inputData.contextAnalysis,
+            referralAnalysis:  inputData.referralAnalysis,
+            buildClaimsOutput: { sessionId: inputData.sessionId, claims: inputData.claims },
+        });
+
         return {
-            sessionId: inputData.sessionId,
+            sessionId:    inputData.sessionId,
             originalText: inputData.userText,
-            claims: inputData.claims,
+            claims:       inputData.claims,
             riskLevel,
         };
     })
     .then(retrievalStep)
+    // Pass-through map: write retrieval output to the session store.
+    // Returns inputData unchanged so evidenceValidationStep sees its expected input.
+    .map(async ({ inputData }) => {
+        writeSession(inputData.sessionId, { retrievalOutput: inputData });
+        return inputData;
+    })
     .then(evidenceValidationStep)
     .then(reportStep);
 anxiosenseWorkflow.commit();
