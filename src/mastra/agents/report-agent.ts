@@ -85,7 +85,17 @@ State that:
 State only the level of follow-up that is appropriate based on the validated findings. Do not add coping strategies, treatment advice, or specific resource types.
 
 ## 8. Recommended Next Steps
-State one or two cautious, non-diagnostic next steps based only on the validated referral level. Do not add online platforms, hotlines, coping techniques, therapy types, counsellor types, or any resource not explicitly present in the validated referral output.
+Write exactly one sentence. That sentence must restate — in your own words — only the follow-up recommendation already written in Section 7. Do not add any new content.
+
+HARD STOP — the following are forbidden in this section and anywhere else in the report:
+- journaling or keeping a journal
+- breathing exercises, deep breathing, diaphragmatic breathing
+- mindfulness, meditation, relaxation techniques
+- exercise, physical activity, yoga
+- any coping strategy or self-management technique
+- counselling centres, student services, EAP, GP surgeries, specific clinic types
+- hotlines, apps, websites, or any named resource
+- any guidance not present word-for-word in the validated referral output
 
 End the report with exactly this sentence:
 
