@@ -55,6 +55,7 @@ export const RetrievalAgentInputSchema = z.object({
   sessionId: z.string(),
   originalText: z.string(),
   claims: z.array(ClaimSchema).min(1),
+  riskLevel: z.string().optional(), // forwarded from referral agent for urgent override
 });
 export type RetrievalAgentInput = z.infer<typeof RetrievalAgentInputSchema>;
 
@@ -86,6 +87,7 @@ export const RetrievalAgentOutputSchema = z.object({
     totalChunksRetrieved: z.number(),
     indexesQueried: z.array(z.string()),
   }),
+  riskLevel: z.string().optional(), // forwarded from referral agent for urgent override
 });
 export type RetrievalAgentOutput = z.infer<typeof RetrievalAgentOutputSchema>;
 
@@ -131,5 +133,6 @@ export const ValidationAgentOutputSchema = z.object({
   claimValidations: z.array(ClaimValidationSchema),
   differentiationAssessment: DifferentiationAssessmentSchema,
   overallConsistencyNotes: z.string(),
+  riskLevel: z.string().optional(), // forwarded from referral agent for urgent override
 });
 export type ValidationAgentOutput = z.infer<typeof ValidationAgentOutputSchema>;

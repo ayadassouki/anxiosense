@@ -47,9 +47,9 @@ export const buildClaimsStep = createStep({
       const lower = item.toLowerCase();
       const category =
         lower.includes('sleep') ||
-        lower.includes('fatigue') ||
-        lower.includes('concentration') ||
-        lower.includes('irritability')
+          lower.includes('fatigue') ||
+          lower.includes('concentration') ||
+          lower.includes('irritability')
           ? 'shared_symptom'
           : 'anxiety_indicator';
 
@@ -69,7 +69,6 @@ export const buildClaimsStep = createStep({
         category: 'contextual_stressor',
       });
     });
-
     return {
       ...inputData,
       sessionId: `session-${Date.now()}`,

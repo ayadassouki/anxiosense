@@ -95,7 +95,7 @@ export const retrievalStep = createStep({
   }: {
     inputData: z.infer<typeof RetrievalAgentInputSchema>;
   }) => {
-    const { sessionId, originalText, claims } = inputData;
+    const { sessionId, originalText, claims, riskLevel } = inputData;
 
     const results: ClaimRetrievalResult[] = [];
     const indexesQueried = new Set<string>();
@@ -144,6 +144,7 @@ export const retrievalStep = createStep({
         totalChunksRetrieved,
         indexesQueried: Array.from(indexesQueried),
       },
+      riskLevel,
     };
   },
 });

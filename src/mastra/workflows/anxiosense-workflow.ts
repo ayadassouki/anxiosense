@@ -122,23 +122,83 @@ const reportStep = createStep({
     inputSchema: ValidationAgentOutputSchema,
     outputSchema: finalReportSchema,
     execute: async ({ inputData, mastra }) => {
+        // Safety override: if the referral agent flagged urgent risk, bypass the
+        // LLM entirely and return a hardcoded crisis response.  This prevents
+        // the report agent from generating a routine screening report when the
+        // user has described an immediate safety concern.
+        if (inputData.riskLevel === 'urgent') {
+            return {
+                finalReport: `# AnxioSense Screening Support — Urgent Safety Notice
+
+## Important
+
+Based on what you shared, there may be an immediate safety concern that requires urgent attention.
+
+**This screening tool is not able to provide crisis support.** Please reach out for help right now:
+
+- Contact a crisis line in your country or region (e.g. a mental health crisis line or helpline)
+- Go to your nearest emergency department, or call emergency services (e.g. 911 / 999 / 112)
+- Reach out immediately to a trusted person who can be with you
+
+---
+
+*This report has not been generated. When an immediate safety concern is present, your wellbeing takes priority over a screening summary. Please seek support now.*
+
+*This tool is intended for screening support only and is not a clinical service.*`,
+            };
+        }
+
         const agent = mastra?.getAgent('reportAgent');
         if (!agent) throw new Error('Report agent not found');
 
+        // Split validated claims by source agent so the LLM knows exactly which
+        // claims belong in each section (Section 2 = emotion, 3 = symptom, 4 = context).
+        // This prevents the model from misassigning or inventing section content.
+        const confidenceLabel = (status: string) =>
+            status === 'supported' ? 'strong evidence' : 'partial evidence';
+
+        const filterAndFormat = (agentName: string) =>
+            inputData.claimValidations
+                .filter((v) => v.supportStatus !== 'unsupported' && v.sourceAgent === agentName)
+                .map((v) => `- ${v.claimText} [${confidenceLabel(v.supportStatus)}]`)
+                .join('\n') || 'None';
+
+        const emotionClaimsText   = filterAndFormat('emotion');
+        const symptomClaimsText   = filterAndFormat('symptom');
+        const contextClaimsText   = filterAndFormat('context');
+
+        const unsupportedCount = inputData.claimValidations
+            .filter((v) => v.supportStatus === 'unsupported').length;
+
         const prompt = `
-Evidence-Based Validation Output:
-${JSON.stringify(inputData, null, 2)}
+Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
 
-Generate the final AnxioSense Screening Support Report using the evidence validation output as the source of truth.
+EMOTIONAL INDICATORS (for Section 2):
+${emotionClaimsText}
 
-Rules:
-- Do not diagnose.
-- Do not say the user has anxiety or depression.
-- Only include claims marked supported or partially_supported.
-- Mention unsupported claims only in a brief limitations section.
-- Cite chunk IDs when explaining evidence.
-- Include the differentiation assessment: anxiety, depression, mixed, or unclear.
+ANXIETY-RELATED INDICATORS (for Section 3):
+${symptomClaimsText}
+
+CONTEXTUAL FACTORS (for Section 4):
+${contextClaimsText}
+
+Unsupported claims: ${unsupportedCount} (do not name them — mention only the count in Section 6)
+Differentiation assessment: ${inputData.differentiationAssessment.primaryLean}
+
+Generate the final AnxioSense Screening Support Report.
+
+CRITICAL RULES — violation of any rule makes the report unusable:
+- Do NOT include any internal identifiers (e.g. EMO-1, SYM-1, CTX-1, ANX-001, or any code of letters-hyphen-number).
+- Do NOT mention chunk IDs, claim IDs, file names, similarity scores, or threshold values.
+- Do NOT diagnose the user or say they have anxiety or depression.
+- Do NOT introduce findings that are not in the lists above. Write exactly what is in the list.
+- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or treatment techniques.
+- Section 2 must use ONLY the emotional indicators listed above.
+- Section 3 must use ONLY the anxiety-related indicators listed above.
+- Section 4 must use ONLY the contextual factors listed above.
+- If a section's list says "None", write: "No [indicator type] were identified in the available information."
 - Keep the tone cautious, supportive, and professional.
+- End with exactly this sentence: "This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment."
 `;
 
         const response = await agent.generate(prompt);
@@ -165,10 +225,22 @@ export const anxiosenseWorkflow = createWorkflow({
         })
     .then(buildClaimsStep)
     .map(async ({ inputData }) => {
+        // Extract risk_level from referral agent output so it can be forwarded
+        // to the report step for the urgent safety override.
+        let riskLevel = 'low';
+        try {
+            const referral = JSON.parse(inputData.referralAnalysis);
+            if (typeof referral.risk_level === 'string') {
+                riskLevel = referral.risk_level;
+            }
+        } catch {
+            // referral JSON parse failed — default to 'low' (safe fallback)
+        }
         return {
             sessionId: inputData.sessionId,
             originalText: inputData.userText,
             claims: inputData.claims,
+            riskLevel,
         };
     })
     .then(retrievalStep)
