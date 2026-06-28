@@ -180,15 +180,14 @@ Based on what you shared, there may be an immediate safety concern that requires
             const unsupportedCount = inputData.claimValidations
                 .filter((v) => v.supportStatus === 'unsupported').length;
 
-            // Include GAD-7 block if available
+            // Read GAD-7 block from session store — will be injected directly into
+            // the final report string after LLM generation so Mistral cannot drop it.
             const session = readSession(inputData.sessionId);
-            const gad7Section = session?.gad7Block
-                ? `\nGAD-7 SCREENING SCORE (include as Section 0 immediately after the title, before Section 1):\n${session.gad7Block}\n`
-                : '';
+            const gad7Block = session?.gad7Block ?? null;
 
             const prompt = `
 Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
-${gad7Section}
+
 EMOTIONAL INDICATORS (for Section 2):
 ${emotionClaimsText}
 
@@ -201,9 +200,8 @@ ${contextClaimsText}
 Unsupported claims: ${unsupportedCount} (do not name them — mention only the count in Section 6)
 Differentiation assessment: ${inputData.differentiationAssessment.primaryLean}
 
-${gad7Section ? 'IMPORTANT: Include the GAD-7 score block verbatim as Section 0 of the report, using the heading "## 0. GAD-7 Screening Score". Do not alter the score, severity, or interpretation text.' : ''}
-
 Generate the final AnxioSense Screening Support Report.
+Start the report with the heading "# AnxioSense Screening Support Report" then go directly to "## 1. Summary". Do NOT include a Section 0 — it will be added automatically.
 
 CRITICAL RULES — violation of any rule makes the report unusable:
 - Do NOT include any internal identifiers (e.g. EMO-1, SYM-1, CTX-1, ANX-001, or any code of letters-hyphen-number).
@@ -220,7 +218,15 @@ CRITICAL RULES — violation of any rule makes the report unusable:
 `;
 
             const response = await agent.generate(prompt);
-            finalReport = response.text;
+
+            // Inject GAD-7 as Section 0 directly in TypeScript — bypasses the LLM
+            // entirely so the full item breakdown is always preserved verbatim.
+            if (gad7Block) {
+                const reportBody = response.text.replace(/^#\s+AnxioSense Screening Support Report\s*/i, '').trimStart();
+                finalReport = `# AnxioSense Screening Support Report\n\n## 0. GAD-7 Screening Score\n\n${gad7Block}\n\n${reportBody}`;
+            } else {
+                finalReport = response.text;
+            }
         }
 
         // ── Evaluation export ─────────────────────────────────────────────────
@@ -236,6 +242,7 @@ CRITICAL RULES — violation of any rule makes the report unusable:
                 testCaseName:     process.env.ANXIOSENSE_TEST_CASE    ?? 'manual-run',
                 promptVersion:    process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
                 userText:         exportSession?.userText          ?? '',
+                gad7Block:        exportSession?.gad7Block         ?? null,
                 emotionAnalysis:  exportSession?.emotionAnalysis   ?? '{}',
                 symptomAnalysis:  exportSession?.symptomAnalysis   ?? '{}',
                 contextAnalysis:  exportSession?.contextAnalysis   ?? '{}',

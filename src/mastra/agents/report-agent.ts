@@ -59,11 +59,6 @@ Report format:
 
 # AnxioSense Screening Support Report
 
-## 0. GAD-7 Screening Score  ← include ONLY if GAD-7 data is provided in the prompt
-If the prompt includes a "GAD-7 SCREENING SCORE" block, reproduce its content verbatim
-under this heading. Do not paraphrase, alter the score, or change the severity label.
-If no GAD-7 data is provided, omit this section entirely.
-
 ## 1. Summary
 Provide a concise overview of the validated findings using only the claim names provided to you. Do not introduce any finding that is not in the validated claims list.
 

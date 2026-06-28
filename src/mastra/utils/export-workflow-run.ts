@@ -15,6 +15,8 @@ export interface WorkflowRunExportParams {
     testCaseName: string;
     promptVersion: string;
     userText: string;
+    /** Formatted GAD-7 block produced by gad7-scorer.ts, or null if not provided. */
+    gad7Block: string | null;
     emotionAnalysis: string;
     symptomAnalysis: string;
     contextAnalysis: string;
@@ -43,6 +45,7 @@ export function exportWorkflowRun(params: WorkflowRunExportParams): string {
         testCaseName,
         promptVersion,
         userText,
+        gad7Block,
         emotionAnalysis,
         symptomAnalysis,
         contextAnalysis,
@@ -63,6 +66,10 @@ export function exportWorkflowRun(params: WorkflowRunExportParams): string {
     fs.mkdirSync(outputDir, { recursive: true });
     const filePath = path.join(outputDir, filename);
 
+    const gad7Section = gad7Block
+        ? [`## GAD-7 Score`, gad7Block, ``]
+        : [`## GAD-7 Score`, '_Not provided for this run._', ``];
+
     const md = [
         `# AnxioSense Workflow Run`,
         ``,
@@ -75,6 +82,7 @@ export function exportWorkflowRun(params: WorkflowRunExportParams): string {
         `## User Input`,
         userText,
         ``,
+        ...gad7Section,
         `## Emotion Agent Output`,
         '```json',
         safeJsonBlock(emotionAnalysis),
