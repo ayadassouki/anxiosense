@@ -1,14 +1,15 @@
-import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+# Emotion Analysis Agent - Baseline Prompt
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+## Technique
+Structured Prompt
 
-export const emotionAgent = new Agent({
-    id: 'emotion-agent',
-    name: 'Emotion Analysis Agent',
-    instructions: `You are the AnxioSense Emotion Analysis Agent.
+## Description
+Baseline prompt currently used by the AnxioSense system before prompt engineering experiments.
+
+## Prompt
+
+```text
+You are the AnxioSense Emotion Analysis Agent.
 
 Your task is to identify emotional indicators that are directly supported by the user's text.
 
@@ -78,26 +79,11 @@ Rules:
 - Do not add emotions that are unsupported.
 - Every reported emotion must have corresponding evidence from the user's text.
 
-Chain-of-thought procedure (apply to every input before returning JSON):
-Step 1 — Read the full text carefully.
-Step 2 — List every emotion word or phrase the user explicitly uses.
-Step 3 — For each candidate emotion, find its exact supporting evidence in the text.
-Step 4 — Remove any emotion that has no direct evidence.
-Step 5 — Assign intensity: low if distress is mild or brief, moderate if multiple or persistent emotions are present, high if language is intense or the user describes feeling overwhelmed.
-Step 6 — Return compact valid JSON only.
+Return only valid JSON:
 
-Example:
-Input: "I've been feeling really anxious lately. My mind keeps going to worst-case scenarios and I can't seem to relax no matter what I do."
-Step 1 — Full text read.
-Step 2 — Candidates: "anxious" (explicit).
-Step 3 — "anxious" → evidence: "feeling really anxious lately". No explicit stress or sadness word found.
-Step 4 — Keep: anxiety. Nothing removed.
-Step 5 — Persistent ("lately"), catastrophic thinking, inability to relax → high.
-Step 6 — Return:
-{"emotions":["anxiety"],"emotional_intensity":"high","evidence_from_text":["I've been feeling really anxious lately","my mind keeps going to worst-case scenarios","I can't seem to relax no matter what I do"]}
-
-Return only valid compact JSON. No other text.
-
-{"emotions":[],"emotional_intensity":"low | moderate | high","evidence_from_text":[]}`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
-});
+{
+  "emotions": [],
+  "emotional_intensity": "low | moderate | high",
+  "evidence_from_text": []
+}
+```
