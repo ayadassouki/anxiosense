@@ -71,3 +71,28 @@ SOURCE_TYPE: contextual_taxonomy
 DESCRIPTION: Relocation, starting a new environment, or adjusting to
 significant change in routine, culture, or social context.
 KEYWORDS: moving, relocation, new environment, transition, adjusting
+
+---
+
+CHUNK_ID: CTX-008
+STRESSOR: Occupational and Workplace Stress
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Stress arising from job demands, difficult colleagues or
+managers, fear of being fired or laid off, workplace conflict, long hours,
+poor work-life balance, or feeling undervalued or overwhelmed in a work
+environment. Relevant for employed students, part-time workers, or early-career
+professionals.
+KEYWORDS: work, boss, manager, coworker, shift, fired, layoff, overtime,
+workplace, job stress, office, hours, deadline at work, undervalued, burned out
+
+---
+
+CHUNK_ID: CTX-009
+STRESSOR: Social Pressure and Peer Expectations
+SOURCE_TYPE: contextual_taxonomy
+DESCRIPTION: Stress arising from the perceived need to meet social
+expectations, fit in, or perform to the standards of peers, social groups,
+or online communities. Includes fear of judgment, exclusion, comparison to
+others on social media, and the pressure to project a certain image.
+KEYWORDS: fitting in, judged, comparison, social media, peers, left out,
+excluded, group, popularity, image, impression, what others think, embarrassed

@@ -16,6 +16,8 @@ export interface SessionData {
     referralAnalysis: string;
     buildClaimsOutput: unknown;
     retrievalOutput: unknown;
+    /** Formatted GAD-7 block for inclusion in the report prompt (optional). */
+    gad7Block: string | null;
 }
 
 const store = new Map<string, Partial<SessionData>>();

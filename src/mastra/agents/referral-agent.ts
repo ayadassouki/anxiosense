@@ -118,6 +118,13 @@ Step 5 — Multiple experiences, persistent distress, some functional impact →
 Step 6 — Return:
 {"risk_level":"moderate","reasoning":"The user describes persistent uncontrollable worry, sleep difficulty, and daily feelings of being overwhelmed, suggesting several anxiety-related experiences with functional impact.","recommended_support":"Consider a non-urgent appointment with a qualified healthcare professional if symptoms continue or affect daily functioning.","safety_note":""}
 
+CRITICAL — risk_level must be EXACTLY one of these three string values:
+  "low"       — for Minimal or Mild Concern Patterns
+  "moderate"  — for Elevated or High Concern Patterns
+  "urgent"    — for Urgent Safety Concern only
+
+Any other value (e.g. "elevated", "high", "medium", "severe") is INVALID and will break the pipeline. Use only the exact strings above.
+
 Return only valid JSON:
 {"risk_level":"low | moderate | urgent","reasoning":"","recommended_support":"","safety_note":""}`,
     model: localOllama('mistral:latest', { temperature: 0.1 }),

@@ -6,9 +6,19 @@ import { z } from 'zod';
 import { ValidationAgentOutputSchema } from '../../kb/types';
 import { writeSession, readSession, clearSession } from '../utils/workflow-session-store';
 import { exportWorkflowRun } from '../utils/export-workflow-run';
+import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-scorer';
 
 const inputSchema = z.object({
     userText: z.string(),
+    /**
+     * Optional GAD-7 answers — exactly 7 integers, each 0–3.
+     * When provided, the deterministic score is computed and included in the
+     * final report.  Omit this field if the user skips the GAD-7 questionnaire.
+     */
+    gad7Answers: z
+        .array(z.number().int().min(0).max(3))
+        .length(7)
+        .optional(),
 });
 
 const agentOutputSchema = z.object({
@@ -170,9 +180,15 @@ Based on what you shared, there may be an immediate safety concern that requires
             const unsupportedCount = inputData.claimValidations
                 .filter((v) => v.supportStatus === 'unsupported').length;
 
+            // Include GAD-7 block if available
+            const session = readSession(inputData.sessionId);
+            const gad7Section = session?.gad7Block
+                ? `\nGAD-7 SCREENING SCORE (include as Section 0 immediately after the title, before Section 1):\n${session.gad7Block}\n`
+                : '';
+
             const prompt = `
 Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
-
+${gad7Section}
 EMOTIONAL INDICATORS (for Section 2):
 ${emotionClaimsText}
 
@@ -184,6 +200,8 @@ ${contextClaimsText}
 
 Unsupported claims: ${unsupportedCount} (do not name them — mention only the count in Section 6)
 Differentiation assessment: ${inputData.differentiationAssessment.primaryLean}
+
+${gad7Section ? 'IMPORTANT: Include the GAD-7 score block verbatim as Section 0 of the report, using the heading "## 0. GAD-7 Screening Score". Do not alter the score, severity, or interpretation text.' : ''}
 
 Generate the final AnxioSense Screening Support Report.
 
@@ -211,17 +229,19 @@ CRITICAL RULES — violation of any rule makes the report unusable:
         // Set ANXIOSENSE_TEST_CASE and ANXIOSENSE_PROMPT_VERSION in your env
         // before running to label the file (defaults are provided below).
         try {
-            const session = readSession(inputData.sessionId);
+            // In the non-urgent path `session` is already in scope from above.
+            // In the urgent path we need to read it here.
+            const exportSession = readSession(inputData.sessionId);
             const filePath = exportWorkflowRun({
                 testCaseName:     process.env.ANXIOSENSE_TEST_CASE    ?? 'manual-run',
                 promptVersion:    process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
-                userText:         session?.userText          ?? '',
-                emotionAnalysis:  session?.emotionAnalysis   ?? '{}',
-                symptomAnalysis:  session?.symptomAnalysis   ?? '{}',
-                contextAnalysis:  session?.contextAnalysis   ?? '{}',
-                referralAnalysis: session?.referralAnalysis  ?? '{}',
-                buildClaimsOutput: session?.buildClaimsOutput ?? {},
-                retrievalOutput:  session?.retrievalOutput   ?? {},
+                userText:         exportSession?.userText          ?? '',
+                emotionAnalysis:  exportSession?.emotionAnalysis   ?? '{}',
+                symptomAnalysis:  exportSession?.symptomAnalysis   ?? '{}',
+                contextAnalysis:  exportSession?.contextAnalysis   ?? '{}',
+                referralAnalysis: exportSession?.referralAnalysis  ?? '{}',
+                buildClaimsOutput: exportSession?.buildClaimsOutput ?? {},
+                retrievalOutput:  exportSession?.retrievalOutput   ?? {},
                 validationOutput: inputData,
                 finalReport,
             });
@@ -251,19 +271,46 @@ export const anxiosenseWorkflow = createWorkflow({
             contextAnalysis: inputData['context-reasoning-step'].result,
             referralAnalysis: inputData['referral-safety-step'].result,
         };
-        })
+    })
     .then(buildClaimsStep)
-    .map(async ({ inputData }) => {
+    .map(async ({ inputData, getInitData }) => {
         // Extract risk_level from referral agent output so it can be forwarded
         // to the report step for the urgent safety override.
-        let riskLevel = 'low';
+        // Validated enum: only "low", "moderate", or "urgent" are accepted.
+        // Any invalid value (e.g. "elevated") or parse failure defaults to
+        // "moderate" — a conservative clinical fallback that avoids under-triaging.
+        const VALID_RISK_LEVELS = ['low', 'moderate', 'urgent'] as const;
+        type RiskLevel = typeof VALID_RISK_LEVELS[number];
+        let riskLevel: RiskLevel = 'moderate';
         try {
             const referral = JSON.parse(inputData.referralAnalysis);
-            if (typeof referral.risk_level === 'string') {
-                riskLevel = referral.risk_level;
+            const raw = referral.risk_level;
+            if (typeof raw === 'string' && (VALID_RISK_LEVELS as readonly string[]).includes(raw)) {
+                riskLevel = raw as RiskLevel;
+            } else if (typeof raw === 'string') {
+                console.warn(
+                    `[AnxioSense] Invalid risk_level value "${raw}" from referral agent — defaulting to "moderate".`
+                );
             }
         } catch {
-            // referral JSON parse failed — default to 'low' (safe fallback)
+            // referral JSON parse failed — default to 'moderate' (conservative fallback)
+            console.warn('[AnxioSense] Referral agent output was not valid JSON — defaulting risk_level to "moderate".');
+        }
+
+        // Compute GAD-7 score deterministically if the user provided answers.
+        // getInitData() gives access to the original workflow input, which may
+        // include gad7Answers.  The sessionId is available here so we can write
+        // the formatted block directly to the session store.
+        const originalInput = getInitData() as { userText: string; gad7Answers?: number[] };
+        let gad7Block: string | null = null;
+        if (Array.isArray(originalInput.gad7Answers) && originalInput.gad7Answers.length === 7) {
+            try {
+                const gad7Result = computeGad7Score(originalInput.gad7Answers);
+                gad7Block = formatGad7ForReport(gad7Result);
+                console.log(`[AnxioSense] GAD-7 scored: ${gad7Result.score}/21 (${gad7Result.severity})`);
+            } catch (e) {
+                console.warn('[AnxioSense] GAD-7 scoring failed (non-fatal):', e);
+            }
         }
 
         // Deposit intermediate outputs into the session store so the report step
@@ -275,6 +322,7 @@ export const anxiosenseWorkflow = createWorkflow({
             contextAnalysis:   inputData.contextAnalysis,
             referralAnalysis:  inputData.referralAnalysis,
             buildClaimsOutput: { sessionId: inputData.sessionId, claims: inputData.claims },
+            gad7Block,
         });
 
         return {
