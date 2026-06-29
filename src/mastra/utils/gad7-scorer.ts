@@ -29,12 +29,30 @@ export const GAD7_RESPONSE_OPTIONS = [
 
 export type Gad7Severity = 'minimal' | 'mild' | 'moderate' | 'severe';
 
+/**
+ * Non-diagnostic concern pattern labels used in the final report.
+ * Per Dr. Abel's guidance: raw scores and clinical severity labels are
+ * NOT shown to users. Instead, the system presents a concern pattern
+ * description that is supportive, non-diagnostic, and explainability-focused.
+ * Source: AnxioSense supervisor feedback, June 2026.
+ */
+export type Gad7ConcernPattern =
+    | 'Minimal Concern Pattern'
+    | 'Mild Concern Pattern'
+    | 'Elevated Concern Pattern'
+    | 'High Concern Pattern';
+
 export interface Gad7Result {
-    /** Raw sum of all 7 item scores (0–21). */
+    /** Raw sum of all 7 item scores (0–21). Internal use only — not shown to users. */
     score: number;
-    /** Severity band per Spitzer et al. (2006). */
+    /** Severity band per Spitzer et al. (2006). Internal use only. */
     severity: Gad7Severity;
-    /** Plain-language interpretation for inclusion in the report. */
+    /**
+     * Non-diagnostic concern pattern label for user-facing output.
+     * Replaces raw score and severity label in the final report.
+     */
+    concernPattern: Gad7ConcernPattern;
+    /** Supportive, non-diagnostic description for inclusion in the report. */
     interpretation: string;
     /** Individual item scores as provided. */
     itemScores: number[];
@@ -58,60 +76,85 @@ export function computeGad7Score(answers: number[]): Gad7Result {
     const score = answers.reduce((sum, v) => sum + v, 0);
 
     let severity: Gad7Severity;
+    let concernPattern: Gad7ConcernPattern;
     let interpretation: string;
 
     if (score <= 4) {
         severity = 'minimal';
+        concernPattern = 'Minimal Concern Pattern';
         interpretation =
-            `The GAD-7 score of ${score}/21 falls in the minimal anxiety range (0–4). ` +
-            `This suggests that the experiences described across the seven items are ` +
-            `mild or infrequent. Routine monitoring is generally appropriate at this level.`;
+            `Your responses suggest that experiences commonly associated with anxiety ` +
+            `are currently limited. Occasional stress or worry is a normal part of life. ` +
+            `If these feelings become more frequent or begin affecting your daily activities, ` +
+            `you may wish to check in with a healthcare professional.`;
     } else if (score <= 9) {
         severity = 'mild';
+        concernPattern = 'Mild Concern Pattern';
         interpretation =
-            `The GAD-7 score of ${score}/21 falls in the mild anxiety range (5–9). ` +
-            `This suggests a pattern of anxiety-related experiences that may be worth ` +
-            `monitoring. A follow-up conversation with a healthcare professional is ` +
-            `optional but may be beneficial if symptoms persist.`;
+            `Your responses indicate the presence of some anxiety-related experiences. ` +
+            `While these feelings may not currently be causing substantial difficulties, ` +
+            `monitoring how they change over time may be helpful. If symptoms become ` +
+            `more frequent or distressing, consider speaking with a healthcare professional.`;
     } else if (score <= 14) {
         severity = 'moderate';
+        concernPattern = 'Elevated Concern Pattern';
         interpretation =
-            `The GAD-7 score of ${score}/21 falls in the moderate anxiety range (10–14). ` +
-            `This level is associated with a meaningful number of anxiety-related ` +
-            `experiences occurring frequently. Consideration of a non-urgent appointment ` +
-            `with a qualified healthcare professional is advisable if these experiences ` +
-            `continue or affect daily functioning.`;
+            `Your responses suggest several experiences that are commonly associated ` +
+            `with anxiety and may be affecting your well-being. It may be beneficial ` +
+            `to discuss these concerns with a healthcare professional who can provide ` +
+            `a more comprehensive assessment and appropriate guidance.`;
     } else {
         severity = 'severe';
+        concernPattern = 'High Concern Pattern';
         interpretation =
-            `The GAD-7 score of ${score}/21 falls in the severe anxiety range (15–21). ` +
-            `This score reflects frequent and wide-ranging anxiety-related experiences ` +
-            `across multiple domains. Speaking with a qualified healthcare professional ` +
-            `is recommended, particularly if these experiences are affecting daily life.`;
+            `Your responses indicate a substantial number of experiences commonly ` +
+            `associated with anxiety. Seeking support from a qualified healthcare ` +
+            `professional may be beneficial. Effective treatments and support options ` +
+            `are available, and discussing your concerns with a professional can help ` +
+            `determine the most appropriate next steps.`;
     }
 
-    return { score, severity, interpretation, itemScores: [...answers] };
+    return { score, severity, concernPattern, interpretation, itemScores: [...answers] };
 }
 
 /**
  * Formats a Gad7Result as a concise plain-text block for inclusion in
  * the report agent prompt.  Keeps clinical language cautious.
  */
+/**
+ * Formats a Gad7Result for inclusion in the final report.
+ *
+ * Per Dr. Abel's guidance:
+ * - Raw numeric scores (x/21) are NOT shown to users.
+ * - Clinical severity labels ("moderate", "severe") are NOT shown to users.
+ * - Instead, the concern pattern label and supportive interpretation are shown.
+ * - The item breakdown is retained for internal transparency / evaluation export
+ *   but framed as "how often you experienced each item" rather than a score.
+ */
 export function formatGad7ForReport(result: Gad7Result): string {
+    const responseLabel = (score: number): string => {
+        if (score === 0) return 'Not at all';
+        if (score === 1) return 'Several days';
+        if (score === 2) return 'More than half the days';
+        return 'Nearly every day';
+    };
+
     const itemLines = GAD7_QUESTIONS.map(
-        (q, i) => `  ${i + 1}. ${q}: ${result.itemScores[i]}/3`
+        (q, i) => `  ${i + 1}. ${q}\n     → ${responseLabel(result.itemScores[i])}`
     ).join('\n');
 
     return [
-        `GAD-7 Screening Score: ${result.score}/21 (${result.severity} range)`,
+        `GAD-7 Self-Report Screening`,
+        `Concern Pattern: ${result.concernPattern}`,
         ``,
-        `Item breakdown:`,
+        `Your responses over the past two weeks:`,
         itemLines,
         ``,
-        `Interpretation: ${result.interpretation}`,
+        `${result.interpretation}`,
         ``,
-        `Note: The GAD-7 is a validated self-report screening instrument, not a `,
-        `diagnostic tool. Scores should be interpreted in the context of a full `,
-        `clinical assessment by a qualified healthcare professional.`,
+        `Note: The GAD-7 is a validated self-report screening instrument used `,
+        `as an internal reference. It is not a diagnostic tool. This result `,
+        `should not be considered a clinical assessment. If you have concerns `,
+        `about your mental health, please speak with a qualified healthcare professional.`,
     ].join('\n');
 }
