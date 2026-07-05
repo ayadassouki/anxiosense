@@ -9,6 +9,10 @@
  */
 
 export interface SessionData {
+    /** Input mode selected by the user. */
+    mode: 'journal' | 'social-media';
+    /** Whether clinician-only details should be included in the report. */
+    clinicianMode: boolean;
     userText: string;
     emotionAnalysis: string;
     symptomAnalysis: string;
@@ -16,8 +20,14 @@ export interface SessionData {
     referralAnalysis: string;
     buildClaimsOutput: unknown;
     retrievalOutput: unknown;
-    /** Formatted GAD-7 block for inclusion in the report prompt (optional). */
+    /** Formatted GAD-7 concern-pattern block for user-facing report (null in social-media mode). */
     gad7Block: string | null;
+    /** Raw GAD-7 total score (0–21). Clinician-only. Null in social-media mode. */
+    gad7Score: number | null;
+    /** Clinical severity band (minimal/mild/moderate/severe). Clinician-only. Null in social-media mode. */
+    gad7Severity: string | null;
+    /** Individual item scores [0–3] × 7. Clinician-only. */
+    gad7ItemScores: number[] | null;
 }
 
 const store = new Map<string, Partial<SessionData>>();

@@ -8,24 +8,44 @@ import { writeSession, readSession, clearSession } from '../utils/workflow-sessi
 import { exportWorkflowRun } from '../utils/export-workflow-run';
 import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-scorer';
 
+// ── Input schema ─────────────────────────────────────────────────────────────
+
 const inputSchema = z.object({
+    /**
+     * Selects the analysis pipeline:
+     *   - "journal"       → personal journal entry; GAD-7 supported; full referral.
+     *   - "social-media"  → pasted Reddit/social posts; GAD-7 bypassed; extra disclaimer.
+     */
+    mode: z.enum(['journal', 'social-media']).default('journal'),
+
+    /** The free-text content to analyse. */
     userText: z.string(),
+
     /**
      * Optional GAD-7 answers — exactly 7 integers, each 0–3.
-     * When provided, the deterministic score is computed and included in the
-     * final report.  Omit this field if the user skips the GAD-7 questionnaire.
+     * Only used in "journal" mode. Ignored in "social-media" mode.
      */
     gad7Answers: z
         .array(z.number().int().min(0).max(3))
         .length(7)
         .optional(),
+
+    /**
+     * When true, the report includes a Clinician Details section with the raw
+     * GAD-7 score, clinical severity label, and per-item breakdown.
+     * Hidden from standard user-facing output.
+     */
+    clinicianMode: z.boolean().optional().default(false),
 });
+
+// ── Shared step schemas ───────────────────────────────────────────────────────
 
 const agentOutputSchema = z.object({
     result: z.string(),
 });
 
 const combinedAnalysisSchema = z.object({
+    mode: z.enum(['journal', 'social-media']),
     userText: z.string(),
     emotionAnalysis: z.string(),
     symptomAnalysis: z.string(),
@@ -41,6 +61,25 @@ const finalReportSchema = z.object({
     finalReport: z.string(),
 });
 
+// ── Mode context helpers ──────────────────────────────────────────────────────
+
+function modePrefix(mode: 'journal' | 'social-media'): string {
+    if (mode === 'social-media') {
+        return (
+            'CONTEXT: The following text was sourced from social media (e.g. Reddit). ' +
+            'Treat it as self-reported content from an unknown author describing their ' +
+            'own experiences. Do NOT assume clinical intent or structured disclosure. ' +
+            'Be appropriately cautious about any inferences.\n\n'
+        );
+    }
+    return (
+        'CONTEXT: The following text is a personal journal entry written by the user ' +
+        'to describe how they have been feeling recently.\n\n'
+    );
+}
+
+// ── Parallel extraction steps ─────────────────────────────────────────────────
+
 const emotionStep = createStep({
     id: 'emotion-analysis-step',
     inputSchema,
@@ -48,8 +87,7 @@ const emotionStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('emotionAgent');
         if (!agent) throw new Error('Emotion agent not found');
-
-        const response = await agent.generate(inputData.userText);
+        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
         return { result: response.text };
     },
 });
@@ -61,8 +99,7 @@ const symptomStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('symptomAgent');
         if (!agent) throw new Error('Symptom agent not found');
-
-        const response = await agent.generate(inputData.userText);
+        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
         return { result: response.text };
     },
 });
@@ -74,8 +111,7 @@ const contextStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('contextAgent');
         if (!agent) throw new Error('Context agent not found');
-
-        const response = await agent.generate(inputData.userText);
+        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
         return { result: response.text };
     },
 });
@@ -88,10 +124,22 @@ const referralStep = createStep({
         const agent = mastra?.getAgent('referralAgent');
         if (!agent) throw new Error('Referral agent not found');
 
-        const response = await agent.generate(inputData.userText);
+        // Social-media mode: prepend extra conservatism instruction to the referral agent.
+        const socialMediaNote =
+            inputData.mode === 'social-media'
+                ? 'IMPORTANT: This text is from social media, not a direct clinical disclosure. ' +
+                  'Be conservative — default to "low" or "moderate" unless there are very explicit ' +
+                  'safety signals in the text itself.\n\n'
+                : '';
+
+        const response = await agent.generate(
+            socialMediaNote + modePrefix(inputData.mode) + inputData.userText
+        );
         return { result: response.text };
     },
 });
+
+// ── Validation step ───────────────────────────────────────────────────────────
 
 const validationStep = createStep({
     id: 'validation-step',
@@ -121,13 +169,11 @@ Validate the agent outputs. Remove or flag unsupported claims. Return only the v
 `;
 
         const response = await agent.generate(prompt);
-
-        return {
-            ...inputData,
-            validationAnalysis: response.text,
-        };
+        return { ...inputData, validationAnalysis: response.text };
     },
 });
+
+// ── Report step ───────────────────────────────────────────────────────────────
 
 const reportStep = createStep({
     id: 'assessment-report-step',
@@ -137,19 +183,16 @@ const reportStep = createStep({
         let finalReport: string;
 
         if (inputData.riskLevel === 'urgent') {
-            // Safety override: bypass the LLM entirely and return a hardcoded crisis
-            // response.  This prevents the report agent from generating a routine
-            // screening report when the user has described an immediate safety concern.
-            finalReport = `# AnxioSense Screening Support — Urgent Safety Notice
+            finalReport = `# AnxioSense Screening Support Report
 
-## Important
+## Important — Urgent Safety Notice
 
 Based on what you shared, there may be an immediate safety concern that requires urgent attention.
 
 **This screening tool is not able to provide crisis support.** Please reach out for help right now:
 
-- Contact a crisis line in your country or region (e.g. a mental health crisis line or helpline)
-- Go to your nearest emergency department, or call emergency services (e.g. 911 / 999 / 112)
+- Contact a crisis line in your country or region
+- Go to your nearest emergency department, or call emergency services (911 / 999 / 112)
 - Reach out immediately to a trusted person who can be with you
 
 ---
@@ -157,13 +200,18 @@ Based on what you shared, there may be an immediate safety concern that requires
 *This report has not been generated. When an immediate safety concern is present, your wellbeing takes priority over a screening summary. Please seek support now.*
 
 *This tool is intended for screening support only and is not a clinical service.*`;
+
         } else {
             const agent = mastra?.getAgent('reportAgent');
             if (!agent) throw new Error('Report agent not found');
 
-            // Split validated claims by source agent so the LLM knows exactly which
-            // claims belong in each section (Section 2 = emotion, 3 = symptom, 4 = context).
-            // This prevents the model from misassigning or inventing section content.
+            // Read session data — includes mode, clinicianMode, gad7 fields, retrieval output
+            const session = readSession(inputData.sessionId);
+            const mode          = session?.mode          ?? 'journal';
+            const clinicianMode = session?.clinicianMode ?? false;
+            const gad7Block     = session?.gad7Block     ?? null;
+
+            // ── Format validated claims by agent ──────────────────────────────
             const confidenceLabel = (status: string) =>
                 status === 'supported' ? 'strong evidence' : 'partial evidence';
 
@@ -173,19 +221,77 @@ Based on what you shared, there may be an immediate safety concern that requires
                     .map((v) => `- ${v.claimText} [${confidenceLabel(v.supportStatus)}]`)
                     .join('\n') || 'None';
 
-            const emotionClaimsText   = filterAndFormat('emotion');
-            const symptomClaimsText   = filterAndFormat('symptom');
-            const contextClaimsText   = filterAndFormat('context');
+            const emotionClaimsText  = filterAndFormat('emotion');
+            const symptomClaimsText  = filterAndFormat('symptom');
+            const contextClaimsText  = filterAndFormat('context');
 
             const unsupportedCount = inputData.claimValidations
                 .filter((v) => v.supportStatus === 'unsupported').length;
 
-            // Read GAD-7 block from session store — will be injected directly into
-            // the final report string after LLM generation so Mistral cannot drop it.
-            const session = readSession(inputData.sessionId);
-            const gad7Block = session?.gad7Block ?? null;
+            // ── Extract top evidence snippets from retrieval output ────────────
+            // Pull the top 4 KB chunks across all supported claims for the
+            // Evidence section — gives the user a transparent view of what the
+            // KB contributed.
+            let evidenceSnippets = 'None available.';
+            try {
+                const retrieval = session?.retrievalOutput as {
+                    results?: Array<{
+                        claimText: string;
+                        retrievedChunks: Array<{ text: string; source?: string; similarityScore: number }>;
+                    }>;
+                } | undefined;
+
+                if (retrieval?.results) {
+                    const chunks: Array<{ text: string; source?: string; score: number }> = [];
+                    for (const r of retrieval.results) {
+                        for (const c of r.retrievedChunks ?? []) {
+                            chunks.push({ text: c.text, source: c.source, score: c.similarityScore });
+                        }
+                    }
+                    // Deduplicate by first 60 chars, keep top 4 by score
+                    const seen = new Set<string>();
+                    const top = chunks
+                        .sort((a, b) => b.score - a.score)
+                        .filter((c) => {
+                            const key = c.text.slice(0, 60);
+                            if (seen.has(key)) return false;
+                            seen.add(key);
+                            return true;
+                        })
+                        .slice(0, 4);
+
+                    if (top.length > 0) {
+                        evidenceSnippets = top
+                            .map((c, i) => {
+                                const excerpt = c.text.length > 200
+                                    ? c.text.slice(0, 200).trimEnd() + '...'
+                                    : c.text;
+                                const src = c.source ? ` (${c.source})` : '';
+                                return `${i + 1}. "${excerpt}"${src}`;
+                            })
+                            .join('\n\n');
+                    }
+                }
+            } catch {
+                // Non-fatal — evidence section will show "None available."
+            }
+
+            // ── Mode-specific framing ─────────────────────────────────────────
+            const modeLabel =
+                mode === 'social-media'
+                    ? 'Social Media Analysis'
+                    : 'Journal / Self-Report';
+
+            const socialMediaDisclaimer =
+                mode === 'social-media'
+                    ? '\nNOTE TO REPORT AGENT: This analysis is based on social media text, not a structured clinical disclosure. ' +
+                      'Add a clear disclaimer in Section 1 that results are based on indirect text and carry additional uncertainty.'
+                    : '';
 
             const prompt = `
+Input Mode: ${modeLabel}
+${socialMediaDisclaimer}
+
 Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
 
 EMOTIONAL INDICATORS (for Section 2):
@@ -194,62 +300,132 @@ ${emotionClaimsText}
 ANXIETY-RELATED INDICATORS (for Section 3):
 ${symptomClaimsText}
 
-CONTEXTUAL FACTORS (for Section 4):
+CONTEXTUAL FACTORS (for Section 5):
 ${contextClaimsText}
 
-Unsupported claims: ${unsupportedCount} (do not name them — mention only the count in Section 6)
+SUPPORTING EVIDENCE FROM KNOWLEDGE BASE (for Section 4 — quote these verbatim):
+${evidenceSnippets}
+
+Unsupported claims dropped: ${unsupportedCount}
 Differentiation assessment: ${inputData.differentiationAssessment.primaryLean}
 
-Generate the final AnxioSense Screening Support Report.
-Start the report with the heading "# AnxioSense Screening Support Report" then go directly to "## 1. Summary". Do NOT include a Section 0 — it will be added automatically.
+Generate the final AnxioSense Screening Support Report using this EXACT section structure:
 
-CRITICAL RULES — violation of any rule makes the report unusable:
-- Do NOT include any internal identifiers (e.g. EMO-1, SYM-1, CTX-1, ANX-001, or any code of letters-hyphen-number).
-- Do NOT mention chunk IDs, claim IDs, file names, similarity scores, or threshold values.
-- Do NOT diagnose the user or say they have anxiety or depression.
-- Do NOT introduce findings that are not in the lists above. Write exactly what is in the list.
-- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or treatment techniques.
-- Section 2 must use ONLY the emotional indicators listed above.
-- Section 3 must use ONLY the anxiety-related indicators listed above.
-- Section 4 must use ONLY the contextual factors listed above.
-- If a section's list says "None", write: "No [indicator type] were identified in the available information."
-- Keep the tone cautious, supportive, and professional.
-- End with exactly this sentence: "This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment."
+# AnxioSense Screening Support Report
+
+## 1. Input Mode
+State the mode used (${modeLabel}) in one sentence.${mode === 'social-media' ? ' Add one sentence noting that results carry additional uncertainty because the text is from social media.' : ''}
+
+## 2. Summary of Concern
+2–3 sentence overview of the validated findings. Use cautious language. Do not diagnose.
+
+## 3. Emotional Indicators
+Use ONLY the emotional indicators listed above. If none: "No emotional indicators were identified in the available information."
+
+## 4. Anxiety-Related Indicators
+Use ONLY the anxiety-related indicators listed above. If none: "No anxiety-related indicators were identified in the available information."
+
+## 5. Supporting Evidence
+Present the knowledge-base evidence snippets provided above. Introduce them with: "The following excerpts from the clinical knowledge base supported the validated findings:" then list them. Do not paraphrase — present them as provided.
+
+## 6. Contextual Factors
+Use ONLY the contextual factors listed above. If none: "No contextual factors were identified in the available information."
+
+## 7. Referral and Safety Recommendation
+State the appropriate follow-up level based on validated findings. Do not add coping strategies or specific resources.
+
+## 8. Limitations
+State that: (a) the report is based only on the information provided; (b) missing context may affect interpretation; (c) this is not a clinical diagnosis; (d) a qualified healthcare professional is needed for a clinical assessment.${mode === 'social-media' ? ' Also note that social media text adds additional uncertainty to the analysis.' : ''}
+
+CRITICAL RULES — any violation makes the report unusable:
+- Do NOT include a Section 0 — it will be added automatically if applicable.
+- Do NOT include claim IDs (EMO-1, SYM-1, CTX-1, etc.), chunk IDs, file names, or similarity scores.
+- Do NOT diagnose the user or say they "have anxiety" or any clinical condition.
+- Do NOT introduce findings not in the lists above.
+- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or therapy techniques.
+- Do NOT mention hotlines, apps, websites, specific clinic types, or named resources.
+- Keep tone supportive, cautious, and non-judgmental.
+- End with exactly: "This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment."
 `;
 
             const response = await agent.generate(prompt);
 
-            // Inject GAD-7 as Section 0 directly in TypeScript — bypasses the LLM
-            // entirely so the full item breakdown is always preserved verbatim.
+            // ── Inject GAD-7 concern-pattern block (Section 0) ────────────────
+            // Inserted directly in TypeScript after generation so Mistral cannot
+            // condense or drop the item-by-item breakdown.
             if (gad7Block) {
-                const reportBody = response.text.replace(/^#\s+AnxioSense Screening Support Report\s*/i, '').trimStart();
-                finalReport = `# AnxioSense Screening Support Report\n\n## 0. GAD-7 Screening Score\n\n${gad7Block}\n\n${reportBody}`;
+                const reportBody = response.text
+                    .replace(/^#\s+AnxioSense Screening Support Report\s*/i, '')
+                    .trimStart();
+                finalReport =
+                    `# AnxioSense Screening Support Report\n\n` +
+                    `## 0. GAD-7 Self-Report Screening\n\n${gad7Block}\n\n` +
+                    reportBody;
             } else {
                 finalReport = response.text;
+            }
+
+            // ── Inject Clinician Details block ────────────────────────────────
+            // Appended after the user-facing report. Raw GAD-7 score and clinical
+            // severity are never shown to standard users.
+            if (clinicianMode && session?.gad7Score !== null && session?.gad7Score !== undefined) {
+                const severityLabel: Record<string, string> = {
+                    minimal:  'Minimal anxiety (0–4)',
+                    mild:     'Mild anxiety (5–9)',
+                    moderate: 'Moderate anxiety (10–14)',
+                    severe:   'Severe anxiety (15–21)',
+                };
+                const itemLabels = ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'];
+                const questions = [
+                    'Feeling nervous, anxious, or on edge',
+                    'Not being able to stop or control worrying',
+                    'Worrying too much about different things',
+                    'Trouble relaxing',
+                    'Being so restless that it is hard to sit still',
+                    'Becoming easily annoyed or irritable',
+                    'Feeling afraid, as if something awful might happen',
+                ];
+                const itemBreakdown = (session.gad7ItemScores ?? [])
+                    .map((score, i) => `  ${i + 1}. ${questions[i]}\n     → ${itemLabels[score]} (${score})`)
+                    .join('\n');
+
+                const clinicianBlock = `
+
+---
+
+## Clinician Details *(restricted — do not share with patient)*
+
+**GAD-7 Raw Score:** ${session.gad7Score}/21
+**Clinical Severity:** ${severityLabel[session.gad7Severity ?? ''] ?? session.gad7Severity ?? 'Unknown'}
+
+**Per-Item Breakdown:**
+${itemBreakdown}
+
+**Differentiation Assessment:** ${inputData.differentiationAssessment.primaryLean}
+**Differentiation Reasoning:** ${inputData.differentiationAssessment.reasoning}
+**Validation Notes:** ${inputData.overallConsistencyNotes}
+
+*This section is intended for qualified clinicians only and must not be shared with the patient as part of the screening output.*`;
+
+                finalReport += clinicianBlock;
             }
         }
 
         // ── Evaluation export ─────────────────────────────────────────────────
-        // Write the full run snapshot to evaluation/prompt-experiments/runs/.
-        // Wrapped in try/catch so a write error never breaks the workflow output.
-        // Set ANXIOSENSE_TEST_CASE and ANXIOSENSE_PROMPT_VERSION in your env
-        // before running to label the file (defaults are provided below).
         try {
-            // In the non-urgent path `session` is already in scope from above.
-            // In the urgent path we need to read it here.
             const exportSession = readSession(inputData.sessionId);
             const filePath = exportWorkflowRun({
-                testCaseName:     process.env.ANXIOSENSE_TEST_CASE    ?? 'manual-run',
-                promptVersion:    process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
-                userText:         exportSession?.userText          ?? '',
-                gad7Block:        exportSession?.gad7Block         ?? null,
-                emotionAnalysis:  exportSession?.emotionAnalysis   ?? '{}',
-                symptomAnalysis:  exportSession?.symptomAnalysis   ?? '{}',
-                contextAnalysis:  exportSession?.contextAnalysis   ?? '{}',
-                referralAnalysis: exportSession?.referralAnalysis  ?? '{}',
+                testCaseName:      process.env.ANXIOSENSE_TEST_CASE     ?? 'manual-run',
+                promptVersion:     process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
+                userText:          exportSession?.userText          ?? '',
+                gad7Block:         exportSession?.gad7Block         ?? null,
+                emotionAnalysis:   exportSession?.emotionAnalysis   ?? '{}',
+                symptomAnalysis:   exportSession?.symptomAnalysis   ?? '{}',
+                contextAnalysis:   exportSession?.contextAnalysis   ?? '{}',
+                referralAnalysis:  exportSession?.referralAnalysis  ?? '{}',
                 buildClaimsOutput: exportSession?.buildClaimsOutput ?? {},
-                retrievalOutput:  exportSession?.retrievalOutput   ?? {},
-                validationOutput: inputData,
+                retrievalOutput:   exportSession?.retrievalOutput   ?? {},
+                validationOutput:  inputData,
                 finalReport,
             });
             clearSession(inputData.sessionId);
@@ -262,30 +438,32 @@ CRITICAL RULES — violation of any rule makes the report unusable:
     },
 });
 
+// ── Workflow definition ───────────────────────────────────────────────────────
+
 export const anxiosenseWorkflow = createWorkflow({
     id: 'anxiosense-workflow',
     inputSchema,
     outputSchema: finalReportSchema,
 })
     .parallel([emotionStep, symptomStep, contextStep, referralStep])
-    .map(async ({ inputData, getInitData }) => {
-        const originalInput = getInitData() as { userText: string };
 
+    // ── Map 1: merge parallel outputs → combinedAnalysisSchema ───────────────
+    .map(async ({ inputData, getInitData }) => {
+        const originalInput = getInitData() as z.infer<typeof inputSchema>;
         return {
-            userText: originalInput.userText,
-            emotionAnalysis: inputData['emotion-analysis-step'].result,
-            symptomAnalysis: inputData['symptom-extraction-step'].result,
-            contextAnalysis: inputData['context-reasoning-step'].result,
+            mode:             originalInput.mode ?? 'journal',
+            userText:         originalInput.userText,
+            emotionAnalysis:  inputData['emotion-analysis-step'].result,
+            symptomAnalysis:  inputData['symptom-extraction-step'].result,
+            contextAnalysis:  inputData['context-reasoning-step'].result,
             referralAnalysis: inputData['referral-safety-step'].result,
         };
     })
     .then(buildClaimsStep)
+
+    // ── Map 2: risk level + GAD-7 computation + session write ────────────────
     .map(async ({ inputData, getInitData }) => {
-        // Extract risk_level from referral agent output so it can be forwarded
-        // to the report step for the urgent safety override.
-        // Validated enum: only "low", "moderate", or "urgent" are accepted.
-        // Any invalid value (e.g. "elevated") or parse failure defaults to
-        // "moderate" — a conservative clinical fallback that avoids under-triaging.
+        // ── Risk level ────────────────────────────────────────────────────────
         const VALID_RISK_LEVELS = ['low', 'moderate', 'urgent'] as const;
         type RiskLevel = typeof VALID_RISK_LEVELS[number];
         let riskLevel: RiskLevel = 'moderate';
@@ -296,33 +474,42 @@ export const anxiosenseWorkflow = createWorkflow({
                 riskLevel = raw as RiskLevel;
             } else if (typeof raw === 'string') {
                 console.warn(
-                    `[AnxioSense] Invalid risk_level value "${raw}" from referral agent — defaulting to "moderate".`
+                    `[AnxioSense] Invalid risk_level "${raw}" from referral agent — defaulting to "moderate".`
                 );
             }
         } catch {
-            // referral JSON parse failed — default to 'moderate' (conservative fallback)
-            console.warn('[AnxioSense] Referral agent output was not valid JSON — defaulting risk_level to "moderate".');
+            console.warn('[AnxioSense] Referral JSON parse failed — defaulting risk_level to "moderate".');
         }
 
-        // Compute GAD-7 score deterministically if the user provided answers.
-        // getInitData() gives access to the original workflow input, which may
-        // include gad7Answers.  The sessionId is available here so we can write
-        // the formatted block directly to the session store.
-        const originalInput = getInitData() as { userText: string; gad7Answers?: number[] };
-        let gad7Block: string | null = null;
-        if (Array.isArray(originalInput.gad7Answers) && originalInput.gad7Answers.length === 7) {
+        // ── GAD-7 (journal mode only) ─────────────────────────────────────────
+        const originalInput = getInitData() as z.infer<typeof inputSchema>;
+        const mode          = originalInput.mode          ?? 'journal';
+        const clinicianMode = originalInput.clinicianMode ?? false;
+
+        let gad7Block:      string | null   = null;
+        let gad7Score:      number | null   = null;
+        let gad7Severity:   string | null   = null;
+        let gad7ItemScores: number[] | null = null;
+
+        if (mode === 'journal' && Array.isArray(originalInput.gad7Answers) && originalInput.gad7Answers.length === 7) {
             try {
                 const gad7Result = computeGad7Score(originalInput.gad7Answers);
-                gad7Block = formatGad7ForReport(gad7Result);
-                console.log(`[AnxioSense] GAD-7 scored: ${gad7Result.score}/21 (${gad7Result.severity})`);
+                gad7Block      = formatGad7ForReport(gad7Result);
+                gad7Score      = gad7Result.score;
+                gad7Severity   = gad7Result.severity;
+                gad7ItemScores = [...gad7Result.itemScores];
+                console.log(`[AnxioSense] GAD-7 scored: ${gad7Score}/21 (${gad7Severity})`);
             } catch (e) {
                 console.warn('[AnxioSense] GAD-7 scoring failed (non-fatal):', e);
             }
+        } else if (mode === 'social-media') {
+            console.log('[AnxioSense] Social-media mode — GAD-7 bypassed.');
         }
 
-        // Deposit intermediate outputs into the session store so the report step
-        // can include them in the evaluation export without schema changes.
+        // ── Session write ─────────────────────────────────────────────────────
         writeSession(inputData.sessionId, {
+            mode,
+            clinicianMode,
             userText:          inputData.userText,
             emotionAnalysis:   inputData.emotionAnalysis,
             symptomAnalysis:   inputData.symptomAnalysis,
@@ -330,6 +517,9 @@ export const anxiosenseWorkflow = createWorkflow({
             referralAnalysis:  inputData.referralAnalysis,
             buildClaimsOutput: { sessionId: inputData.sessionId, claims: inputData.claims },
             gad7Block,
+            gad7Score,
+            gad7Severity,
+            gad7ItemScores,
         });
 
         return {
@@ -340,12 +530,13 @@ export const anxiosenseWorkflow = createWorkflow({
         };
     })
     .then(retrievalStep)
-    // Pass-through map: write retrieval output to the session store.
-    // Returns inputData unchanged so evidenceValidationStep sees its expected input.
+
+    // ── Pass-through: write retrieval output to session ───────────────────────
     .map(async ({ inputData }) => {
         writeSession(inputData.sessionId, { retrievalOutput: inputData });
         return inputData;
     })
     .then(evidenceValidationStep)
     .then(reportStep);
+
 anxiosenseWorkflow.commit();
