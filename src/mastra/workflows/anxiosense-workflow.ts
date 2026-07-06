@@ -282,10 +282,19 @@ Based on what you shared, there may be an immediate safety concern that requires
                     ? 'Social Media Analysis'
                     : 'Journal / Self-Report';
 
+            // Per supervisor guidance: social-media mode must NEVER assign or infer a GAD-7 score.
+            // The GAD-7 is a structured self-report instrument — it can only be computed from
+            // the user's own responses to its 7 items. For secondary text data (Reddit, social
+            // media), the GAD-7 serves only as a conceptual reference for symptom domains.
             const socialMediaDisclaimer =
                 mode === 'social-media'
-                    ? '\nNOTE TO REPORT AGENT: This analysis is based on social media text, not a structured clinical disclosure. ' +
-                      'Add a clear disclaimer in Section 1 that results are based on indirect text and carry additional uncertainty.'
+                    ? '\nNOTE TO REPORT AGENT: This analysis is based on social media text written by an unknown author, ' +
+                      'not a structured clinical self-report. ' +
+                      'CRITICAL: Do NOT assign, infer, estimate, or reference any GAD-7 score for this content. ' +
+                      'The system identifies anxiety-related linguistic and contextual indicators only. ' +
+                      'In Section 1, add a clear statement that: (a) no GAD-7 was administered, ' +
+                      '(b) results carry additional uncertainty due to the indirect nature of the text, ' +
+                      'and (c) this is a non-diagnostic screening summary based on linguistic indicators.'
                     : '';
 
             const prompt = `
@@ -357,9 +366,12 @@ CRITICAL RULES — any violation makes the report unusable:
                 const reportBody = response.text
                     .replace(/^#\s+AnxioSense Screening Support Report\s*/i, '')
                     .trimStart();
+                // Section 0 heading uses supervisor-approved label.
+                // Numerical score and clinical severity label are never shown here —
+                // those appear only in the Clinician Details section (if clinicianMode).
                 finalReport =
                     `# AnxioSense Screening Support Report\n\n` +
-                    `## 0. GAD-7 Self-Report Screening\n\n${gad7Block}\n\n` +
+                    `## 0. GAD-7 Screening Result\n\n${gad7Block}\n\n` +
                     reportBody;
             } else {
                 finalReport = response.text;
@@ -369,11 +381,12 @@ CRITICAL RULES — any violation makes the report unusable:
             // Appended after the user-facing report. Raw GAD-7 score and clinical
             // severity are never shown to standard users.
             if (clinicianMode && session?.gad7Score !== null && session?.gad7Score !== undefined) {
+                // Per Spitzer et al. (2006) as cited in supervisor guidance
                 const severityLabel: Record<string, string> = {
-                    minimal:  'Minimal anxiety (0–4)',
-                    mild:     'Mild anxiety (5–9)',
-                    moderate: 'Moderate anxiety (10–14)',
-                    severe:   'Severe anxiety (15–21)',
+                    minimal:  'Minimal Anxiety — 0–4',
+                    mild:     'Mild Anxiety — 5–9',
+                    moderate: 'Moderate Anxiety — 10–14',
+                    severe:   'Severe Anxiety — 15–21',
                 };
                 const itemLabels = ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'];
                 const questions = [

@@ -82,35 +82,33 @@ export function computeGad7Score(answers: number[]): Gad7Result {
     if (score <= 4) {
         severity = 'minimal';
         concernPattern = 'Minimal Concern Pattern';
+        // Exact wording per supervisor guidance (AnxioSense, July 2026)
         interpretation =
-            `Your responses suggest that experiences commonly associated with anxiety ` +
-            `are currently limited. Occasional stress or worry is a normal part of life. ` +
-            `If these feelings become more frequent or begin affecting your daily activities, ` +
-            `you may wish to check in with a healthcare professional.`;
+            `Your responses suggest that experiences commonly associated with anxiety are currently limited. ` +
+            `Occasional stress or worry is a normal part of life. If these feelings become more frequent or ` +
+            `begin affecting your daily activities, you may wish to check in with a healthcare professional.`;
     } else if (score <= 9) {
         severity = 'mild';
         concernPattern = 'Mild Concern Pattern';
         interpretation =
-            `Your responses indicate the presence of some anxiety-related experiences. ` +
-            `While these feelings may not currently be causing substantial difficulties, ` +
-            `monitoring how they change over time may be helpful. If symptoms become ` +
-            `more frequent or distressing, consider speaking with a healthcare professional.`;
+            `Your responses indicate the presence of some anxiety-related experiences. While these feelings ` +
+            `may not currently be causing substantial difficulties, monitoring how they change over time may ` +
+            `be helpful. Consider using healthy coping strategies and seeking support if symptoms become ` +
+            `more frequent or distressing.`;
     } else if (score <= 14) {
         severity = 'moderate';
         concernPattern = 'Elevated Concern Pattern';
         interpretation =
-            `Your responses suggest several experiences that are commonly associated ` +
-            `with anxiety and may be affecting your well-being. It may be beneficial ` +
-            `to discuss these concerns with a healthcare professional who can provide ` +
-            `a more comprehensive assessment and appropriate guidance.`;
+            `Your responses suggest several experiences that are commonly associated with anxiety and may be ` +
+            `affecting your well-being. It may be beneficial to discuss these concerns with a healthcare ` +
+            `professional who can provide a more comprehensive assessment and appropriate guidance.`;
     } else {
         severity = 'severe';
         concernPattern = 'High Concern Pattern';
         interpretation =
-            `Your responses indicate a substantial number of experiences commonly ` +
-            `associated with anxiety. Seeking support from a qualified healthcare ` +
-            `professional may be beneficial. Effective treatments and support options ` +
-            `are available, and discussing your concerns with a professional can help ` +
+            `Your responses indicate a substantial number of experiences commonly associated with anxiety. ` +
+            `Seeking support from a qualified healthcare professional may be beneficial. Effective treatments ` +
+            `and support options are available, and discussing your concerns with a professional can help ` +
             `determine the most appropriate next steps.`;
     }
 
@@ -143,18 +141,20 @@ export function formatGad7ForReport(result: Gad7Result): string {
         (q, i) => `  ${i + 1}. ${q}\n     → ${responseLabel(result.itemScores[i])}`
     ).join('\n');
 
+    // Preamble and disclaimer use exact supervisor-approved wording (July 2026).
     return [
         `GAD-7 Self-Report Screening`,
-        `Concern Pattern: ${result.concernPattern}`,
+        ``,
+        `Based on the information provided, the system identifies a pattern of ` +
+        `anxiety-related experiences and interpreted as;`,
+        ``,
+        `**${result.concernPattern}**`,
+        ``,
+        result.interpretation,
         ``,
         `Your responses over the past two weeks:`,
         itemLines,
         ``,
-        `${result.interpretation}`,
-        ``,
-        `Note: The GAD-7 is a validated self-report screening instrument used `,
-        `as an internal reference. It is not a diagnostic tool. This result `,
-        `should not be considered a clinical assessment. If you have concerns `,
-        `about your mental health, please speak with a qualified healthcare professional.`,
+        `This result is intended for screening purposes only and should not be considered a diagnosis.`,
     ].join('\n');
 }
