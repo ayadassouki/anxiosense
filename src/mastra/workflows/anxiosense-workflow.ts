@@ -217,33 +217,31 @@ Based on what you shared, there may be an immediate safety concern that requires
             const modeLabel =
                 mode === 'social-media' ? 'Social Media Analysis' : 'Journal / Self-Report';
 
-            // ── Plain-language Supporting Findings (user-facing, no KB metadata) ─
-            // All non-unsupported claims in plain language. No chunk IDs, no ICD
-            // codes, no similarity scores, no source_type — those go to clinician mode.
-            const validatedClaims = inputData.claimValidations
-                .filter(v => v.supportStatus !== 'unsupported');
+            // ── Group validated claims by agent for structured LLM input ──────
+            // Claims are passed as semantic labels, not raw user sentences,
+            // so the LLM can rewrite them as clinical findings.
+            const emotionClaims  = inputData.claimValidations
+                .filter(v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'emotion')
+                .map(v => v.claimText);
+            const symptomClaims  = inputData.claimValidations
+                .filter(v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'symptom')
+                .map(v => v.claimText);
+            const contextClaims  = inputData.claimValidations
+                .filter(v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'context')
+                .map(v => v.claimText);
 
-            let supportingFindingsSection: string;
-            if (validatedClaims.length === 0) {
-                supportingFindingsSection =
-                    '## Supporting Findings\n\n' +
-                    'No significant anxiety-related indicators were identified in the provided text.';
-            } else {
-                const bullets = validatedClaims
-                    .map(v => `- ${v.claimText}`)
-                    .join('\n');
-                supportingFindingsSection =
-                    '## Supporting Findings\n\n' +
-                    'The report identified the following experiences in the provided text:\n\n' +
-                    bullets + '\n\n' +
-                    'These findings were checked against the clinical guidance and screening ' +
-                    'knowledge base used by AnxioSense.';
-            }
+            const claimsForPrompt = [
+                `Emotional signals: ${emotionClaims.length  > 0 ? emotionClaims.join('; ')  : 'none identified'}`,
+                `Anxiety indicators: ${symptomClaims.length > 0 ? symptomClaims.join('; ')  : 'none identified'}`,
+                `Contextual factors: ${contextClaims.length > 0 ? contextClaims.join('; ')  : 'none identified'}`,
+            ].join('\n');
 
-            // ── Evidence Agreement (plain language — no cosine/threshold language) ─
-            const totalClaims    = inputData.claimValidations.length;
-            const supportedCount = inputData.claimValidations.filter(v => v.supportStatus === 'supported').length;
-            const partialCount   = inputData.claimValidations.filter(v => v.supportStatus === 'partially_supported').length;
+            // ── Evidence Agreement — based on concern-level comparison ─────────
+            // Compares validated text signal strength (symptom claim count) against
+            // the GAD-7 concern band, or falls back to KB support ratio for social-media.
+            const validatedSymptomClaims = inputData.claimValidations.filter(
+                v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'symptom'
+            );
 
             let evidenceAgreement: 'High' | 'Moderate' | 'Low';
             let agreementText: string;
@@ -254,19 +252,45 @@ Based on what you shared, there may be an immediate safety concern that requires
             } else if (discordanceNote === 'low_gad7_high_text') {
                 evidenceAgreement = 'Low';
                 agreementText     = 'The written text reflected more concern indicators than the questionnaire responses.';
-            } else if (totalClaims === 0) {
-                evidenceAgreement = 'Low';
-                agreementText     = 'Insufficient information was available to assess agreement across sources.';
-            } else {
-                const supportRatio = (supportedCount + partialCount * 0.5) / totalClaims;
-                if (supportRatio >= 0.6) {
+            } else if (gad7ConcernPattern) {
+                // Journal mode with GAD-7: compare concern bands numerically
+                const levelToNum: Record<string, number> = {
+                    'Minimal Concern Pattern':  0,
+                    'Mild Concern Pattern':     1,
+                    'Elevated Concern Pattern': 2,
+                    'High Concern Pattern':     3,
+                };
+                const gad7Num = levelToNum[gad7ConcernPattern] ?? 1;
+                // Text level: derived from validated symptom claim count
+                const textNum = validatedSymptomClaims.length === 0 ? 0
+                    : validatedSymptomClaims.length <= 2              ? 1
+                    : validatedSymptomClaims.length <= 4              ? 2
+                    :                                                    3;
+                const diff = Math.abs(gad7Num - textNum);
+                if (diff === 0) {
                     evidenceAgreement = 'High';
-                    agreementText     = (mode === 'journal' && gad7Block)
-                        ? 'The questionnaire responses and written text were generally consistent.'
-                        : 'The identified indicators were broadly consistent with the clinical guidance used.';
-                } else {
+                    agreementText     = 'The questionnaire responses and written text were generally consistent.';
+                } else if (diff === 1) {
                     evidenceAgreement = 'Moderate';
                     agreementText     = 'Some indicators were present, but the available text provided limited detail.';
+                } else {
+                    evidenceAgreement = 'Low';
+                    agreementText     = 'The questionnaire responses and written text did not fully align.';
+                }
+            } else {
+                // Social media or journal without GAD-7: compare text against KB
+                const totalClaims    = inputData.claimValidations.length;
+                const supportedCount = inputData.claimValidations.filter(v => v.supportStatus === 'supported').length;
+                const partialCount   = inputData.claimValidations.filter(v => v.supportStatus === 'partially_supported').length;
+                if (totalClaims === 0) {
+                    evidenceAgreement = 'Low';
+                    agreementText     = 'Insufficient information was available to assess agreement across sources.';
+                } else {
+                    const supportRatio = (supportedCount + partialCount * 0.5) / totalClaims;
+                    evidenceAgreement  = supportRatio >= 0.6 ? 'High' : 'Moderate';
+                    agreementText      = supportRatio >= 0.6
+                        ? 'The identified indicators were broadly consistent with the clinical guidance used.'
+                        : 'Some indicators were present, but the available text provided limited detail.';
                 }
             }
 
@@ -299,17 +323,29 @@ Based on what you shared, there may be an immediate safety concern that requires
                     'options are available and that discussing these concerns with a professional can help determine the most appropriate next steps.';
             }
 
-            // ── LLM generates ONLY Recommendation + Limitations ──────────────
-            // All other sections (Assessment Overview, Supporting Findings, Evidence
-            // Agreement) are built deterministically in TypeScript above to keep
-            // KB metadata and raw chunk text away from the user-facing output.
+            // ── LLM generates Supporting Findings + Recommendation + Limitations ─
+            // Supporting Findings are generated by the LLM (not TypeScript) so it can
+            // rewrite the raw claim text into concise clinical language without copying
+            // user sentences. Assessment Overview and Evidence Agreement remain TypeScript.
             const prompt = `
 Input Mode: ${modeLabel}
 Concern Pattern: ${concernPatternForReport}
 
-Generate ONLY two sections for the AnxioSense Screening Support Report.
-Do NOT include a document title. Do NOT include Assessment Overview or Supporting Findings — those are generated automatically.
-Start your response directly with "## Recommendation".
+VALIDATED FINDINGS (summarise as clinical plain-language findings — do NOT reproduce user text):
+${claimsForPrompt}
+
+Generate THREE sections. Do NOT include a document title. Do NOT include Assessment Overview — it is generated automatically.
+Start your response directly with "## Supporting Findings".
+
+## Supporting Findings
+Rewrite the validated findings above as concise clinical plain-language bullet points.
+Rules:
+- NEVER copy the user's original words or sentences
+- Use clinical terminology: "persistent worry", "sleep disruption", "positive emotional tone", "stable functioning", "social withdrawal"
+- Keep each bullet 2–5 words (a label, not a sentence)
+- If anxiety indicators are "none identified" AND emotional signals are positive/neutral: write only "No significant anxiety-related indicators were identified in the provided text."
+- If anxiety indicators are present: write "The report identified the following experiences in the provided text:" then 3–6 bullets, then end with "These findings were checked against the clinical guidance and screening knowledge base used by AnxioSense."
+- Include any contextual factors at the end of the bullets (e.g., "Academic stress", "Social pressures")
 
 ## Recommendation
 ${recommendationInstruction}
@@ -318,10 +354,12 @@ ${recommendationInstruction}
 State that: (a) the report is based only on the information provided; (b) missing context may affect interpretation; (c) this is not a clinical diagnosis; (d) a qualified healthcare professional is needed for a clinical assessment.${mode === 'social-media' ? ' Also note that social media text adds additional uncertainty to the analysis.' : ''}
 End with exactly: "This report is intended for screening support only and should not be considered a clinical diagnosis."
 
-CRITICAL RULES:
-- Do NOT include a title, Assessment Overview, Supporting Findings, or any other sections
-- Do NOT diagnose the user or say they "have anxiety" or any clinical condition
-- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or therapy techniques
+CRITICAL RULES — any violation makes the report unusable:
+- Do NOT include a document title, Assessment Overview, or Evidence Agreement
+- Do NOT reproduce user text in Supporting Findings — summarise clinically
+- Do NOT include chunk IDs, claim IDs, file names, similarity scores
+- Do NOT diagnose the user or name any clinical condition
+- Do NOT suggest coping strategies, breathing exercises, mindfulness, or therapy techniques
 - Do NOT mention hotlines, apps, websites, specific clinic types, or named resources
 - Keep tone supportive, cautious, and non-judgmental
 `;
@@ -329,15 +367,25 @@ CRITICAL RULES:
             const response = await agent.generate(prompt);
 
             // ── Post-process LLM output ───────────────────────────────────────
-            // Strip any title or preamble — keep only ## Recommendation onward
             let llmBody = response.text.trim()
                 .replace(/^#+\s*AnxioSense\b[^\n]*\n\n?/im, '')
                 .trim();
 
-            // If LLM generated extra sections before Recommendation, strip them
-            const recIdx = llmBody.search(/^#{1,3}\s*Recommendation\b/im);
-            if (recIdx > 10) {
-                llmBody = llmBody.slice(recIdx).trim();
+            // Ensure output starts at Supporting Findings; strip any LLM preamble
+            const sfIdx = llmBody.search(/^#{1,3}\s*Supporting\s+Findings\b/im);
+            if (sfIdx > 10) {
+                llmBody = llmBody.slice(sfIdx).trim();
+            } else if (sfIdx === -1) {
+                // LLM skipped the section — inject fallback
+                const recIdx = llmBody.search(/^#{1,3}\s*Recommendation\b/im);
+                const fallback = symptomClaims.length === 0
+                    ? '## Supporting Findings\n\nNo significant anxiety-related indicators were identified in the provided text.'
+                    : '## Supporting Findings\n\nThe report identified the following experiences in the provided text:\n\n' +
+                      symptomClaims.map(c => `- ${c}`).join('\n') +
+                      '\n\nThese findings were checked against the clinical guidance and screening knowledge base used by AnxioSense.';
+                llmBody = recIdx !== -1
+                    ? fallback + '\n\n' + llmBody.slice(recIdx)
+                    : fallback + '\n\n' + llmBody;
             }
 
             // ── Build Assessment Overview (deterministic TypeScript) ──────────
@@ -374,7 +422,7 @@ CRITICAL RULES:
             }
             const assessmentOverview = `## Assessment Overview\n\n${overviewParts.join('\n')}`;
 
-            // ── Evidence Agreement section (plain language) ───────────────────
+            // ── Evidence Agreement section ────────────────────────────────────
             const evidenceAgreementSection =
                 `## Evidence Agreement\n\n**${evidenceAgreement}** — ${agreementText}`;
 
@@ -393,21 +441,19 @@ CRITICAL RULES:
             finalReport =
                 `# AnxioSense Screening Support Report\n\n` +
                 `${assessmentOverview}\n\n` +
-                `${supportingFindingsSection}\n\n` +
                 mainBody;
 
-            // ── Clinician Details block ───────────────────────────────────────
-            // Appended only in clinician mode. Contains all technical evidence
-            // (chunk IDs, claim support levels, raw scores) hidden from standard users.
+            // ── Clinician Summary block ───────────────────────────────────────
+            // Clinically meaningful details only — no chunk IDs, no cosine thresholds.
             if (clinicianMode) {
                 const severityLabel: Record<string, string> = {
-                    minimal:  'Minimal Anxiety — 0–4',
-                    mild:     'Mild Anxiety — 5–9',
-                    moderate: 'Moderate Anxiety — 10–14',
-                    severe:   'Severe Anxiety — 15–21',
+                    minimal:  'Minimal — 0–4',
+                    mild:     'Mild — 5–9',
+                    moderate: 'Moderate — 10–14',
+                    severe:   'Severe — 15–21',
                 };
-                const itemLabels  = ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'];
-                const questions   = [
+                const itemLabels = ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'];
+                const questions  = [
                     'Feeling nervous, anxious, or on edge',
                     'Not being able to stop or control worrying',
                     'Worrying too much about different things',
@@ -417,66 +463,59 @@ CRITICAL RULES:
                     'Feeling afraid, as if something awful might happen',
                 ];
 
-                // GAD-7 block (only if scores available)
-                let gad7ClinicianBlock = '';
+                // GAD-7 section
+                let gad7ClinicianSection = '';
                 if (session?.gad7Score !== null && session?.gad7Score !== undefined) {
                     const itemBreakdown = (session.gad7ItemScores ?? [])
-                        .map((score, i) => `  ${i + 1}. ${questions[i]}\n     → ${itemLabels[score]} (${score})`)
+                        .map((score, i) => `  ${i + 1}. ${questions[i]}\n     → ${itemLabels[score]}`)
                         .join('\n');
-                    gad7ClinicianBlock =
-                        `**GAD-7 Raw Score:** ${session.gad7Score}/21\n` +
-                        `**Clinical Severity:** ${severityLabel[session.gad7Severity ?? ''] ?? session.gad7Severity ?? 'Unknown'}\n\n` +
-                        `**Per-Item Breakdown:**\n${itemBreakdown}\n\n`;
+                    gad7ClinicianSection =
+                        `**GAD-7:** ${session.gad7Score}/21 ` +
+                        `(${severityLabel[session.gad7Severity ?? ''] ?? session.gad7Severity ?? 'Unknown'})\n\n` +
+                        `**Per-Item Responses:**\n${itemBreakdown}\n\n`;
                 }
 
-                // Technical evidence: claim labels + support levels
-                const claimTable = inputData.claimValidations.length > 0
-                    ? inputData.claimValidations
-                        .map((v, i) => `  ${i + 1}. "${v.claimText}" (${v.sourceAgent}) — ${v.supportStatus}`)
+                // Validated indicators — clinician-friendly labels, no raw user text
+                const allValidated = inputData.claimValidations.filter(v => v.supportStatus !== 'unsupported');
+                const indicatorLines = allValidated.length > 0
+                    ? allValidated
+                        .map(v => {
+                            const supportLabel = v.supportStatus === 'supported' ? 'Supported' : 'Partially Supported';
+                            return `  - ${v.claimText} (${supportLabel})`;
+                        })
                         .join('\n')
-                    : '  No claims evaluated.';
+                    : '  No anxiety-related indicators validated.';
 
-                // Extract CHUNK_IDs from retrieval output
-                let chunkIdLine = '';
-                try {
-                    const retrieval = session?.retrievalOutput as {
-                        results?: Array<{
-                            retrievedChunks: Array<{ text: string }>;
-                        }>;
-                    } | undefined;
-                    if (retrieval?.results) {
-                        const ids: string[] = [];
-                        for (const r of retrieval.results) {
-                            for (const c of r.retrievedChunks ?? []) {
-                                const m = c.text.match(/CHUNK_ID:\s*(\S+)/i);
-                                if (m) ids.push(m[1]);
-                            }
-                        }
-                        const unique = [...new Set(ids)];
-                        if (unique.length > 0) {
-                            chunkIdLine = `**Retrieved chunk IDs:** ${unique.join(', ')}\n\n`;
-                        }
-                    }
-                } catch { /* non-fatal */ }
-
-                // Differentiation — omit if unclear
+                // Differential considerations — always natural clinical language
                 const diffLean = inputData.differentiationAssessment.primaryLean;
-                const diffLine = (!diffLean || diffLean === 'unclear')
-                    ? 'Differential considerations were not conclusive from the available text.'
-                    : `Primary lean: ${diffLean} — ${inputData.differentiationAssessment.reasoning}`;
+                const differentialText = (!diffLean || diffLean === 'unclear')
+                    ? 'Available information was insufficient to confidently distinguish anxiety-related symptoms from ' +
+                      'other possible conditions such as depression. Further clinical assessment would be required.'
+                    : `Assessment leans toward ${diffLean}. ${inputData.differentiationAssessment.reasoning}`;
+
+                // Assessment notes — only if discordance was detected
+                const assessmentNotes = discordanceNote === 'high_gad7_low_text'
+                    ? 'The questionnaire responses indicated greater concern than was reflected in the written text. ' +
+                      'This may suggest that written expression did not fully capture the respondent\'s internal experience.'
+                    : discordanceNote === 'low_gad7_high_text'
+                    ? 'The written text reflected more indicators of concern than the questionnaire responses alone suggested. ' +
+                      'Clinical attention to both sources would be warranted.'
+                    : '';
 
                 const clinicianBlock = `
 
 ---
 
-## Clinician Details *(restricted — do not share with patient)*
+## Clinician Summary *(restricted — do not share with patient)*
 
-${gad7ClinicianBlock}**Claims evaluated (${inputData.claimValidations.length}):**
-${claimTable}
+${gad7ClinicianSection}**Validated Indicators:**
+${indicatorLines}
 
-${chunkIdLine}**Differentiation:** ${diffLine}
-**Validation Notes:** ${inputData.overallConsistencyNotes}
+**Evidence Confidence:** ${evidenceAgreement}
 
+**Differential Considerations:**
+${differentialText}
+${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
 *This section is intended for qualified clinicians only and must not be shared with the patient as part of the screening output.*`;
 
                 finalReport += clinicianBlock;
