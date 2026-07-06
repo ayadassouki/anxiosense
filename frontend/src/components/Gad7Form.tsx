@@ -25,9 +25,11 @@ const OPTIONS = [
 interface Gad7FormProps {
   onComplete: (answers: number[]) => void;
   onSkip:     () => void;
+  /** When true, hides the Skip button at step 0 so users cannot bypass the questionnaire. */
+  required?:  boolean;
 }
 
-export default function Gad7Form({ onComplete, onSkip }: Gad7FormProps) {
+export default function Gad7Form({ onComplete, onSkip, required = false }: Gad7FormProps) {
   const [step, setStep]       = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -125,16 +127,18 @@ export default function Gad7Form({ onComplete, onSkip }: Gad7FormProps) {
             ))}
           </Box>
 
-          {/* Back / Skip */}
-          <Box display="flex" justifyContent="space-between" mt={3}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBack}
-              sx={{ color: 'text.secondary' }}
-            >
-              {step === 0 ? 'Skip GAD-7' : 'Back'}
-            </Button>
-          </Box>
+          {/* Back / Skip — hidden at step 0 when questionnaire is required */}
+          {!(required && step === 0) && (
+            <Box display="flex" justifyContent="space-between" mt={3}>
+              <Button
+                startIcon={<ArrowBackIcon />}
+                onClick={handleBack}
+                sx={{ color: 'text.secondary' }}
+              >
+                {step === 0 ? 'Skip GAD-7' : 'Back'}
+              </Button>
+            </Box>
+          )}
         </Box>
       </Fade>
     </Box>

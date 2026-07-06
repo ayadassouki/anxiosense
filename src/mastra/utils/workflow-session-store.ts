@@ -28,6 +28,14 @@ export interface SessionData {
     gad7Severity: string | null;
     /** Individual item scores [0–3] × 7. Clinician-only. */
     gad7ItemScores: number[] | null;
+    /** User-facing concern pattern label derived from GAD-7 score (null if no GAD-7). */
+    gad7ConcernPattern: string | null;
+    /**
+     * Flags cases where GAD-7 and text-based claims disagree markedly.
+     * high_gad7_low_text: GAD-7 ≥15 but text claims ≤1 (minimal text signal)
+     * low_gad7_high_text: GAD-7 ≤4 but text has ≥4 real claims
+     */
+    discordanceNote: 'high_gad7_low_text' | 'low_gad7_high_text' | null;
 }
 
 const store = new Map<string, Partial<SessionData>>();

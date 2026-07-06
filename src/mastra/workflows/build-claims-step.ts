@@ -108,7 +108,7 @@ export const buildClaimsStep = createStep({
         claimId:     'GEN-1',
         sourceAgent: 'emotion',
         claimText:   inputData.userText.slice(0, 300).trim() || 'general emotional state',
-        category:    'emotional_state',
+        category:    'anxiety_indicator',
       });
     }
 

@@ -142,7 +142,7 @@ export default function AssessmentPage() {
           </Box>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-              <Gad7Form onComplete={onGad7Complete} onSkip={onGad7Skip} />
+              <Gad7Form onComplete={onGad7Complete} onSkip={onGad7Skip} required />
             </CardContent>
           </Card>
         </Box>
@@ -283,22 +283,20 @@ export default function AssessmentPage() {
                   <Box>
                     <Typography variant="body1" fontWeight={600}>
                       GAD-7 Questionnaire
-                      <Chip label="Optional" size="small"
-                        sx={{ ml: 1.5, fontSize: 10, height: 18, bgcolor: 'action.hover' }} />
+                      <Chip label="Required" size="small"
+                        sx={{ ml: 1.5, fontSize: 10, height: 18,
+                          bgcolor: gad7Answers ? 'rgba(126,200,165,0.15)' : 'rgba(239,68,68,0.08)',
+                          color: gad7Answers ? '#059669' : '#DC2626',
+                          border: gad7Answers ? '1px solid rgba(126,200,165,0.4)' : '1px solid rgba(239,68,68,0.25)',
+                        }} />
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {gad7Answers
                         ? `Completed — ${gad7Answers.length} questions answered`
-                        : 'Adds a validated anxiety screening score to your report'}
+                        : 'Complete the questionnaire to enable analysis'}
                     </Typography>
                   </Box>
                   <Box display="flex" gap={1}>
-                    {gad7Answers && (
-                      <Button size="small" variant="outlined" onClick={() => setGad7Answers(null)}
-                        sx={{ fontSize: 12, py: 0.5, borderColor: 'divider', color: 'text.secondary' }}>
-                        Remove
-                      </Button>
-                    )}
                     <Button
                       size="small"
                       variant={gad7Answers ? 'text' : 'outlined'}
@@ -376,16 +374,21 @@ export default function AssessmentPage() {
           </Card>
 
           {/* ── Submit ── */}
-          <Box display="flex" justifyContent="flex-end">
+          <Box display="flex" flexDirection="column" alignItems="flex-end" gap={0.75}>
             <Button
               variant="contained" size="large"
               endIcon={<ArrowForwardIcon />}
               onClick={handleSubmit}
-              disabled={userText.trim().length < 20}
+              disabled={userText.trim().length < 20 || (isJournal && !gad7Answers)}
               sx={{ px: 4, py: 1.4, minWidth: 200 }}
             >
               Run Analysis
             </Button>
+            {isJournal && !gad7Answers && userText.trim().length >= 20 && (
+              <Typography variant="caption" color="text.secondary">
+                Complete the GAD-7 questionnaire above to run analysis
+              </Typography>
+            )}
           </Box>
 
           {/* ── Privacy notice ── */}

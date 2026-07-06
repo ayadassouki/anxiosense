@@ -207,9 +207,11 @@ Based on what you shared, there may be an immediate safety concern that requires
 
             // Read session data — includes mode, clinicianMode, gad7 fields, retrieval output
             const session = readSession(inputData.sessionId);
-            const mode          = session?.mode          ?? 'journal';
-            const clinicianMode = session?.clinicianMode ?? false;
-            const gad7Block     = session?.gad7Block     ?? null;
+            const mode              = session?.mode              ?? 'journal';
+            const clinicianMode     = session?.clinicianMode     ?? false;
+            const gad7Block         = session?.gad7Block         ?? null;
+            const gad7ConcernPattern = session?.gad7ConcernPattern ?? null;
+            const discordanceNote   = session?.discordanceNote   ?? null;
 
             // ── Format validated claims by agent ──────────────────────────────
             const confidenceLabel = (status: string) =>
@@ -228,10 +230,7 @@ Based on what you shared, there may be an immediate safety concern that requires
             const unsupportedCount = inputData.claimValidations
                 .filter((v) => v.supportStatus === 'unsupported').length;
 
-            // ── Extract top evidence snippets from retrieval output ────────────
-            // Pull the top 4 KB chunks across all supported claims for the
-            // Evidence section — gives the user a transparent view of what the
-            // KB contributed.
+            // ── Extract top evidence snippets from retrieval output ───────────
             let evidenceSnippets = 'None available.';
             try {
                 const retrieval = session?.retrievalOutput as {
@@ -248,7 +247,6 @@ Based on what you shared, there may be an immediate safety concern that requires
                             chunks.push({ text: c.text, source: c.source, score: c.similarityScore });
                         }
                     }
-                    // Deduplicate by first 60 chars, keep top 4 by score
                     const seen = new Set<string>();
                     const top = chunks
                         .sort((a, b) => b.score - a.score)
@@ -276,106 +274,193 @@ Based on what you shared, there may be an immediate safety concern that requires
                 // Non-fatal — evidence section will show "None available."
             }
 
-            // ── Mode-specific framing ─────────────────────────────────────────
+            // ── Mode label ────────────────────────────────────────────────────
             const modeLabel =
-                mode === 'social-media'
-                    ? 'Social Media Analysis'
-                    : 'Journal / Self-Report';
+                mode === 'social-media' ? 'Social Media Analysis' : 'Journal / Self-Report';
 
-            // Per supervisor guidance: social-media mode must NEVER assign or infer a GAD-7 score.
-            // The GAD-7 is a structured self-report instrument — it can only be computed from
-            // the user's own responses to its 7 items. For secondary text data (Reddit, social
-            // media), the GAD-7 serves only as a conceptual reference for symptom domains.
-            const socialMediaDisclaimer =
-                mode === 'social-media'
-                    ? '\nNOTE TO REPORT AGENT: This analysis is based on social media text written by an unknown author, ' +
-                      'not a structured clinical self-report. ' +
-                      'CRITICAL: Do NOT assign, infer, estimate, or reference any GAD-7 score for this content. ' +
-                      'The system identifies anxiety-related linguistic and contextual indicators only. ' +
-                      'In Section 1, add a clear statement that: (a) no GAD-7 was administered, ' +
-                      '(b) results carry additional uncertainty due to the indirect nature of the text, ' +
-                      'and (c) this is a non-diagnostic screening summary based on linguistic indicators.'
-                    : '';
+            // ── Evidence Agreement ────────────────────────────────────────────
+            const totalClaims     = inputData.claimValidations.length;
+            const supportedCount  = inputData.claimValidations.filter(v => v.supportStatus === 'supported').length;
+            const partialCount    = inputData.claimValidations.filter(v => v.supportStatus === 'partially_supported').length;
+
+            let evidenceAgreement: 'High' | 'Moderate' | 'Low';
+            let agreementReason: string;
+
+            if (discordanceNote === 'high_gad7_low_text') {
+                evidenceAgreement = 'Low';
+                agreementReason   = 'The structured questionnaire indicates a higher level of concern than was reflected in the written text. Written expression may not fully capture an individual\'s internal experiences.';
+            } else if (discordanceNote === 'low_gad7_high_text') {
+                evidenceAgreement = 'Low';
+                agreementReason   = 'The written text reflects more indicators of concern than the structured questionnaire score suggests. Both sources were considered in generating this report.';
+            } else if (totalClaims === 0) {
+                evidenceAgreement = 'Low';
+                agreementReason   = 'Insufficient evidence was available to meaningfully compare across sources.';
+            } else {
+                const supportRatio = (supportedCount + partialCount * 0.5) / totalClaims;
+                if (supportRatio >= 0.6) {
+                    evidenceAgreement = 'High';
+                    agreementReason   = (mode === 'journal' && gad7Block)
+                        ? 'The structured questionnaire and written text indicators were largely consistent with the clinical knowledge base.'
+                        : 'The identified indicators were largely consistent with the clinical knowledge base.';
+                } else {
+                    evidenceAgreement = 'Moderate';
+                    agreementReason   = 'Some findings were supported by the clinical knowledge base while others had only partial or no support.';
+                }
+            }
+
+            // ── Recommendation instruction (pattern-specific) ─────────────────
+            // Concern pattern priority: GAD-7 (authoritative) > riskLevel proxy
+            const concernPatternForReport = gad7ConcernPattern
+                ?? (inputData.riskLevel === 'urgent'   ? 'High Concern Pattern'
+                  : inputData.riskLevel === 'moderate' ? 'Elevated Concern Pattern'
+                  :                                      'Minimal Concern Pattern');
+
+            let recommendationInstruction: string;
+            if (concernPatternForReport === 'Minimal Concern Pattern') {
+                recommendationInstruction =
+                    'State that no immediate referral is indicated. Note that occasional mild experiences are a normal part of life. ' +
+                    'Suggest monitoring how these experiences change over time and considering speaking with a healthcare professional ' +
+                    'only if they become more frequent, worsen, or begin affecting daily functioning.';
+            } else if (concernPatternForReport === 'Mild Concern Pattern') {
+                recommendationInstruction =
+                    'Use monitoring language only — do NOT recommend professional consultation as the default outcome. ' +
+                    'Include this wording verbatim: "Monitoring how these experiences change over time may be helpful. ' +
+                    'Consider speaking with a healthcare professional if they become more frequent, worsen, or begin affecting daily functioning." ' +
+                    'Do not add language implying referral is necessary or urgent.';
+            } else if (concernPatternForReport === 'Elevated Concern Pattern') {
+                recommendationInstruction =
+                    'State that it may be beneficial to discuss these concerns with a qualified healthcare professional who can ' +
+                    'provide a comprehensive assessment and appropriate guidance. Keep tone helpful and non-urgent.';
+            } else {
+                // High Concern Pattern
+                recommendationInstruction =
+                    'State that seeking support from a qualified healthcare professional may be beneficial. Note that effective support ' +
+                    'options are available and that discussing these concerns with a professional can help determine the most appropriate next steps.';
+            }
 
             const prompt = `
 Input Mode: ${modeLabel}
-${socialMediaDisclaimer}
 
 Evidence-Based Validation Summary (pre-categorised — use ONLY what is listed here):
 
-EMOTIONAL INDICATORS (for Section 2):
+EMOTIONAL INDICATORS (for Emotional Indicators section):
 ${emotionClaimsText}
 
-ANXIETY-RELATED INDICATORS (for Section 3):
+ANXIETY-RELATED INDICATORS (for Anxiety-Related Indicators section):
 ${symptomClaimsText}
 
-CONTEXTUAL FACTORS (for Section 5):
+CONTEXTUAL FACTORS (for Contextual Factors section):
 ${contextClaimsText}
 
-SUPPORTING EVIDENCE FROM KNOWLEDGE BASE (for Section 4 — quote these verbatim):
+SUPPORTING EVIDENCE FROM KNOWLEDGE BASE (for Supporting Evidence section — quote these verbatim):
 ${evidenceSnippets}
 
 Unsupported claims dropped: ${unsupportedCount}
-Differentiation assessment: ${inputData.differentiationAssessment.primaryLean}
 
-Generate the final AnxioSense Screening Support Report using this EXACT section structure:
+Generate the following sections for the AnxioSense Screening Support Report.
+IMPORTANT: Do NOT include a document title line. Do NOT include an "Assessment Overview" section — it is inserted automatically.
+Start your response directly with the "## Emotional Indicators" heading.
 
-# AnxioSense Screening Support Report
-
-## 1. Input Mode
-State the mode used (${modeLabel}) in one sentence.${mode === 'social-media' ? ' Add one sentence noting that results carry additional uncertainty because the text is from social media.' : ''}
-
-## 2. Summary of Concern
-2–3 sentence overview of the validated findings. Use cautious language. Do not diagnose.
-
-## 3. Emotional Indicators
+## Emotional Indicators
 Use ONLY the emotional indicators listed above. If none: "No emotional indicators were identified in the available information."
 
-## 4. Anxiety-Related Indicators
+## Anxiety-Related Indicators
 Use ONLY the anxiety-related indicators listed above. If none: "No anxiety-related indicators were identified in the available information."
 
-## 5. Supporting Evidence
-Present the knowledge-base evidence snippets provided above. Introduce them with: "The following excerpts from the clinical knowledge base supported the validated findings:" then list them. Do not paraphrase — present them as provided.
+## Supporting Evidence
+Present the knowledge-base evidence snippets provided above. Introduce with: "The following excerpts from the clinical knowledge base supported the validated findings:" then list them verbatim as provided. Do not paraphrase.
 
-## 6. Contextual Factors
+## Contextual Factors
 Use ONLY the contextual factors listed above. If none: "No contextual factors were identified in the available information."
 
-## 7. Referral and Safety Recommendation
-State the appropriate follow-up level based on validated findings. Do not add coping strategies or specific resources.
+## Recommendation
+${recommendationInstruction}
 
-## 8. Limitations
+## Limitations
 State that: (a) the report is based only on the information provided; (b) missing context may affect interpretation; (c) this is not a clinical diagnosis; (d) a qualified healthcare professional is needed for a clinical assessment.${mode === 'social-media' ? ' Also note that social media text adds additional uncertainty to the analysis.' : ''}
+End the Limitations section with exactly: "This report is intended for screening support only and should not be considered a clinical diagnosis."
 
 CRITICAL RULES — any violation makes the report unusable:
-- Do NOT include a Section 0 — it will be added automatically if applicable.
-- Do NOT include claim IDs (EMO-1, SYM-1, CTX-1, etc.), chunk IDs, file names, or similarity scores.
-- Do NOT diagnose the user or say they "have anxiety" or any clinical condition.
-- Do NOT introduce findings not in the lists above.
-- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or therapy techniques.
-- Do NOT mention hotlines, apps, websites, specific clinic types, or named resources.
-- Keep tone supportive, cautious, and non-judgmental.
-- End with exactly: "This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment."
+- Do NOT include a document title or an "Assessment Overview" section
+- Do NOT include claim IDs (EMO-1, SYM-1, CTX-1, etc.), chunk IDs, file names, or similarity scores
+- Do NOT diagnose the user or say they "have anxiety" or any clinical condition
+- Do NOT introduce findings not in the lists above
+- Do NOT suggest coping strategies, breathing exercises, mindfulness, journaling, or therapy techniques
+- Do NOT mention hotlines, apps, websites, specific clinic types, or named resources
+- Keep tone supportive, cautious, and non-judgmental
 `;
 
             const response = await agent.generate(prompt);
 
-            // ── Inject GAD-7 concern-pattern block (Section 0) ────────────────
-            // Inserted directly in TypeScript after generation so Mistral cannot
-            // condense or drop the item-by-item breakdown.
-            if (gad7Block) {
-                const reportBody = response.text
-                    .replace(/^#\s+AnxioSense Screening Support Report\s*/i, '')
-                    .trimStart();
-                // Section 0 heading uses supervisor-approved label.
-                // Numerical score and clinical severity label are never shown here —
-                // those appear only in the Clinician Details section (if clinicianMode).
-                finalReport =
-                    `# AnxioSense Screening Support Report\n\n` +
-                    `## 0. GAD-7 Screening Result\n\n${gad7Block}\n\n` +
-                    reportBody;
-            } else {
-                finalReport = response.text;
+            // ── Post-process LLM output ───────────────────────────────────────
+            // 1. Strip any document title the LLM added
+            let llmBody = response.text.trim()
+                .replace(/^#+\s*AnxioSense\b[^\n]*\n\n?/im, '')
+                .trim();
+
+            // 2. Strip any Assessment Overview the LLM generated
+            //    (find first real content heading, strip everything before it if it looks like an overview)
+            const contentHeadingMatch = llmBody.match(
+                /^#{1,3}\s*(Emotional\s+Indicators?|Anxiety-Related|Supporting\s+Evidence|Contextual|Recommendation|Limitations?)\b/im
+            );
+            if (contentHeadingMatch && (contentHeadingMatch.index ?? 0) > 10) {
+                const before = llmBody.slice(0, contentHeadingMatch.index);
+                if (/assessment\s+overview|input\s+mode/i.test(before)) {
+                    llmBody = llmBody.slice(contentHeadingMatch.index ?? 0).trim();
+                }
             }
+
+            // ── Build Assessment Overview (deterministic TypeScript) ──────────
+            // GAD-7 block always verbatim; discordance note always exact wording.
+            const overviewParts: string[] = [];
+            if (mode === 'social-media') {
+                overviewParts.push(
+                    '**Analysis Type:** Social Media Analysis\n\n' +
+                    'No structured questionnaire was available because this analysis was performed using secondary ' +
+                    'social media text. Results therefore rely only on linguistic, emotional, symptomatic, and ' +
+                    'contextual indicators identified in the written text.'
+                );
+            } else {
+                overviewParts.push('**Analysis Type:** Journal / Self-Report');
+                if (gad7Block) {
+                    overviewParts.push('\n' + gad7Block);
+                } else {
+                    overviewParts.push(
+                        '\nNo structured questionnaire was completed for this assessment. ' +
+                        'The analysis relies on linguistic and contextual indicators identified in the written text.'
+                    );
+                }
+                if (discordanceNote === 'high_gad7_low_text') {
+                    overviewParts.push(
+                        '\n**Note on Evidence Sources:** The structured questionnaire indicates a higher level of ' +
+                        'concern than was reflected in the written text. Written expression may not fully capture ' +
+                        'all of an individual\'s internal experiences. Both sources were considered in generating this report.'
+                    );
+                } else if (discordanceNote === 'low_gad7_high_text') {
+                    overviewParts.push(
+                        '\n**Note on Evidence Sources:** The written text reflects more indicators of concern than ' +
+                        'the structured questionnaire score alone suggests. Both sources were considered in generating this report.'
+                    );
+                }
+            }
+            const assessmentOverview = `## Assessment Overview\n\n${overviewParts.join('\n')}`;
+
+            // ── Insert Evidence Agreement before Limitations ──────────────────
+            const evidenceAgreementSection =
+                `## Evidence Agreement\n\n**${evidenceAgreement}** — ${agreementReason}`;
+
+            const limitIdx = llmBody.search(/^#{1,3}\s*Limitations?\b/im);
+            let mainBody: string;
+            if (limitIdx !== -1) {
+                mainBody =
+                    llmBody.slice(0, limitIdx).trimEnd() +
+                    '\n\n' + evidenceAgreementSection +
+                    '\n\n' + llmBody.slice(limitIdx);
+            } else {
+                mainBody = llmBody + '\n\n' + evidenceAgreementSection;
+            }
+
+            finalReport = `# AnxioSense Screening Support Report\n\n${assessmentOverview}\n\n${mainBody}`;
 
             // ── Inject Clinician Details block ────────────────────────────────
             // Appended after the user-facing report. Raw GAD-7 score and clinical
@@ -519,6 +604,36 @@ export const anxiosenseWorkflow = createWorkflow({
             console.log('[AnxioSense] Social-media mode — GAD-7 bypassed.');
         }
 
+        // ── Concern pattern label (from GAD-7 score) ──────────────────────────
+        let gad7ConcernPattern: string | null = null;
+        if (mode === 'journal' && gad7Score !== null) {
+            if      (gad7Score <= 4)  gad7ConcernPattern = 'Minimal Concern Pattern';
+            else if (gad7Score <= 9)  gad7ConcernPattern = 'Mild Concern Pattern';
+            else if (gad7Score <= 14) gad7ConcernPattern = 'Elevated Concern Pattern';
+            else                      gad7ConcernPattern = 'High Concern Pattern';
+        }
+
+        // ── Discordance detection ─────────────────────────────────────────────
+        // Flags when GAD-7 and text-based signal disagree markedly.
+        // GEN-1 is the fallback claim injected when agents return nothing —
+        // treat it as "no real text signal" for discordance purposes.
+        let discordanceNote: 'high_gad7_low_text' | 'low_gad7_high_text' | null = null;
+        if (mode === 'journal' && gad7Score !== null) {
+            const isFallbackOnly =
+                inputData.claims.length === 1 && inputData.claims[0].claimId === 'GEN-1';
+            const realClaimCount = isFallbackOnly ? 0 : inputData.claims.length;
+
+            if (gad7Score >= 15 && realClaimCount <= 1) {
+                // High questionnaire score but minimal text signal
+                discordanceNote = 'high_gad7_low_text';
+                console.log('[AnxioSense] Discordance detected: high_gad7_low_text');
+            } else if (gad7Score <= 4 && realClaimCount >= 4) {
+                // Minimal questionnaire score but rich text signal
+                discordanceNote = 'low_gad7_high_text';
+                console.log('[AnxioSense] Discordance detected: low_gad7_high_text');
+            }
+        }
+
         // ── Session write ─────────────────────────────────────────────────────
         writeSession(inputData.sessionId, {
             mode,
@@ -533,6 +648,8 @@ export const anxiosenseWorkflow = createWorkflow({
             gad7Score,
             gad7Severity,
             gad7ItemScores,
+            gad7ConcernPattern,
+            discordanceNote,
         });
 
         return {
