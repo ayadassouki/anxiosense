@@ -29,23 +29,10 @@ import {
 const SUPPORTED_THRESHOLD = 0.72;
 const PARTIAL_THRESHOLD   = 0.55;
 
-/**
- * Computes the cosine similarity between two vectors.
- * Both vectors must be the same length.
- * Returns a value in [-1, 1]; for normalised embeddings this is [0, 1].
- */
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot   += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
+// NOTE: Cosine similarity is not computed here. The retrieval step (retrieval-agent.ts)
+// attaches similarityScore to each chunk directly from the LibSQLVector query result,
+// which returns cosine similarity scores for L2-normalised fastembed vectors.
+// Thresholds are applied to those pre-computed scores below.
 
 export const evidenceValidationStep = createStep({
   id: 'evidence-validation-step',

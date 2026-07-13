@@ -1,0 +1,284 @@
+# AnxioSense Workflow Run
+
+## Test Case
+manual-run
+
+## Prompt Version
+cot-oneshot-v1
+
+## User Input
+I don't think I can keep myself safe anymore. I feel hopeless and I have been thinking about hurting myself.
+
+## Emotion Agent Output
+```json
+{
+  "emotions": [
+    "hopelessness",
+    "frustration"
+  ],
+  "emotional_intensity": "high",
+  "evidence_from_text": [
+    "I don't think I can keep myself safe anymore.",
+    "I feel hopeless",
+    "I have been thinking about hurting myself"
+  ]
+}
+```
+
+## Symptom Agent Output
+```json
+{
+  "possible_anxiety_indicators": [],
+  "evidence_from_text": [
+    "I don't think I can keep myself safe anymore.",
+    "I feel hopeless"
+  ],
+  "not_enough_information": true
+}
+```
+
+## Context Agent Output
+```json
+{
+  "contextual_stressors": [
+    "Health concerns"
+  ],
+  "life_domains": [
+    "Health"
+  ],
+  "evidence_from_text": [
+    "I don't think I can keep myself safe anymore.",
+    "I feel hopeless",
+    "I have been thinking about hurting myself"
+  ]
+}
+```
+
+## Referral Agent Output
+```json
+{
+  "risk_level": "urgent",
+  "reasoning": "The user describes feeling unable to stay safe and has been considering self-harm, indicating an immediate safety concern.",
+  "recommended_support": "Immediate emergency/crisis support is strongly recommended. If possible, contact a trusted person for immediate help.",
+  "safety_note": "If you or someone else is in immediate danger, please seek help immediately by calling your local emergency number or contacting a crisis hotline."
+}
+```
+
+## Build Claims Step
+```json
+{
+  "sessionId": "session-1782674123932",
+  "claims": [
+    {
+      "claimId": "EMO-1",
+      "sourceAgent": "emotion",
+      "claimText": "hopelessness",
+      "category": "emotional_state"
+    },
+    {
+      "claimId": "EMO-2",
+      "sourceAgent": "emotion",
+      "claimText": "frustration",
+      "category": "emotional_state"
+    },
+    {
+      "claimId": "CTX-1",
+      "sourceAgent": "context",
+      "claimText": "Health concerns",
+      "category": "contextual_stressor"
+    }
+  ]
+}
+```
+
+## Retrieval Step
+```json
+{
+  "sessionId": "session-1782674123932",
+  "results": [
+    {
+      "claimId": "EMO-1",
+      "claimText": "hopelessness",
+      "sourceAgent": "emotion",
+      "category": "emotional_state",
+      "retrievedChunks": [
+        {
+          "chunkId": "DEP-004",
+          "text": "CHUNK_ID: DEP-004\nINDICATOR: Feelings of Worthlessness or Excessive Guilt\nSOURCE: ICD-11 6A70, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Persistent feelings of worthlessness, or excessive or\ninappropriate guilt, extending beyond reasonable self-criticism about a\nspecific event.\nPLAIN_LANGUAGE_EXAMPLES: \"I feel like a burden to everyone around me.\"\n\"Everything that goes wrong feels like it's my fault, even when it\nisn't.\"\nNON_DIAGNOSTIC_NOTE: Relevant to referral_guidelines.txt severity tiering.\nProfound hopelessness combined with this indicator should be cross-checked\nagainst safety_boundary.txt escalation criteria.",
+          "source": "ICD-11 6A70, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "depression_indicators.txt",
+          "similarityScore": 0.6228373050689697
+        },
+        {
+          "chunkId": "DEP-005",
+          "text": "CHUNK_ID: DEP-005\nINDICATOR: Difficulty Concentrating (Depression Presentation)\nSOURCE: ICD-11 6A70, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Difficulty concentrating or making decisions, often described\nalongside mental slowing or low motivation rather than active worry.\nPLAIN_LANGUAGE_EXAMPLES: \"I can't make even small decisions anymore.\" \"My\nthinking feels slow and foggy.\"\nNON_DIAGNOSTIC_NOTE: Compare to ANX-004 in anxiety_indicators.txt — the\nunderlying mechanism (worry-driven vs. energy/motivation-driven) differs\neven though the surface symptom looks similar. See shared_symptoms.txt.",
+          "source": "ICD-11 6A70, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "depression_indicators.txt",
+          "similarityScore": 0.6044511497020721
+        },
+        {
+          "chunkId": "DIFF-002",
+          "text": "CHUNK_ID: DIFF-002\nSECTION: Features More Strongly Associated With Depression\nSOURCE_TYPE: differentiation_guidance\nCONTENT:\n- Anhedonia: a pervasive, marked loss of interest or pleasure across most\n  activities — considered one of the most specific discriminators.\n- Past/present-oriented cognitive content: hopelessness, worthlessness,\n  guilt, themes of loss or failure rather than anticipated threat.\n- Psychomotor slowing (retardation): slowed speech, movement, or thinking.\n- Early-morning waking or hypersomnia.\n- Pervasive low mood rather than situational worry.",
+          "sourceType": "differentiation_guidance",
+          "file": "anxiety_vs_depression.txt",
+          "similarityScore": 0.6027712523937225
+        },
+        {
+          "chunkId": "ANX-005",
+          "text": "CHUNK_ID: ANX-005\nINDICATOR: Irritability (Anxiety Presentation)\nSOURCE: ICD-11 6B00, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Low frustration tolerance or a persistent edgy, on-edge mood,\ncommonly arising from chronic nervous system activation and the strain of\nongoing worry.\nPLAIN_LANGUAGE_EXAMPLES: \"I snap at people more than I used to.\" \"Small\nthings set me off lately.\"\nNON_DIAGNOSTIC_NOTE: Irritability is a non-specific symptom shared with\ndepression (see shared_symptoms.txt) and many other states, including\nordinary stress and sleep deprivation.",
+          "source": "ICD-11 6B00, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "anxiety_indicators.txt",
+          "similarityScore": 0.59062460064888
+        }
+      ]
+    },
+    {
+      "claimId": "EMO-2",
+      "claimText": "frustration",
+      "sourceAgent": "emotion",
+      "category": "emotional_state",
+      "retrievedChunks": [
+        {
+          "chunkId": "ANX-005",
+          "text": "CHUNK_ID: ANX-005\nINDICATOR: Irritability (Anxiety Presentation)\nSOURCE: ICD-11 6B00, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Low frustration tolerance or a persistent edgy, on-edge mood,\ncommonly arising from chronic nervous system activation and the strain of\nongoing worry.\nPLAIN_LANGUAGE_EXAMPLES: \"I snap at people more than I used to.\" \"Small\nthings set me off lately.\"\nNON_DIAGNOSTIC_NOTE: Irritability is a non-specific symptom shared with\ndepression (see shared_symptoms.txt) and many other states, including\nordinary stress and sleep deprivation.",
+          "source": "ICD-11 6B00, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "anxiety_indicators.txt",
+          "similarityScore": 0.6153232455253601
+        },
+        {
+          "chunkId": "DEP-004",
+          "text": "CHUNK_ID: DEP-004\nINDICATOR: Feelings of Worthlessness or Excessive Guilt\nSOURCE: ICD-11 6A70, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Persistent feelings of worthlessness, or excessive or\ninappropriate guilt, extending beyond reasonable self-criticism about a\nspecific event.\nPLAIN_LANGUAGE_EXAMPLES: \"I feel like a burden to everyone around me.\"\n\"Everything that goes wrong feels like it's my fault, even when it\nisn't.\"\nNON_DIAGNOSTIC_NOTE: Relevant to referral_guidelines.txt severity tiering.\nProfound hopelessness combined with this indicator should be cross-checked\nagainst safety_boundary.txt escalation criteria.",
+          "source": "ICD-11 6A70, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "depression_indicators.txt",
+          "similarityScore": 0.5825001001358032
+        },
+        {
+          "chunkId": "DEP-007",
+          "text": "CHUNK_ID: DEP-007\nINDICATOR: Psychomotor Agitation or Retardation\nSOURCE: ICD-11 6A70, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Observable slowing of movement and speech (retardation), or\nits opposite, restless agitation, occurring alongside other depressive\nfeatures.\nPLAIN_LANGUAGE_EXAMPLES: \"I feel like I'm moving in slow motion.\" /\n\"I can't stop pacing, even though I feel exhausted.\"\nNON_DIAGNOSTIC_NOTE: Agitated presentations of depression can closely\nresemble anxiety. See anxiety_vs_depression.txt, \"Difficult\nDifferentiation Situations.\"",
+          "source": "ICD-11 6A70, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "depression_indicators.txt",
+          "similarityScore": 0.5801929831504822
+        },
+        {
+          "chunkId": "ANX-003",
+          "text": "CHUNK_ID: ANX-003\nINDICATOR: Muscle Tension and Motor Restlessness\nSOURCE: ICD-11 6B00, WHO (2025-01)\nSOURCE_TYPE: clinical_description\nDESCRIPTION: Chronic muscular tension, an inability to relax, feeling\n\"keyed up\" or on edge, or motor restlessness such as pacing or fidgeting.\nPLAIN_LANGUAGE_EXAMPLES: \"My shoulders are always tight.\" \"I can't sit\nstill, I have to keep moving.\"\nNON_DIAGNOSTIC_NOTE: Differentiates generalized anxiety presentations from\npurely cognitive worry; physical tension alone is common and not, by\nitself, indicative of a disorder.",
+          "source": "ICD-11 6B00, WHO (2025-01)",
+          "sourceType": "clinical_description",
+          "file": "anxiety_indicators.txt",
+          "similarityScore": 0.5599940121173859
+        }
+      ]
+    },
+    {
+      "claimId": "CTX-1",
+      "claimText": "Health concerns",
+      "sourceAgent": "context",
+      "category": "contextual_stressor",
+      "retrievedChunks": [
+        {
+          "chunkId": "CTX-006",
+          "text": "CHUNK_ID: CTX-006\nSTRESSOR: Health Concerns\nSOURCE_TYPE: contextual_taxonomy\nDESCRIPTION: Distress related to an active medical condition, physical\nsymptoms, or preoccupation with health.\nKEYWORDS: sick, chronic pain, diagnosis, doctor, symptoms, illness",
+          "sourceType": "contextual_taxonomy",
+          "file": "contextual_stressors.txt",
+          "similarityScore": 0.7198582291603088
+        },
+        {
+          "chunkId": "CTX-004",
+          "text": "CHUNK_ID: CTX-004\nSTRESSOR: Family Stress\nSOURCE_TYPE: contextual_taxonomy\nDESCRIPTION: Conflict, high expectations, or lack of support within the\nfamily or household.\nKEYWORDS: parents, family, expectations, arguments at home, mom, dad",
+          "sourceType": "contextual_taxonomy",
+          "file": "contextual_stressors.txt",
+          "similarityScore": 0.615709513425827
+        }
+      ]
+    }
+  ],
+  "sessionDifferentiationChunks": [],
+  "retrievalMeta": {
+    "totalClaims": 3,
+    "totalChunksRetrieved": 10,
+    "indexesQueried": [
+      "anxiety_indicators.txt",
+      "depression_indicators.txt",
+      "anxiety_vs_depression.txt",
+      "contextual_stressors.txt"
+    ]
+  },
+  "riskLevel": "urgent"
+}
+```
+
+## Evidence Validation Step
+```json
+{
+  "sessionId": "session-1782674123932",
+  "claimValidations": [
+    {
+      "claimId": "EMO-1",
+      "claimText": "hopelessness",
+      "sourceAgent": "emotion",
+      "supportStatus": "partially_supported",
+      "citedChunkIds": [
+        "DEP-004",
+        "DEP-005"
+      ],
+      "validationNote": "Claim has partial knowledge-base support (cosine similarity: 0.623, threshold: 0.55–0.72). Treat with caution; evidence from: depression_indicators.txt, depression_indicators.txt."
+    },
+    {
+      "claimId": "EMO-2",
+      "claimText": "frustration",
+      "sourceAgent": "emotion",
+      "supportStatus": "partially_supported",
+      "citedChunkIds": [
+        "ANX-005",
+        "DEP-004"
+      ],
+      "validationNote": "Claim has partial knowledge-base support (cosine similarity: 0.615, threshold: 0.55–0.72). Treat with caution; evidence from: anxiety_indicators.txt, depression_indicators.txt."
+    },
+    {
+      "claimId": "CTX-1",
+      "claimText": "Health concerns",
+      "sourceAgent": "context",
+      "supportStatus": "partially_supported",
+      "citedChunkIds": [
+        "CTX-006",
+        "CTX-004"
+      ],
+      "validationNote": "Claim has partial knowledge-base support (cosine similarity: 0.720, threshold: 0.55–0.72). Treat with caution; evidence from: contextual_stressors.txt, contextual_stressors.txt."
+    }
+  ],
+  "differentiationAssessment": {
+    "primaryLean": "unclear",
+    "supportingChunkIds": [],
+    "reasoning": "Differentiation evidence did not meet the similarity threshold. Presentation cannot be confidently assigned to a single category."
+  },
+  "overallConsistencyNotes": "Validation uses cosine similarity thresholds (supported ≥ 0.72, partially_supported ≥ 0.55, unsupported < 0.55). 3 claims evaluated: 0 supported, 3 partially supported, 0 unsupported.",
+  "riskLevel": "urgent"
+}
+```
+
+## Final Report
+```md
+# AnxioSense Screening Support — Urgent Safety Notice
+
+## Important
+
+Based on what you shared, there may be an immediate safety concern that requires urgent attention.
+
+**This screening tool is not able to provide crisis support.** Please reach out for help right now:
+
+- Contact a crisis line in your country or region (e.g. a mental health crisis line or helpline)
+- Go to your nearest emergency department, or call emergency services (e.g. 911 / 999 / 112)
+- Reach out immediately to a trusted person who can be with you
+
+---
+
+*This report has not been generated. When an immediate safety concern is present, your wellbeing takes priority over a screening summary. Please seek support now.*
+
+*This tool is intended for screening support only and is not a clinical service.*
+```
