@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const contextAgent = new Agent({
     id: 'context-agent',
@@ -79,5 +77,5 @@ Step 5 — Return:
 
 Return only compact valid JSON. The JSON must be complete — it must have a closing } bracket.
 Do not truncate or leave the JSON open. Always close every bracket and brace.`,
-    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
+    model: groq('llama-3.3-70b-versatile'),
 });

@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const symptomAgent = new Agent({
     id: 'symptom-agent',
@@ -94,5 +92,5 @@ Output:
 
 Return only this JSON shape, compact and valid:
 {"possible_anxiety_indicators":[],"evidence_from_text":[],"not_enough_information":false}`,
-    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
+    model: groq('llama-3.3-70b-versatile'),
 });

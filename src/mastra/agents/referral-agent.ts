@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const referralAgent = new Agent({
     id: 'referral-agent',
@@ -127,5 +125,5 @@ Any other value (e.g. "elevated", "high", "medium", "severe") is INVALID and wil
 
 Return only valid JSON:
 {"risk_level":"low | moderate | urgent","reasoning":"","recommended_support":"","safety_note":""}`,
-    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
+    model: groq('llama-3.3-70b-versatile'),
 });

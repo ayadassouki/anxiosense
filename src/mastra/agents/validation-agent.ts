@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const validationAgent = new Agent({
     id: 'validation-agent',
@@ -120,5 +118,5 @@ Return only valid JSON:
   "unsupported_or_removed_claims": [],
   "validation_notes": ""
 }`,
-    model: localOllama('mistral:latest'),
+    model: groq('llama-3.3-70b-versatile'),
 });

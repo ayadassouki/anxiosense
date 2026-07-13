@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const emotionAgent = new Agent({
     id: 'emotion-agent',
@@ -99,5 +97,5 @@ Step 6 — Return:
 Return only valid compact JSON. No other text.
 
 {"emotions":[],"emotional_intensity":"low | moderate | high","evidence_from_text":[]}`,
-    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
+    model: groq('llama-3.3-70b-versatile'),
 });

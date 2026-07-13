@@ -1,9 +1,7 @@
 import { Agent } from '@mastra/core/agent';
-import { createOllama } from 'ollama-ai-provider-v2';
+import { createGroq } from '@ai-sdk/groq';
 
-const localOllama = createOllama({
-    baseURL: 'http://localhost:11434/api',
-});
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
 export const reportAgent = new Agent({
     id: 'report-agent',
@@ -63,5 +61,5 @@ DECISION PROCEDURE
 4. State the referral level as provided; do not elaborate beyond it.
 5. Keep the limitations section factual and concise.
 6. Return the completed report and nothing else.`,
-    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
+    model: groq('llama-3.3-70b-versatile'),
 });
