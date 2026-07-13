@@ -24,3 +24,4 @@ src/mastra/public/evaluation/
 # Backup and scratch files — should never be committed
 *.backup.ts
 *.bak
+AGENTS.md
