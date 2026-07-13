@@ -15,8 +15,10 @@
  * Returns a PreAssessOutput whose `processedText` field replaces the raw
  * userText in the Mastra workflow call.
  *
- * Semantic insufficiency causes rejection by default. Set REJECT_INSUFFICIENT=false
- * in env to disable hard rejection (e.g. for development or A/B evaluation).
+ * Semantic rejection applies only to English submissions — the sufficiency checker
+ * is English-only (ASCII regex). Non-English text passes through to the Mastra
+ * workflow regardless of the semantic check result. Set REJECT_INSUFFICIENT=false
+ * to disable rejection even for English (development / A/B evaluation).
  */
 
 import { replaceEmoji } from './emoji.js';
@@ -55,10 +57,19 @@ export async function preAssess(text: string, mode: InputMode): Promise<PreAsses
   }
 
   // ── Step 5: Determine rejection ───────────────────────────────────────
-  // Default: reject semantically insufficient input so it never reaches the
-  // Mastra workflow. Set REJECT_INSUFFICIENT=false in your environment to
-  // disable hard rejection (e.g. during development or A/B evaluation).
-  const hardRejectInsufficient = process.env.REJECT_INSUFFICIENT !== 'false';
+  // The semantic sufficiency checker uses an ASCII [a-z] regex and cannot
+  // evaluate non-Latin scripts (Arabic, CJK, Cyrillic, etc.).  Applying the
+  // English-only check to those submissions would always produce
+  // contentWordCount = 0 and incorrectly reject valid non-English input.
+  //
+  // Policy: hard semantic rejection only applies when the detected language is
+  // English.  For all other languages the check result is logged for
+  // observability but the submission is allowed through to the Mastra workflow.
+  //
+  // Set REJECT_INSUFFICIENT=false to disable rejection even for English
+  // (useful during development or A/B evaluation).
+  const isEnglish = detectedLanguage === 'en';
+  const hardRejectInsufficient = isEnglish && process.env.REJECT_INSUFFICIENT !== 'false';
   const rejected = hardRejectInsufficient && !semanticallySufficient;
 
   // ── Step 6: PII-safe logging ──────────────────────────────────────────

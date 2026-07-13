@@ -7,8 +7,15 @@
  * (e.g. very short stopword-only phrases that happen to be ≥20 chars after
  * whitespace expansion).
  *
+ * LIMITATION — English only:
+ * The default implementation uses a `\b[a-z]{3,}\b` regex that matches only
+ * ASCII lowercase letters. Non-Latin scripts (Arabic, CJK, Cyrillic, etc.)
+ * produce contentWordCount = 0 regardless of actual content. Callers must
+ * NOT apply the rejection gate to non-English input. See pipeline.ts for
+ * the language-aware rejection policy.
+ *
  * This is intentionally conservative: the threshold is low (2 content words)
- * to avoid false positives.  A caller may log a warning when
+ * to avoid false positives. A caller may log a warning when
  * `semanticallySufficient === false` but it is up to the caller whether to
  * hard-reject the submission.
  *

@@ -215,12 +215,16 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     referralLevel  = 'urgent';
 
   } else if (mode === 'journal' && Array.isArray(gad7Answers) && gad7Answers.length === 7) {
-    // Authoritative: deterministic from submitted answers — cannot be wrong
+    // Canonical: deterministic from submitted answers — cannot be wrong.
+    // referralLevel is capped at 'moderate' for all GAD-7 severity bands.
+    // 'urgent' is reserved exclusively for the safety-agent crisis path above
+    // (isUrgentReport), which is triggered by explicit crisis / safety indicators
+    // in the user's text — not by a high GAD-7 score alone.
     const gad7Score = (gad7Answers as number[]).reduce((a: number, b: number) => a + b, 0);
     if      (gad7Score <= 4)  { concernPattern = 'Minimal Concern Pattern';  referralLevel = 'low';      }
     else if (gad7Score <= 9)  { concernPattern = 'Mild Concern Pattern';     referralLevel = 'moderate'; }
     else if (gad7Score <= 14) { concernPattern = 'Elevated Concern Pattern'; referralLevel = 'moderate'; }
-    else                      { concernPattern = 'High Concern Pattern';      referralLevel = 'urgent';   }
+    else                      { concernPattern = 'High Concern Pattern';      referralLevel = 'moderate'; }
 
   } else {
     // Text-only (no GAD-7) or social-media mode:

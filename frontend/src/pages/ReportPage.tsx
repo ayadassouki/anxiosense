@@ -701,7 +701,7 @@ export default function ReportPage() {
             bgcolor: 'rgba(79,124,172,0.04)', border: '1px solid rgba(79,124,172,0.1)' }}>
             <Typography variant="caption" color="text.secondary" lineHeight={1.8} display="block">
               🔒 Your raw text was not saved. This report was generated using a multi-agent
-              AI pipeline with RAG-validated evidence retrieval. AnxioSense is a research prototype.
+              AI pipeline with evidence retrieval and validation. AnxioSense is a research prototype.
               Where applicable, GAD-7 scores and clinical severity categories are included in the Assessment Overview section of this report.
             </Typography>
           </Box>

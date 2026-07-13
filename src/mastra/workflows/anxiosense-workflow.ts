@@ -552,28 +552,34 @@ ${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
             console.warn('[AnxioSense] Timing block failed (non-fatal):', timingErr);
         }
 
-        // ── Evaluation export ─────────────────────────────────────────────────
-        try {
-            const exportSession = readSession(inputData.sessionId);
-            const filePath = exportWorkflowRun({
-                testCaseName:      process.env.ANXIOSENSE_TEST_CASE     ?? 'manual-run',
-                promptVersion:     process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
-                userText:          exportSession?.userText          ?? '',
-                gad7Block:         exportSession?.gad7Block         ?? null,
-                emotionAnalysis:   exportSession?.emotionAnalysis   ?? '{}',
-                symptomAnalysis:   exportSession?.symptomAnalysis   ?? '{}',
-                contextAnalysis:   exportSession?.contextAnalysis   ?? '{}',
-                referralAnalysis:  exportSession?.referralAnalysis  ?? '{}',
-                buildClaimsOutput: exportSession?.buildClaimsOutput ?? {},
-                retrievalOutput:   exportSession?.retrievalOutput   ?? {},
-                validationOutput:  inputData,
-                finalReport,
-                timings:           assembledTimings,
-            });
-            clearSession(inputData.sessionId);
-            console.log(`[AnxioSense] Evaluation run saved → ${filePath}`);
-        } catch (e) {
-            console.warn('[AnxioSense] Export failed (non-fatal):', e);
+        // ── Evaluation export (opt-in) ────────────────────────────────────────
+        // Disabled by default so normal users do not generate evaluation files.
+        // Set EXPORT_EVALUATIONS=true in the Mastra process environment to enable.
+        // clearSession always runs to free in-memory state regardless of export setting.
+        const exportSession = readSession(inputData.sessionId);
+        clearSession(inputData.sessionId);
+
+        if (process.env.EXPORT_EVALUATIONS === 'true') {
+            try {
+                const filePath = exportWorkflowRun({
+                    testCaseName:      process.env.ANXIOSENSE_TEST_CASE     ?? 'manual-run',
+                    promptVersion:     process.env.ANXIOSENSE_PROMPT_VERSION ?? 'cot-oneshot-v1',
+                    userText:          exportSession?.userText          ?? '',
+                    gad7Block:         exportSession?.gad7Block         ?? null,
+                    emotionAnalysis:   exportSession?.emotionAnalysis   ?? '{}',
+                    symptomAnalysis:   exportSession?.symptomAnalysis   ?? '{}',
+                    contextAnalysis:   exportSession?.contextAnalysis   ?? '{}',
+                    referralAnalysis:  exportSession?.referralAnalysis  ?? '{}',
+                    buildClaimsOutput: exportSession?.buildClaimsOutput ?? {},
+                    retrievalOutput:   exportSession?.retrievalOutput   ?? {},
+                    validationOutput:  inputData,
+                    finalReport,
+                    timings:           assembledTimings,
+                });
+                console.log(`[AnxioSense] Evaluation run saved → ${filePath}`);
+            } catch (e) {
+                console.warn('[AnxioSense] Export failed (non-fatal):', e);
+            }
         }
 
         return { finalReport };

@@ -312,6 +312,20 @@ describe('preAssess pipeline', () => {
     assert.ok(result.languageConfidence >= 0.5);
   });
 
+  test('non-English text is not rejected despite English-only semantic checker', async () => {
+    // The semantic checker regex \b[a-z]{3,}\b matches no Arabic characters,
+    // so contentWordCount = 0 and semanticallySufficient = false.
+    // The rejection gate must be bypassed for non-English languages because
+    // the checker cannot evaluate them — see pipeline.ts and semantic.ts.
+    const result = await preAssess(
+      'أشعر بالقلق الشديد ولا أستطيع النوم بشكل صحيح في الفترة الأخيرة',
+      'journal'
+    );
+    assert.equal(result.detectedLanguage, 'ar');
+    assert.equal(result.rejected, false, 'non-English input must not be rejected by English-only semantic gate');
+    assert.equal(result.semanticallySufficient, false, 'checker correctly scores 0 — limitation is documented');
+  });
+
   test('semanticallySufficient is true for meaningful journal entry', async () => {
     const result = await preAssess(
       "Feeling really overwhelmed and anxious — deadlines, meetings, everything at once.",
