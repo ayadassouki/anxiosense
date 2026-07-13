@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
     } catch {
-      throw new Error('Could not reach the server. Make sure the AnxioSense server is running (cd server && npm run dev).');
+      throw new Error('Could not reach the server. Please try again later.');
     }
     const body = await res.json().catch(() => ({})) as { message?: string; token?: string; user?: User };
     if (!res.ok) throw new Error(body.message ?? `Login failed (HTTP ${res.status})`);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, password }),
       });
     } catch {
-      throw new Error('Could not reach the server. Make sure the AnxioSense server is running (cd server && npm run dev).');
+      throw new Error('Could not reach the server. Please try again later.');
     }
     const body = await res.json().catch(() => ({})) as { message?: string; token?: string; user?: User };
     if (!res.ok) throw new Error(body.message ?? `Registration failed (HTTP ${res.status})`);
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ credential }),
       });
     } catch {
-      throw new Error('Could not reach the server. Make sure the AnxioSense server is running (cd server && npm run dev).');
+      throw new Error('Could not reach the server. Please try again later.');
     }
     const body = await res.json().catch(() => ({})) as { message?: string; token?: string; user?: User };
     if (!res.ok) throw new Error(body.message ?? `Google sign-in failed (HTTP ${res.status})`);
