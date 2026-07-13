@@ -1,3 +1,5 @@
+import { API_URL } from '../config/api';
+
 const TOKEN_KEY = 'anxiosense_token';
 
 function authHeaders(): HeadersInit {
@@ -35,17 +37,17 @@ export interface ReportSummary {
 // ── Reports API ───────────────────────────────────────────────────────────────
 
 export async function getReports(): Promise<ReportSummary[]> {
-  const res = await fetch('/api/reports', { headers: authHeaders() });
+  const res = await fetch(`${API_URL}/api/reports`, { headers: authHeaders() });
   return handleResponse<ReportSummary[]>(res);
 }
 
 export async function getReport(id: string): Promise<ReportSummary> {
-  const res = await fetch(`/api/reports/${id}`, { headers: authHeaders() });
+  const res = await fetch(`${API_URL}/api/reports/${id}`, { headers: authHeaders() });
   return handleResponse<ReportSummary>(res);
 }
 
 export async function deleteReport(id: string): Promise<void> {
-  const res = await fetch(`/api/reports/${id}`, {
+  const res = await fetch(`${API_URL}/api/reports/${id}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -70,7 +72,7 @@ export interface WorkflowResult {
 }
 
 export async function runWorkflow(params: RunWorkflowParams): Promise<WorkflowResult> {
-  const res = await fetch('/api/workflow/run', {
+  const res = await fetch(`${API_URL}/api/workflow/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(params),
