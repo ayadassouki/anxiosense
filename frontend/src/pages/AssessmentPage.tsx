@@ -43,7 +43,7 @@ const AGENT_STEPS = [
   { label: 'Emotion analysis',      detail: 'Identifying emotional tone and affect patterns…' },
   { label: 'Symptom identification',detail: 'Mapping language markers to anxiety symptom clusters…' },
   { label: 'Context assessment',    detail: 'Understanding psychosocial stressors and context…' },
-  { label: 'Evidence retrieval',    detail: 'Matching against validated clinical knowledge base…' },
+  { label: 'Evidence retrieval',    detail: 'Retrieving from curated clinical knowledge base…' },
   { label: 'Report generation',     detail: 'Synthesising evidence-informed assessment report…' },
 ];
 

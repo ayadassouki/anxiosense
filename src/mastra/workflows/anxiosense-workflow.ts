@@ -152,40 +152,6 @@ const referralStep = createStep({
     },
 });
 
-// ── Validation step ───────────────────────────────────────────────────────────
-
-const validationStep = createStep({
-    id: 'validation-step',
-    inputSchema: combinedAnalysisSchema,
-    outputSchema: validatedAnalysisSchema,
-    execute: async ({ inputData, mastra }) => {
-        const agent = mastra?.getAgent('validationAgent');
-        if (!agent) throw new Error('Validation agent not found');
-
-        const prompt = `
-Original User Text:
-${inputData.userText}
-
-Emotion Analysis Agent Output:
-${inputData.emotionAnalysis}
-
-Symptom Extraction Agent Output:
-${inputData.symptomAnalysis}
-
-Context Reasoning Agent Output:
-${inputData.contextAnalysis}
-
-Referral and Safety Agent Output:
-${inputData.referralAnalysis}
-
-Validate the agent outputs. Remove or flag unsupported claims. Return only the validation JSON.
-`;
-
-        const response = await agent.generate(prompt);
-        return { ...inputData, validationAnalysis: response.text };
-    },
-});
-
 // ── Report step ───────────────────────────────────────────────────────────────
 
 const reportStep = createStep({

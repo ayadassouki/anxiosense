@@ -20,3 +20,7 @@ dist
 # These are served as static files by the Hono server when present here —
 # move completed research runs to evaluation/prompt-experiments/runs/ instead.
 src/mastra/public/evaluation/
+
+# Backup and scratch files — should never be committed
+*.backup.ts
+*.bak

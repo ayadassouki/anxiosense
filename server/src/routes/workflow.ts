@@ -290,6 +290,8 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
       emojiProcessed: preResult.emojiProcessed,
       normalized: preResult.normalized,
       groundingScore: grounding.score,
+      groundingLexical: grounding.lexicalScore,
+      groundingTfidf: grounding.tfidfSimilarity,
       groundingConfidence: confidence,
       timings: {
         preAssessMs,

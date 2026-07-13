@@ -50,23 +50,33 @@ export interface PreAssessOutput {
 }
 
 /**
- * Result of the post-report Lexical Grounding Evaluation.
+ * Result of the post-report Grounding Evaluation.
  *
  * This is research metadata — it does not affect what the user sees.
  * See grounding.ts for the distinction between this evaluation and the
  * Mastra workflow's in-process evidence validation step.
+ *
+ * Two complementary scores are provided:
+ *   - lexicalScore: 4-char root-prefix matching (fast, language-agnostic)
+ *   - tfidfSimilarity: TF-IDF weighted cosine similarity (content-aware)
+ *
+ * `score` equals `lexicalScore` for backwards compatibility.
+ * `passed` is derived from `lexicalScore` >= 0.25.
  */
 export interface GroundingReport {
   /**
-   * Lexical grounding score in [0, 1].
-   * Measures what fraction of the user's key terms appear in the report,
-   * penalised by generic phrase count. Higher = more grounded.
+   * Primary grounding score in [0, 1]. Equals lexicalScore.
+   * Kept for backwards compatibility with existing callers and tests.
    */
   score: number;
+  /** Fraction of user key-terms found in the report via 4-char root prefix matching. */
+  lexicalScore: number;
+  /** TF-IDF cosine similarity between user text and report in [0, 1]. */
+  tfidfSimilarity: number;
   /** Number of user key-terms found in the report (exact or root-prefix match). */
   specificReferences: number;
   /** Number of generic/filler phrases detected in the report. */
   genericPhraseCount: number;
-  /** True when score >= GROUNDING_THRESHOLD (0.25). */
+  /** True when lexicalScore >= GROUNDING_THRESHOLD (0.25). */
   passed: boolean;
 }
