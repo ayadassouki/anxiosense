@@ -94,5 +94,5 @@ Output:
 
 Return only this JSON shape, compact and valid:
 {"possible_anxiety_indicators":[],"evidence_from_text":[],"not_enough_information":false}`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
+    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
 });

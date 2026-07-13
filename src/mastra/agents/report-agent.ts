@@ -63,5 +63,5 @@ DECISION PROCEDURE
 4. State the referral level as provided; do not elaborate beyond it.
 5. Keep the limitations section factual and concise.
 6. Return the completed report and nothing else.`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
+    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
 });

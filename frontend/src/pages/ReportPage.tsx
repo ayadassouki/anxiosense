@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Card, CardContent, Chip,
@@ -9,7 +9,7 @@ import BookOutlinedIcon from '@mui/icons-material/BookOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
-import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined';
 import Layout from '../components/Layout';
@@ -107,10 +107,17 @@ function renderBody(text: string) {
 
 // ── Clinician section detector ────────────────────────────────────────────────
 function splitClinicianBlock(report: string): { main: string; clinician: string | null } {
-  const marker = /---\s*\n(?:#{1,3}\s*)?(?:Clinician|Clinical) (?:Note|Section|Mode)/i;
+  const marker = /---\s*\n(?:#{1,3}\s*)?(?:Clinician|Clinical) (?:Note|Section|Mode|Summary)/i;
   const match = report.search(marker);
   if (match === -1) return { main: report, clinician: null };
   return { main: report.slice(0, match).trim(), clinician: report.slice(match).trim() };
+}
+
+// ── Pipeline performance section detector ────────────────────────────────────
+function splitPipelinePerformance(text: string): { body: string; pipeline: string | null } {
+  const idx = text.search(/^#{1,3}\s*Pipeline Performance\b/im);
+  if (idx === -1) return { body: text, pipeline: null };
+  return { body: text.slice(0, idx).trim(), pipeline: text.slice(idx).trim() };
 }
 
 // ── Section card ─────────────────────────────────────────────────────────────
@@ -193,26 +200,290 @@ export default function ReportPage() {
     });
   }
 
-  function handleDownload() {
+  function handleExportPDF() {
     if (!report?.fullReport) return;
-    const date = new Date(report.createdAt).toISOString().slice(0, 10);
-    const filename = `AnxioSense-Report-${date}.txt`;
-    const header = [
-      'AnxioSense Screening Support Report',
-      `Date: ${new Date(report.createdAt).toLocaleString()}`,
-      `Mode: ${report.mode === 'journal' ? 'Journal Entry' : 'Social Media Analysis'}`,
-      `Concern Pattern: ${report.concernPattern}`,
-      '─'.repeat(60),
-      '',
-    ].join('\n');
-    const content = header + report.fullReport;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const concern  = CONCERN_CONFIG[report.concernPattern] ?? CONCERN_CONFIG['Elevated Concern Pattern'];
+    const referral = REFERRAL_CONFIG[report.referralLevel] ?? REFERRAL_CONFIG['moderate'];
+    const dateStr  = new Date(report.createdAt).toLocaleDateString('en-CA', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const timeStr  = new Date(report.createdAt).toLocaleTimeString('en-CA', {
+      hour: '2-digit', minute: '2-digit',
+    });
+    const modeStr = report.mode === 'journal' ? 'Self-Assessment' : 'Social Media Analysis';
+
+    // Split out clinician block and legacy timing from the report text.
+    // Timing section is always excluded from both normal and clinician PDFs.
+    const { main: mainWithTiming, clinician: clinicianRaw } = splitClinicianBlock(report.fullReport);
+    const { body: clinicalContent } = splitPipelinePerformance(mainWithTiming);
+    const sections = parseSections(clinicalContent);
+
+    // ── Markdown → HTML converter (print-safe, no raw markdown) ────────────
+    function mdToHtml(text: string): string {
+      const lines = text.split('\n');
+      const out: string[] = [];
+      let inList = false;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          continue; // skip blank lines (paragraph spacing handled by CSS)
+        }
+
+        // Horizontal rule
+        if (/^-{3,}$/.test(trimmed)) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          out.push('<hr/>');
+          continue;
+        }
+
+        // Headings
+        const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)/);
+        if (headingMatch) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          const level = headingMatch[1].length + 1; // ## → h3
+          const headingText = headingMatch[2]
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+          out.push(`<h${level} class="md-heading">${headingText}</h${level}>`);
+          continue;
+        }
+
+        // Bullet
+        if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          const content = trimmed.slice(2)
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+          out.push(`<li>${content}</li>`);
+          continue;
+        }
+
+        // Plain paragraph
+        if (inList) { out.push('</ul>'); inList = false; }
+        const content = trimmed
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>');
+        out.push(`<p>${content}</p>`);
+      }
+
+      if (inList) out.push('</ul>');
+      return out.join('\n');
+    }
+
+    // ── Clinical sections ────────────────────────────────────────────────────
+    const sectionsHtml = sections
+      .map((s, i) => `
+        <div class="section">
+          ${s.heading ? `
+          <div class="section-heading">
+            <span class="section-num">${i + 1}</span>
+            <h2>${s.heading}</h2>
+          </div>` : ''}
+          <div class="section-body">${mdToHtml(s.body)}</div>
+        </div>`)
+      .join('');
+
+    // ── Clinician section (included only when clinicianMode is true) ─────────
+    // Strips the `---` separator and heading before converting.
+    let clinicianHtml = '';
+    if (report.clinicianMode && clinicianRaw) {
+      const clinicianBody = clinicianRaw
+        .replace(/^---\s*\n/m, '')                      // remove separator line
+        .replace(/^#{1,3}\s*Clinician Summary[^\n]*/im, '') // remove heading
+        .trim();
+      clinicianHtml = `
+        <div class="clinician-section">
+          <div class="clinician-header">
+            <span class="clinician-badge">CLINICIAN SUMMARY</span>
+            <span class="clinician-note">Restricted — do not share with patient</span>
+          </div>
+          <div class="clinician-body">${mdToHtml(clinicianBody)}</div>
+        </div>`;
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>AnxioSense${report.clinicianMode ? ' Clinician' : ''} Report — ${dateStr}</title>
+  <style>
+    @page {
+      margin: 1.1in 1in;
+      orphans: 3;
+      widows: 3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 11pt;
+      line-height: 1.75;
+      color: #1a1a1a;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0;
+    }
+    h1, h2, h3 { page-break-after: avoid; }
+    .report-header {
+      border-bottom: 2px solid #4F7CAC;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .report-title { font-size: 18pt; font-weight: bold; color: #1a1a1a; margin: 0 0 6px; }
+    .report-meta  { font-size: 9pt; color: #555; margin: 2px 0; }
+    .concern-box {
+      background: ${concern.bg};
+      border: 1.5px solid ${concern.border};
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      page-break-inside: avoid;
+    }
+    .concern-label { font-size: 9pt; color: #555; font-weight: bold; letter-spacing: 0.5px; margin: 0 0 4px; }
+    .concern-value { font-size: 13pt; font-weight: bold; color: ${concern.color}; margin: 0 0 6px; }
+    .concern-desc  { font-size: 10pt; color: ${concern.color}; margin: 0 0 4px; opacity: 0.9; }
+    .concern-cite  { font-size: 8pt; color: ${concern.color}; opacity: 0.6; margin: 0; }
+    .referral-box {
+      background: ${referral.bg};
+      border: 1.5px solid ${referral.color};
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 8px 0 16px;
+      font-size: 10pt;
+      color: ${referral.color};
+      font-weight: 600;
+      page-break-inside: avoid;
+    }
+    .disclaimer {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 9pt;
+      color: #92400E;
+      margin: 0 0 20px;
+      page-break-inside: avoid;
+    }
+    .section {
+      margin-bottom: 18px;
+      padding: 14px 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      page-break-inside: avoid;
+    }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      page-break-after: avoid;
+    }
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(79,124,172,0.12);
+      color: #4F7CAC;
+      font-size: 10pt; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-heading h2 { font-size: 12pt; margin: 0; font-weight: 700; color: #111; }
+    .section-body p   { margin: 4px 0; font-size: 10.5pt; orphans: 2; widows: 2; }
+    .section-body li  { margin: 3px 0 3px 16px; font-size: 10.5pt; }
+    .section-body ul  { margin: 6px 0; padding-left: 0; list-style: none; }
+    .section-body ul li::before { content: "·  "; color: #4F7CAC; }
+    .section-body hr  { border: none; border-top: 1px solid #e5e7eb; margin: 8px 0; }
+    .section-body .md-heading { font-size: 11pt; color: #333; margin: 8px 0 4px; }
+    /* Clinician section */
+    .clinician-section {
+      page-break-before: always;
+      border: 1.5px solid rgba(167,139,250,0.5);
+      border-radius: 6px;
+      padding: 18px;
+      margin-top: 24px;
+      background: rgba(167,139,250,0.04);
+    }
+    .clinician-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(167,139,250,0.3);
+    }
+    .clinician-badge {
+      font-size: 9pt; font-weight: 700;
+      color: #7C3AED; letter-spacing: 0.5px;
+    }
+    .clinician-note {
+      font-size: 8.5pt; color: #7C3AED; opacity: 0.7; font-style: italic;
+    }
+    .clinician-body p  { margin: 4px 0; font-size: 10pt; color: #333; }
+    .clinician-body li { margin: 3px 0 3px 16px; font-size: 10pt; }
+    .clinician-body ul { margin: 6px 0; padding-left: 0; list-style: none; }
+    .clinician-body ul li::before { content: "–  "; color: #7C3AED; }
+    .clinician-body hr { border: none; border-top: 1px solid rgba(167,139,250,0.25); margin: 8px 0; }
+    .clinician-body .md-heading { font-size: 10.5pt; color: #7C3AED; margin: 10px 0 4px; font-weight: 700; }
+    .footer {
+      margin-top: 32px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 8.5pt;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="report-header">
+    <p class="report-title">AnxioSense Screening Support Report${report.clinicianMode ? ' — Clinician Copy' : ''}</p>
+    <p class="report-meta">Date: ${dateStr} · ${timeStr}</p>
+    <p class="report-meta">Mode: ${modeStr}</p>
+  </div>
+
+  <div class="concern-box">
+    <p class="concern-label">CONCERN PATTERN</p>
+    <p class="concern-value">${concern.label}</p>
+    <p class="concern-desc">${concern.description}</p>
+    ${concern.citation ? `<p class="concern-cite">${concern.citation}</p>` : ''}
+  </div>
+
+  <div class="referral-box">
+    REFERRAL RECOMMENDATION &nbsp;·&nbsp; ${referral.label}
+  </div>
+
+  <div class="disclaimer">
+    <strong>Not a diagnosis.</strong> This report is a computational screening tool for research purposes only.
+    It does not constitute a clinical assessment, diagnosis, or treatment recommendation.
+    If you have concerns about your mental health, please consult a qualified professional.
+  </div>
+
+  ${sectionsHtml}
+
+  ${clinicianHtml}
+
+  <div class="footer">
+    AnxioSense Research Prototype · Generated ${dateStr} · Raw text was not retained
+    ${report.clinicianMode ? ' · Clinician copy — not for distribution to patients' : ''}
+  </div>
+</body>
+</html>`;
+
+    const popup = window.open('', '_blank', 'width=860,height=700,scrollbars=yes');
+    if (!popup) {
+      alert('PDF export was blocked by your browser. Please allow pop-ups for this site and try again.');
+      return;
+    }
+    popup.document.write(html);
+    popup.document.close();
+    popup.focus();
+    // Small delay to ensure styles render before print dialog opens
+    setTimeout(() => { popup.print(); }, 400);
   }
 
   if (loading) {
@@ -247,7 +518,9 @@ export default function ReportPage() {
     hour: '2-digit', minute: '2-digit',
   });
 
-  const { main, clinician } = splitClinicianBlock(report.fullReport);
+  const { main: mainWithTiming, clinician } = splitClinicianBlock(report.fullReport);
+  // Strip any Pipeline Performance section that may exist in older saved reports
+  const { body: main } = splitPipelinePerformance(mainWithTiming);
   const sections = parseSections(main);
 
   return (
@@ -275,7 +548,7 @@ export default function ReportPage() {
                     icon={report.mode === 'journal'
                       ? <BookOutlinedIcon style={{ fontSize: 14 }} />
                       : <ArticleOutlinedIcon style={{ fontSize: 14 }} />}
-                    label={report.mode === 'journal' ? 'Journal Entry' : 'Social Media'}
+                    label={report.mode === 'journal' ? 'Self-Assessment' : 'Social Media'}
                     size="small"
                     sx={{ bgcolor: 'rgba(79,124,172,0.08)', color: 'primary.dark',
                       border: '1px solid rgba(79,124,172,0.2)', fontWeight: 600 }}
@@ -297,9 +570,9 @@ export default function ReportPage() {
                       {copied ? <CheckIcon fontSize="small" sx={{ color: '#7EC8A5' }} /> : <ContentCopyIcon fontSize="small" />}
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Download report as .txt">
-                    <IconButton size="small" onClick={handleDownload} sx={{ color: 'text.secondary' }}>
-                      <DownloadIcon fontSize="small" />
+                  <Tooltip title="Export report as PDF">
+                    <IconButton size="small" onClick={handleExportPDF} sx={{ color: 'text.secondary' }}>
+                      <PictureAsPdfIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -405,13 +678,13 @@ export default function ReportPage() {
             </>
           )}
 
-          {/* ── Download button ── */}
+          {/* ── Export PDF button ── */}
           <Box display="flex" justifyContent="center" mt={2} mb={3}>
             <Button
               variant="outlined"
               size="large"
-              startIcon={<DownloadIcon />}
-              onClick={handleDownload}
+              startIcon={<PictureAsPdfIcon />}
+              onClick={handleExportPDF}
               sx={{
                 px: 4, py: 1.4, borderRadius: 3,
                 borderColor: 'primary.light',
@@ -419,7 +692,7 @@ export default function ReportPage() {
                 '&:hover': { bgcolor: 'rgba(79,124,172,0.06)' },
               }}
             >
-              Download Report (.txt)
+              Export PDF
             </Button>
           </Box>
 
@@ -429,7 +702,7 @@ export default function ReportPage() {
             <Typography variant="caption" color="text.secondary" lineHeight={1.8} display="block">
               🔒 Your raw text was not saved. This report was generated using a multi-agent
               AI pipeline with RAG-validated evidence retrieval. AnxioSense is a research prototype.
-              Numerical GAD-7 scores and clinical severity labels are not shown to users per responsible AI design principles.
+              Where applicable, GAD-7 scores and clinical severity categories are included in the Assessment Overview section of this report.
             </Typography>
           </Box>
 

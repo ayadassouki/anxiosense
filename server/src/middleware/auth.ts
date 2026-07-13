@@ -1,6 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+// Fail closed in production: refuse to start if JWT_SECRET is not explicitly set.
+// In development the fallback string is permitted but logged as a warning.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error(
+    '[auth] JWT_SECRET environment variable must be set in production. ' +
+    'Set it to a long random string (e.g. openssl rand -hex 32).'
+  );
+}
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    '[auth] WARNING: JWT_SECRET not set. Using insecure fallback. ' +
+    'Set JWT_SECRET in .env before any user-facing deployment.'
+  );
+}
+
 const JWT_SECRET = process.env.JWT_SECRET ?? 'anxiosense-dev-secret-change-in-prod';
 
 export interface AuthPayload {

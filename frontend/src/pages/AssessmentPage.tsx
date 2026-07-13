@@ -18,6 +18,7 @@ import Layout from '../components/Layout';
 import Gad7Form from '../components/Gad7Form';
 import { runWorkflow } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { validateText, VALIDATION_MIN_CHARS, VALIDATION_MAX_CHARS } from '../utils/validateText';
 
 // ── Styled stepper connector ──────────────────────────────────────────────────
 const ThinConnector = styled(StepConnector)(() => ({
@@ -32,6 +33,11 @@ const ThinConnector = styled(StepConnector)(() => ({
   },
 }));
 
+// ── Input validation constants (derived from shared spec) ─────────────────────
+const MIN_CHARS  = VALIDATION_MIN_CHARS;   // 20
+const MAX_CHARS  = VALIDATION_MAX_CHARS;   // 5000
+const WARN_CHARS = 4500;                   // amber warning threshold
+
 // ── Agent pipeline steps shown during analysis ────────────────────────────────
 const AGENT_STEPS = [
   { label: 'Emotion analysis',      detail: 'Identifying emotional tone and affect patterns…' },
@@ -45,6 +51,43 @@ const AGENT_STEPS = [
 const STEP_DURATIONS = [8000, 7000, 6000, 9000, 14000];
 
 type PageView = 'input' | 'gad7' | 'analyzing' | 'done';
+
+// ── GAD-7 display helper ───────────────────────────────────────────────────────
+// anxietyLabel  — published GAD-7 interpretation (Spitzer et al., 2006).
+// concernPattern — app's non-clinical framing used in the report.
+// Both are derived from the same score thresholds as the pipeline.
+interface Gad7DisplayInfo {
+  anxietyLabel: string;    // published interpretation (e.g. "Moderate Anxiety")
+  concernPattern: string;  // app label  (e.g. "Elevated Concern Pattern")
+  color: string;
+  note: string;
+}
+function gad7DisplayInfo(score: number): Gad7DisplayInfo {
+  if (score <= 4)  return {
+    anxietyLabel:   'Minimal Anxiety',
+    concernPattern: 'Minimal Concern Pattern',
+    color: '#059669',
+    note: 'Responses suggest limited anxiety-related experiences at this time.',
+  };
+  if (score <= 9)  return {
+    anxietyLabel:   'Mild Anxiety',
+    concernPattern: 'Mild Concern Pattern',
+    color: '#D97706',
+    note: 'Some anxiety-related experiences noted. Monitoring over time may be helpful.',
+  };
+  if (score <= 14) return {
+    anxietyLabel:   'Moderate Anxiety',
+    concernPattern: 'Elevated Concern Pattern',
+    color: '#EA580C',
+    note: 'Several anxiety-related experiences identified. Consider discussing with a healthcare professional.',
+  };
+  return {
+    anxietyLabel:   'Severe Anxiety',
+    concernPattern: 'High Concern Pattern',
+    color: '#DC2626',
+    note: 'A substantial number of anxiety-related experiences indicated. Seeking professional support may be beneficial.',
+  };
+}
 
 export default function AssessmentPage() {
   const { state } = useLocation() as { state: { mode?: 'journal' | 'social-media' } };
@@ -80,7 +123,8 @@ export default function AssessmentPage() {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   async function handleSubmit() {
-    if (!userText.trim()) { setError('Please enter some text before submitting.'); return; }
+    const validation = validateText(userText);
+    if (!validation.valid) { setError(validation.message ?? 'Invalid input.'); return; }
     setError('');
     setView('analyzing');
     setActiveStep(0);
@@ -117,7 +161,7 @@ export default function AssessmentPage() {
   const modeColor    = isJournal ? '#4F7CAC'  : '#A78BFA';
   const modeBg       = isJournal ? 'rgba(79,124,172,0.06)'  : 'rgba(167,139,250,0.06)';
   const modeIcon     = isJournal ? <BookOutlinedIcon />      : <ArticleOutlinedIcon />;
-  const modeLabel    = isJournal ? 'Journal mode'            : 'Social Media mode';
+  const modeLabel    = isJournal ? 'Self-Assessment mode'    : 'Social Media mode';
   const placeholder  = isJournal
     ? "How have you been feeling lately? Write freely — no one will read this text. The AI analyses language patterns and emotional tone, not specific details."
     : "Paste a Reddit post, social media caption, or public text here. The AI will analyse language patterns for indicators of anxiety-related themes.\n\nNote: this mode does not include GAD-7 and applies extra conservatism to referral recommendations.";
@@ -136,7 +180,7 @@ export default function AssessmentPage() {
             </Button>
             <Typography variant="h3" gutterBottom>GAD-7 Questionnaire</Typography>
             <Typography variant="body2" color="text.secondary">
-              This validated screening tool helps contextualise your journal entry.
+              This validated screening tool helps contextualise your self-assessment.
               Your answers are processed locally and not stored.
             </Typography>
           </Box>
@@ -174,7 +218,7 @@ export default function AssessmentPage() {
               )}
 
               <Typography variant="h3" gutterBottom>
-                {view === 'done' ? 'Report ready!' : 'Analysing your entry…'}
+                {view === 'done' ? 'Report ready!' : 'Analysing your self-assessment…'}
               </Typography>
               <Typography color="text.secondary" variant="body2" mb={5}>
                 {view === 'done'
@@ -239,7 +283,7 @@ export default function AssessmentPage() {
             </Box>
             <Typography color="text.secondary" variant="body2">
               {isJournal
-                ? 'Write about how you\'ve been feeling. The analysis uses language patterns, not specific content.'
+                ? 'Write about how you\'ve been feeling. The analysis uses language patterns, not specific content. Complete the GAD-7 to enable structured context.'
                 : 'Paste public text for indirect linguistic analysis. No GAD-7 questionnaire is included in this mode.'}
             </Typography>
           </Box>
@@ -266,51 +310,107 @@ export default function AssessmentPage() {
                   },
                 }}
               />
-              <Box display="flex" justifyContent="flex-end" mt={1}>
-                <Typography variant="caption" color={userText.length < 20 ? 'error.main' : 'text.disabled'}>
-                  {userText.length} characters {userText.length < 20 && userText.length > 0 ? '(minimum 20)' : ''}
+              <Box display="flex" alignItems="center" justifyContent="space-between" mt={1} flexWrap="wrap" gap={0.5}>
+                <Typography variant="caption"
+                  color={userText.length > MAX_CHARS ? 'error.main'
+                    : userText.length >= WARN_CHARS  ? 'warning.main'
+                    : userText.length < MIN_CHARS && userText.length > 0 ? 'error.main'
+                    : 'text.disabled'}>
+                  {userText.length < MIN_CHARS && userText.length > 0
+                    ? `${userText.length} / ${MAX_CHARS.toLocaleString()} — minimum ${MIN_CHARS} characters`
+                    : userText.length > MAX_CHARS
+                    ? `${userText.length.toLocaleString()} / ${MAX_CHARS.toLocaleString()} — over limit`
+                    : userText.length >= WARN_CHARS
+                    ? `${userText.length.toLocaleString()} / ${MAX_CHARS.toLocaleString()} — approaching limit`
+                    : `${userText.length.toLocaleString()} / ${MAX_CHARS.toLocaleString()}`}
                 </Typography>
+                {userText.length > MAX_CHARS && (
+                  <Typography variant="caption" color="error.main">
+                    Please shorten your text to run analysis
+                  </Typography>
+                )}
               </Box>
             </CardContent>
           </Card>
 
           {/* ── GAD-7 section (journal only) ── */}
-          {isJournal && (
-            <Card elevation={0} sx={{ border: '1px solid', borderColor: gad7Answers ? '#7EC8A533' : 'divider', mb: 2.5,
-              bgcolor: gad7Answers ? 'rgba(126,200,165,0.04)' : 'transparent' }}>
-              <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>
-                      GAD-7 Questionnaire
-                      <Chip label="Required" size="small"
-                        sx={{ ml: 1.5, fontSize: 10, height: 18,
-                          bgcolor: gad7Answers ? 'rgba(126,200,165,0.15)' : 'rgba(239,68,68,0.08)',
-                          color: gad7Answers ? '#059669' : '#DC2626',
-                          border: gad7Answers ? '1px solid rgba(126,200,165,0.4)' : '1px solid rgba(239,68,68,0.25)',
-                        }} />
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {gad7Answers
-                        ? `Completed — ${gad7Answers.length} questions answered`
-                        : 'Complete the questionnaire to enable analysis'}
-                    </Typography>
+          {isJournal && (() => {
+            const gad7Score = gad7Answers ? gad7Answers.reduce((a, b) => a + b, 0) : null;
+            const gad7Info  = gad7Score !== null ? gad7DisplayInfo(gad7Score) : null;
+            return (
+              <Card elevation={0} sx={{
+                border: '1px solid',
+                borderColor: gad7Answers ? '#7EC8A533' : 'divider',
+                mb: 2.5,
+                bgcolor: gad7Answers ? 'rgba(126,200,165,0.04)' : 'transparent',
+              }}>
+                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                  {/* Header row */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+                    <Box>
+                      <Typography variant="body1" fontWeight={600}>
+                        GAD-7 Questionnaire
+                        <Chip label="Required" size="small"
+                          sx={{ ml: 1.5, fontSize: 10, height: 18,
+                            bgcolor: gad7Answers ? 'rgba(126,200,165,0.15)' : 'rgba(239,68,68,0.08)',
+                            color: gad7Answers ? '#059669' : '#DC2626',
+                            border: gad7Answers ? '1px solid rgba(126,200,165,0.4)' : '1px solid rgba(239,68,68,0.25)',
+                          }} />
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {gad7Answers
+                          ? `Completed — ${gad7Answers.length} questions answered`
+                          : 'Complete the questionnaire to enable analysis'}
+                      </Typography>
+                    </Box>
+                    <Box display="flex" gap={1}>
+                      <Button
+                        size="small"
+                        variant={gad7Answers ? 'text' : 'outlined'}
+                        onClick={() => setView('gad7')}
+                        startIcon={gad7Answers ? <CheckCircleOutlineIcon sx={{ color: '#7EC8A5' }} /> : undefined}
+                        sx={{ fontSize: 12, py: 0.5, color: gad7Answers ? '#7EC8A5' : 'primary.main' }}
+                      >
+                        {gad7Answers ? 'Redo questionnaire' : 'Start questionnaire'}
+                      </Button>
+                    </Box>
                   </Box>
-                  <Box display="flex" gap={1}>
-                    <Button
-                      size="small"
-                      variant={gad7Answers ? 'text' : 'outlined'}
-                      onClick={() => setView('gad7')}
-                      startIcon={gad7Answers ? <CheckCircleOutlineIcon sx={{ color: '#7EC8A5' }} /> : undefined}
-                      sx={{ fontSize: 12, py: 0.5, color: gad7Answers ? '#7EC8A5' : 'primary.main' }}
-                    >
-                      {gad7Answers ? 'Redo questionnaire' : 'Start questionnaire'}
-                    </Button>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
+
+                  {/* Score summary — shown after completion */}
+                  {gad7Score !== null && gad7Info && (
+                    <Box mt={2} pt={2} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+                      {/* Total score */}
+                      <Box display="flex" alignItems="baseline" gap={1.5} flexWrap="wrap" mb={0.5}>
+                        <Typography variant="h4" sx={{ color: gad7Info.color, fontWeight: 700 }}>
+                          {gad7Score} / 21
+                        </Typography>
+                        {/* Published GAD-7 interpretation */}
+                        <Typography variant="body1" fontWeight={700} sx={{ color: gad7Info.color }}>
+                          {gad7Info.anxietyLabel}
+                        </Typography>
+                      </Box>
+                      {/* App concern pattern label */}
+                      <Typography variant="body2" fontWeight={600}
+                        sx={{ color: gad7Info.color, opacity: 0.8, mb: 0.75 }}>
+                        {gad7Info.concernPattern}
+                      </Typography>
+                      {/* Interpretive note */}
+                      <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.6} mb={0.75}>
+                        {gad7Info.note}
+                      </Typography>
+                      {/* Disclaimer */}
+                      <Typography variant="caption"
+                        sx={{ color: 'text.disabled', fontSize: 10, display: 'block', lineHeight: 1.5 }}>
+                        This score is from the GAD-7 screening questionnaire (Spitzer et al., 2006) and
+                        indicates a possible level of anxiety. It is not a clinical diagnosis — only a
+                        qualified healthcare professional can make a clinical assessment.
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* ── Options ── */}
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3.5 }}>
@@ -379,12 +479,16 @@ export default function AssessmentPage() {
               variant="contained" size="large"
               endIcon={<ArrowForwardIcon />}
               onClick={handleSubmit}
-              disabled={userText.trim().length < 20 || (isJournal && !gad7Answers)}
+              disabled={
+                userText.trim().length < MIN_CHARS ||
+                userText.length > MAX_CHARS ||
+                (isJournal && !gad7Answers)
+              }
               sx={{ px: 4, py: 1.4, minWidth: 200 }}
             >
               Run Analysis
             </Button>
-            {isJournal && !gad7Answers && userText.trim().length >= 20 && (
+            {isJournal && !gad7Answers && userText.trim().length >= MIN_CHARS && userText.length <= MAX_CHARS && (
               <Typography variant="caption" color="text.secondary">
                 Complete the GAD-7 questionnaire above to run analysis
               </Typography>

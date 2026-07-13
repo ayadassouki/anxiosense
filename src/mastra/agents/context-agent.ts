@@ -79,5 +79,5 @@ Step 5 — Return:
 
 Return only compact valid JSON. The JSON must be complete — it must have a closing } bracket.
 Do not truncate or leave the JSON open. Always close every bracket and brace.`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
+    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
 });

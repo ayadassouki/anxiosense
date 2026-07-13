@@ -4,7 +4,7 @@ import { retrievalStep } from '../agents/retrieval-agent';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { ValidationAgentOutputSchema } from '../../kb/types';
-import { writeSession, readSession, clearSession } from '../utils/workflow-session-store';
+import { writeSession, readSession, clearSession, type SessionData } from '../utils/workflow-session-store';
 import { exportWorkflowRun } from '../utils/export-workflow-run';
 import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-scorer';
 
@@ -42,6 +42,8 @@ const inputSchema = z.object({
 
 const agentOutputSchema = z.object({
     result: z.string(),
+    /** Wall-clock duration of agent.generate() in milliseconds. */
+    durationMs: z.number(),
 });
 
 const combinedAnalysisSchema = z.object({
@@ -51,6 +53,13 @@ const combinedAnalysisSchema = z.object({
     symptomAnalysis: z.string(),
     contextAnalysis: z.string(),
     referralAnalysis: z.string(),
+    /** Per-agent generate() durations for session timing instrumentation. */
+    agentTimingsMs: z.object({
+        emotion: z.number(),
+        symptom: z.number(),
+        context: z.number(),
+        referral: z.number(),
+    }),
 });
 
 const validatedAnalysisSchema = combinedAnalysisSchema.extend({
@@ -87,8 +96,9 @@ const emotionStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('emotionAgent');
         if (!agent) throw new Error('Emotion agent not found');
+        const t0 = Date.now();
         const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text };
+        return { result: response.text, durationMs: Date.now() - t0 };
     },
 });
 
@@ -99,8 +109,9 @@ const symptomStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('symptomAgent');
         if (!agent) throw new Error('Symptom agent not found');
+        const t0 = Date.now();
         const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text };
+        return { result: response.text, durationMs: Date.now() - t0 };
     },
 });
 
@@ -111,8 +122,9 @@ const contextStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('contextAgent');
         if (!agent) throw new Error('Context agent not found');
+        const t0 = Date.now();
         const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text };
+        return { result: response.text, durationMs: Date.now() - t0 };
     },
 });
 
@@ -132,10 +144,11 @@ const referralStep = createStep({
                   'safety signals in the text itself.\n\n'
                 : '';
 
+        const t0 = Date.now();
         const response = await agent.generate(
             socialMediaNote + modePrefix(inputData.mode) + inputData.userText
         );
-        return { result: response.text };
+        return { result: response.text, durationMs: Date.now() - t0 };
     },
 });
 
@@ -200,6 +213,10 @@ Based on what you shared, there may be an immediate safety concern that requires
 *This report has not been generated. When an immediate safety concern is present, your wellbeing takes priority over a screening summary. Please seek support now.*
 
 *This tool is intended for screening support only and is not a clinical service.*`;
+
+            // Clear session data — urgent path short-circuits before the export block.
+            // Timing data is unavailable on this path; just clean up memory.
+            try { clearSession(inputData.sessionId); } catch { /* non-fatal */ }
 
         } else {
             const agent = mastra?.getAgent('reportAgent');
@@ -522,6 +539,53 @@ ${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
             }
         }
 
+        // ── Pipeline Performance timing ────────────────────────────────────────
+        // Timing is written to session store and logged to console ONLY.
+        // It is NOT appended to finalReport (kept out of user-facing content).
+        // It IS passed to the evaluation export for research analysis.
+        let assembledTimings: SessionData['timings'] | undefined;
+        try {
+            const timingSession = readSession(inputData.sessionId);
+            const agentMs       = timingSession?.agentTimingsMs;
+            const retrievalMs   = timingSession?.retrievalElapsedMs  ?? 0;
+            const validationMs  = timingSession?.validationElapsedMs ?? 0;
+            const reportMs      = timingSession?.reportStartMs != null
+                ? Date.now() - timingSession.reportStartMs
+                : 0;
+
+            if (agentMs) {
+                const parallelMs = Math.max(agentMs.emotion, agentMs.symptom, agentMs.context, agentMs.referral);
+                const totalMs    = parallelMs + retrievalMs + validationMs + reportMs;
+                const fmt = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms} ms`;
+
+                assembledTimings = {
+                    parallelMs,
+                    emotionMs:   agentMs.emotion,
+                    symptomMs:   agentMs.symptom,
+                    contextMs:   agentMs.context,
+                    referralMs:  agentMs.referral,
+                    retrievalMs,
+                    validationMs,
+                    reportMs,
+                    totalMs,
+                };
+
+                writeSession(inputData.sessionId, { timings: assembledTimings });
+
+                // Console-only timing summary (not written to user report)
+                console.log(
+                    `[AnxioSense] Timing — ` +
+                    `parallel: ${fmt(parallelMs)} ` +
+                    `(emotion: ${fmt(agentMs.emotion)}, symptom: ${fmt(agentMs.symptom)}, ` +
+                    `context: ${fmt(agentMs.context)}, referral: ${fmt(agentMs.referral)}), ` +
+                    `retrieval: ${fmt(retrievalMs)}, validation: ${fmt(validationMs)}, ` +
+                    `report: ${fmt(reportMs)}, total: ${fmt(totalMs)}`
+                );
+            }
+        } catch (timingErr) {
+            console.warn('[AnxioSense] Timing block failed (non-fatal):', timingErr);
+        }
+
         // ── Evaluation export ─────────────────────────────────────────────────
         try {
             const exportSession = readSession(inputData.sessionId);
@@ -538,6 +602,7 @@ ${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
                 retrievalOutput:   exportSession?.retrievalOutput   ?? {},
                 validationOutput:  inputData,
                 finalReport,
+                timings:           assembledTimings,
             });
             clearSession(inputData.sessionId);
             console.log(`[AnxioSense] Evaluation run saved → ${filePath}`);
@@ -568,6 +633,12 @@ export const anxiosenseWorkflow = createWorkflow({
             symptomAnalysis:  inputData['symptom-extraction-step'].result,
             contextAnalysis:  inputData['context-reasoning-step'].result,
             referralAnalysis: inputData['referral-safety-step'].result,
+            agentTimingsMs: {
+                emotion:  inputData['emotion-analysis-step'].durationMs,
+                symptom:  inputData['symptom-extraction-step'].durationMs,
+                context:  inputData['context-reasoning-step'].durationMs,
+                referral: inputData['referral-safety-step'].durationMs,
+            },
         };
     })
     .then(buildClaimsStep)
@@ -663,6 +734,9 @@ export const anxiosenseWorkflow = createWorkflow({
             gad7ItemScores,
             gad7ConcernPattern,
             discordanceNote,
+            // Timing: parallel agent durations + start mark for retrieval
+            agentTimingsMs:    inputData.agentTimingsMs,
+            retrievalStartMs:  Date.now(),
         });
 
         return {
@@ -674,12 +748,33 @@ export const anxiosenseWorkflow = createWorkflow({
     })
     .then(retrievalStep)
 
-    // ── Pass-through: write retrieval output to session ───────────────────────
+    // ── Pass-through: write retrieval output + timing to session ─────────────
     .map(async ({ inputData }) => {
-        writeSession(inputData.sessionId, { retrievalOutput: inputData });
+        const session = readSession(inputData.sessionId);
+        const retrievalElapsedMs = session?.retrievalStartMs != null
+            ? Date.now() - session.retrievalStartMs
+            : 0;
+        writeSession(inputData.sessionId, {
+            retrievalOutput:    inputData,
+            retrievalElapsedMs,
+            validationStartMs:  Date.now(),
+        });
         return inputData;
     })
     .then(evidenceValidationStep)
+
+    // ── Map 4: record evidence validation elapsed time ────────────────────────
+    .map(async ({ inputData }) => {
+        const session = readSession(inputData.sessionId);
+        const validationElapsedMs = session?.validationStartMs != null
+            ? Date.now() - session.validationStartMs
+            : 0;
+        writeSession(inputData.sessionId, {
+            validationElapsedMs,
+            reportStartMs: Date.now(),
+        });
+        return inputData;
+    })
     .then(reportStep);
 
 anxiosenseWorkflow.commit();

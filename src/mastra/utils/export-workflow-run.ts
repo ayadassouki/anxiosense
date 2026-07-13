@@ -25,6 +25,27 @@ export interface WorkflowRunExportParams {
     retrievalOutput: unknown;
     validationOutput: unknown;
     finalReport: string;
+    /**
+     * Pipeline timing data.  Optional — absent when the timing block failed or on the
+     * urgent-safety path (which short-circuits before timing is assembled).
+     * Included here for research analysis; intentionally excluded from user-facing report.
+     */
+    timings?: {
+        parallelMs:  number;
+        emotionMs:   number;
+        symptomMs:   number;
+        contextMs:   number;
+        referralMs:  number;
+        retrievalMs: number;
+        validationMs: number;
+        reportMs:    number;
+        totalMs:     number;
+    };
+}
+
+/** Format a duration in milliseconds for human reading. */
+function fmtMs(ms: number): string {
+    return ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms} ms`;
 }
 
 /** Try to pretty-print a JSON string; fall back to the raw string on parse error. */
@@ -54,6 +75,7 @@ export function exportWorkflowRun(params: WorkflowRunExportParams): string {
         retrievalOutput,
         validationOutput,
         finalReport,
+        timings,
     } = params;
 
     // Build a filename-safe timestamp: 2026-06-28T14-05-30
@@ -122,6 +144,25 @@ export function exportWorkflowRun(params: WorkflowRunExportParams): string {
         '```md',
         finalReport,
         '```',
+        ``,
+        ...(timings
+            ? [
+                `## Pipeline Performance (research metadata — not shown to users)`,
+                ``,
+                `| Stage | Duration |`,
+                `|---|---|`,
+                `| Parallel agents (4 agents, concurrent) | ${fmtMs(timings.parallelMs)} |`,
+                `|   ↳ Emotion analysis | ${fmtMs(timings.emotionMs)} |`,
+                `|   ↳ Symptom identification | ${fmtMs(timings.symptomMs)} |`,
+                `|   ↳ Context assessment | ${fmtMs(timings.contextMs)} |`,
+                `|   ↳ Referral & safety | ${fmtMs(timings.referralMs)} |`,
+                `| Knowledge base retrieval | ${fmtMs(timings.retrievalMs)} |`,
+                `| Evidence validation | ${fmtMs(timings.validationMs)} |`,
+                `| Report generation | ${fmtMs(timings.reportMs)} |`,
+                `| **Total** | **${fmtMs(timings.totalMs)}** |`,
+                ``,
+            ]
+            : [`## Pipeline Performance`, `_Timing data not available for this run._`, ``]),
     ].join('\n');
 
     fs.writeFileSync(filePath, md, 'utf-8');

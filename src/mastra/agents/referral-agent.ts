@@ -127,5 +127,5 @@ Any other value (e.g. "elevated", "high", "medium", "severe") is INVALID and wil
 
 Return only valid JSON:
 {"risk_level":"low | moderate | urgent","reasoning":"","recommended_support":"","safety_note":""}`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
+    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
 });

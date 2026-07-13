@@ -8,6 +8,13 @@ const combinedAnalysisSchema = z.object({
   symptomAnalysis: z.string(),
   contextAnalysis: z.string(),
   referralAnalysis: z.string(),
+  /** Per-agent generate() durations collected in Map 1; passed through for session write in Map 2. */
+  agentTimingsMs: z.object({
+    emotion: z.number(),
+    symptom: z.number(),
+    context: z.number(),
+    referral: z.number(),
+  }),
 });
 
 export const claimsBuildOutputSchema = combinedAnalysisSchema.extend({

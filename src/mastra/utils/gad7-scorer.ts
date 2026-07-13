@@ -30,11 +30,10 @@ export const GAD7_RESPONSE_OPTIONS = [
 export type Gad7Severity = 'minimal' | 'mild' | 'moderate' | 'severe';
 
 /**
- * Non-diagnostic concern pattern labels used in the final report.
- * Per Dr. Abel's guidance: raw scores and clinical severity labels are
- * NOT shown to users. Instead, the system presents a concern pattern
- * description that is supportive, non-diagnostic, and explainability-focused.
- * Source: AnxioSense supervisor feedback, June 2026.
+ * Non-diagnostic concern pattern labels used in the report's concern-level framing
+ * (referral card, PDF header, concern pattern box).
+ * These coexist with the clinical score and severity shown in the Assessment Overview.
+ * Source: AnxioSense supervisor feedback, updated July 2026.
  */
 export type Gad7ConcernPattern =
     | 'Minimal Concern Pattern'
@@ -43,13 +42,13 @@ export type Gad7ConcernPattern =
     | 'High Concern Pattern';
 
 export interface Gad7Result {
-    /** Raw sum of all 7 item scores (0–21). Internal use only — not shown to users. */
+    /** Raw sum of all 7 item scores (0–21). Shown to users in the Assessment Overview. */
     score: number;
-    /** Severity band per Spitzer et al. (2006). Internal use only. */
+    /** Clinical severity band per Spitzer et al. (2006). Shown to users in the Assessment Overview. */
     severity: Gad7Severity;
     /**
-     * Non-diagnostic concern pattern label for user-facing output.
-     * Replaces raw score and severity label in the final report.
+     * Non-diagnostic concern pattern label used throughout the report's
+     * concern-level framing (e.g. referral card, PDF header).
      */
     concernPattern: Gad7ConcernPattern;
     /** Supportive, non-diagnostic description for inclusion in the report. */
@@ -116,18 +115,18 @@ export function computeGad7Score(answers: number[]): Gad7Result {
 }
 
 /**
- * Formats a Gad7Result as a concise plain-text block for inclusion in
- * the report agent prompt.  Keeps clinical language cautious.
- */
-/**
- * Formats a Gad7Result for inclusion in the final report.
+ * Formats a Gad7Result for inclusion in the user-facing final report.
  *
- * Per Dr. Abel's guidance:
- * - Raw numeric scores (x/21) are NOT shown to users.
- * - Clinical severity labels ("moderate", "severe") are NOT shown to users.
- * - Instead, the concern pattern label and supportive interpretation are shown.
- * - The item breakdown is retained for internal transparency / evaluation export
- *   but framed as "how often you experienced each item" rather than a score.
+ * Updated per Professor Abel's guidance (July 2026):
+ * - The total score (x / 21) IS shown to users.
+ * - The clinical severity category (Minimal / Mild / Moderate / Severe) IS shown.
+ * - The clinical interpretation paragraph IS shown.
+ * - The non-diagnostic concern pattern label is also shown for consistency with
+ *   the rest of the report's concern-level framing.
+ * - The item breakdown is retained so users can see which items drove the score.
+ *
+ * Note: the clinician section independently shows the same data in a more
+ * structured format alongside differential considerations and validated claims.
  */
 export function formatGad7ForReport(result: Gad7Result): string {
     const responseLabel = (score: number): string => {
@@ -141,20 +140,29 @@ export function formatGad7ForReport(result: Gad7Result): string {
         (q, i) => `  ${i + 1}. ${q}\n     → ${responseLabel(result.itemScores[i])}`
     ).join('\n');
 
-    // Preamble and disclaimer use exact supervisor-approved wording (July 2026).
+    const severityDisplay: Record<Gad7Severity, string> = {
+        minimal:  'Minimal',
+        mild:     'Mild',
+        moderate: 'Moderate',
+        severe:   'Severe',
+    };
+
     return [
         `GAD-7 Self-Report Screening`,
         ``,
-        `Based on the information provided, the system identifies a pattern of ` +
-        `anxiety-related experiences and interpreted as;`,
+        `**Score:** ${result.score} / 21`,
+        `**Clinical Severity:** ${severityDisplay[result.severity]}`,
         ``,
-        `**${result.concernPattern}**`,
-        ``,
+        `**Clinical Interpretation:**`,
         result.interpretation,
+        ``,
+        `**Concern Pattern:** ${result.concernPattern}`,
         ``,
         `Your responses over the past two weeks:`,
         itemLines,
         ``,
-        `This result is intended for screening purposes only and should not be considered a diagnosis.`,
+        `This score is derived from the GAD-7 screening questionnaire (Spitzer et al., 2006). ` +
+        `It indicates a possible level of anxiety and is intended for screening purposes only. ` +
+        `It is not a clinical diagnosis — only a qualified healthcare professional can make a clinical assessment.`,
     ].join('\n');
 }

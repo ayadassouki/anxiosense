@@ -10,7 +10,13 @@ dist
 
 *.duckdb
 *.duckdb.*
-
+*.wal
 .netlify
 .vercel
 .DS_Store
+.hf_cache/
+
+# Mastra auto-generated public evaluation run outputs.
+# These are served as static files by the Hono server when present here —
+# move completed research runs to evaluation/prompt-experiments/runs/ instead.
+src/mastra/public/evaluation/

@@ -99,5 +99,5 @@ Step 6 — Return:
 Return only valid compact JSON. No other text.
 
 {"emotions":[],"emotional_intensity":"low | moderate | high","evidence_from_text":[]}`,
-    model: localOllama('mistral:latest', { temperature: 0.1 }),
+    model: localOllama.chat('mistral:latest', { options: { temperature: 0.1 } }),
 });

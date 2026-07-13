@@ -36,6 +36,34 @@ export interface SessionData {
      * low_gad7_high_text: GAD-7 ≤4 but text has ≥4 real claims
      */
     discordanceNote: 'high_gad7_low_text' | 'low_gad7_high_text' | null;
+
+    // ── Timing scratch fields (internal — written by workflow map steps) ─────
+    /** Wall-clock ms for each parallel agent's generate() call. */
+    agentTimingsMs?: { emotion: number; symptom: number; context: number; referral: number };
+    /** Timestamp (Date.now()) recorded just before the retrieval step starts. */
+    retrievalStartMs?: number;
+    /** Elapsed retrieval time in ms — written by Map 3 after retrieval completes. */
+    retrievalElapsedMs?: number;
+    /** Timestamp (Date.now()) recorded just before the evidence validation step starts. */
+    validationStartMs?: number;
+    /** Elapsed validation time in ms — written by Map 4 after validation completes. */
+    validationElapsedMs?: number;
+    /** Timestamp (Date.now()) recorded just before the report generation step starts. */
+    reportStartMs?: number;
+
+    // ── Final assembled timing summary (written by report step) ──────────────
+    timings?: {
+        /** Wall-clock time for the parallel agent phase (= max of the four agents, since they run concurrently). */
+        parallelMs: number;
+        emotionMs:  number;
+        symptomMs:  number;
+        contextMs:  number;
+        referralMs: number;
+        retrievalMs:   number;
+        validationMs:  number;
+        reportMs:      number;
+        totalMs:       number;
+    };
 }
 
 const store = new Map<string, Partial<SessionData>>();

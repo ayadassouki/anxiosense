@@ -120,7 +120,7 @@ export default function DashboardPage() {
               {[
                 { label: 'Total reports',  value: reports.length,
                   color: '#4F7CAC', bg: 'rgba(79,124,172,0.08)' },
-                { label: 'Journal mode',   value: reports.filter(r => r.mode === 'journal').length,
+                { label: 'Self-Assessment', value: reports.filter(r => r.mode === 'journal').length,
                   color: '#7EC8A5', bg: 'rgba(126,200,165,0.08)' },
                 { label: 'Social media',   value: reports.filter(r => r.mode === 'social-media').length,
                   color: '#A78BFA', bg: 'rgba(167,139,250,0.08)' },
@@ -194,8 +194,8 @@ export default function DashboardPage() {
             <Grid item xs={12} sm={6}>
               <ModeCard
                 icon={<BookOutlinedIcon />}
-                title="Journal Entry"
-                description="Write about how you've been feeling. Optionally complete the GAD-7 questionnaire."
+                title="Self-Assessment"
+                description="Write about how you've been feeling. Includes the GAD-7 questionnaire for structured context."
                 onClick={() => startAssessment('journal')}
               />
             </Grid>

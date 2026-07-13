@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts"
+    "start": "tsx src/index.ts",
+    "test": "npx tsx src/utils/__tests__/validateText.test.ts && npx tsx src/utils/__tests__/preAssess.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
