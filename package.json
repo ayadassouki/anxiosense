@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx tsx src/mastra/utils/__tests__/recommendation-logic.test.ts",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",
-    "index-kb": "tsx src/scripts/index-knowledge-base.ts",
+    "index-kb": "node --env-file=.env --import=tsx/esm src/scripts/index-knowledge-base.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -29,6 +29,7 @@
     "@mastra/memory": "^1.20.3",
     "@mastra/observability": "^1.14.1",
     "ai": "latest",
+    "esbuild": "^0.28.1",
     "ollama-ai-provider-v2": "^3.6.0",
     "zod": "^4.4.3"
   },

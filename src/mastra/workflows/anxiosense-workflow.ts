@@ -7,6 +7,12 @@ import { ValidationAgentOutputSchema } from '../../kb/types';
 import { writeSession, readSession, clearSession, type SessionData } from '../utils/workflow-session-store';
 import { exportWorkflowRun } from '../utils/export-workflow-run';
 import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-scorer';
+import {
+    getPatientRecommendation,
+    getStandardClinicalRecommendation,
+    getFunctionalImpairmentLabel,
+    type FunctionalImpairment,
+} from '../utils/recommendation-logic';
 
 // ── Input schema ─────────────────────────────────────────────────────────────
 
@@ -36,6 +42,22 @@ const inputSchema = z.object({
      * Hidden from standard user-facing output.
      */
     clinicianMode: z.boolean().optional().default(false),
+
+    /**
+     * Functional impairment response — the GAD-7 standard follow-up question:
+     * "How difficult have these problems made it for you to do your work, take
+     * care of things at home, or get along with other people?"
+     *
+     * Only used in journal mode (alongside GAD-7 answers).
+     * Does NOT change the GAD-7 score — only personalises the recommendation.
+     * Source: Spitzer et al. (2006); AnxioSense supervisory guidance (July 2026).
+     */
+    functionalImpairment: z.enum([
+        'not_difficult_at_all',
+        'somewhat_difficult',
+        'very_difficult',
+        'extremely_difficult',
+    ]).optional(),
 });
 
 // ── Shared step schemas ───────────────────────────────────────────────────────
@@ -190,11 +212,12 @@ Based on what you shared, there may be an immediate safety concern that requires
 
             // Read session data — includes mode, clinicianMode, gad7 fields, retrieval output
             const session = readSession(inputData.sessionId);
-            const mode              = session?.mode              ?? 'journal';
-            const clinicianMode     = session?.clinicianMode     ?? false;
-            const gad7Block         = session?.gad7Block         ?? null;
-            const gad7ConcernPattern = session?.gad7ConcernPattern ?? null;
-            const discordanceNote   = session?.discordanceNote   ?? null;
+            const mode                 = session?.mode                 ?? 'journal';
+            const clinicianMode        = session?.clinicianMode        ?? false;
+            const gad7Block            = session?.gad7Block            ?? null;
+            const gad7ConcernPattern   = session?.gad7ConcernPattern   ?? null;
+            const discordanceNote      = session?.discordanceNote      ?? null;
+            const functionalImpairment = session?.functionalImpairment ?? null;
 
             // ── Mode label ────────────────────────────────────────────────────
             const modeLabel =
@@ -277,14 +300,36 @@ Based on what you shared, there may be an immediate safety concern that requires
                 }
             }
 
-            // ── Recommendation instruction (concern-pattern-specific) ──────────
+            // ── Recommendation instruction (from PDF lookup table) ────────────
+            // When GAD-7 + functional impairment are both available, use the
+            // exact patient-facing text from the specification lookup table.
+            // Otherwise fall back to concern-pattern-based instructions.
             const concernPatternForReport = gad7ConcernPattern
                 ?? (inputData.riskLevel === 'urgent'   ? 'High Concern Pattern'
                   : inputData.riskLevel === 'moderate' ? 'Elevated Concern Pattern'
                   :                                      'Minimal Concern Pattern');
 
+            const gad7Severity = session?.gad7Severity ?? null;
+
             let recommendationInstruction: string;
-            if (concernPatternForReport === 'Minimal Concern Pattern') {
+
+            if (
+                mode === 'journal' &&
+                gad7Severity &&
+                functionalImpairment &&
+                ['minimal','mild','moderate','severe'].includes(gad7Severity) &&
+                ['not_difficult_at_all','somewhat_difficult','very_difficult','extremely_difficult'].includes(functionalImpairment)
+            ) {
+                // Deterministic lookup — exact text from PDF specification.
+                // Tell LLM to include this verbatim without any modification.
+                const exactText = getPatientRecommendation(
+                    gad7Severity as 'minimal' | 'mild' | 'moderate' | 'severe',
+                    functionalImpairment as FunctionalImpairment
+                );
+                recommendationInstruction =
+                    `Include the following patient-facing recommendation VERBATIM — do not paraphrase, ` +
+                    `shorten, expand, or rewrite it in any way:\n\n"${exactText}"`;
+            } else if (concernPatternForReport === 'Minimal Concern Pattern') {
                 recommendationInstruction =
                     'State that no immediate follow-up is indicated. Note that occasional mild experiences are a normal part of life. ' +
                     'Suggest monitoring how these experiences change over time and considering speaking with a healthcare professional ' +
@@ -384,6 +429,17 @@ CRITICAL RULES — any violation makes the report unusable:
                 overviewParts.push('**Analysis Type:** Journal / Self-Report');
                 if (gad7Block) {
                     overviewParts.push('\n' + gad7Block);
+                    // Append functional impairment if provided
+                    if (functionalImpairment) {
+                        const impairmentLabel = getFunctionalImpairmentLabel(
+                            functionalImpairment as FunctionalImpairment
+                        );
+                        overviewParts.push(
+                            `\n**Functional Impairment:** ${impairmentLabel}\n\n` +
+                            `*"If you checked off any problems, how difficult have these problems made it for you ` +
+                            `to do your work, take care of things at home, or get along with other people?"*`
+                        );
+                    }
                 } else {
                     overviewParts.push(
                         '\nNo structured questionnaire was completed for this assessment. ' +
@@ -637,8 +693,9 @@ export const anxiosenseWorkflow = createWorkflow({
 
         // ── GAD-7 (journal mode only) ─────────────────────────────────────────
         const originalInput = getInitData() as z.infer<typeof inputSchema>;
-        const mode          = originalInput.mode          ?? 'journal';
-        const clinicianMode = originalInput.clinicianMode ?? false;
+        const mode                = originalInput.mode                ?? 'journal';
+        const clinicianMode       = originalInput.clinicianMode       ?? false;
+        const functionalImpairment = originalInput.functionalImpairment ?? null;
 
         let gad7Block:      string | null   = null;
         let gad7Score:      number | null   = null;
@@ -694,6 +751,7 @@ export const anxiosenseWorkflow = createWorkflow({
         writeSession(inputData.sessionId, {
             mode,
             clinicianMode,
+            functionalImpairment,
             userText:          inputData.userText,
             emotionAnalysis:   inputData.emotionAnalysis,
             symptomAnalysis:   inputData.symptomAnalysis,

@@ -57,11 +57,16 @@ export async function deleteReport(id: string): Promise<void> {
 // ── Workflow API ──────────────────────────────────────────────────────────────
 
 export interface RunWorkflowParams {
-  mode:           'journal' | 'social-media';
-  userText:       string;
-  gad7Answers?:   number[];
-  clinicianMode?: boolean;
-  saveSession?:   boolean;
+  mode:                  'journal' | 'social-media';
+  userText:              string;
+  gad7Answers?:          number[];
+  /**
+   * Functional impairment response — does not change the GAD-7 score,
+   * only personalises the patient-facing recommendation.
+   */
+  functionalImpairment?: 'not_difficult_at_all' | 'somewhat_difficult' | 'very_difficult' | 'extremely_difficult';
+  clinicianMode?:        boolean;
+  saveSession?:          boolean;
 }
 
 export interface WorkflowResult {

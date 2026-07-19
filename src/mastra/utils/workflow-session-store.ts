@@ -31,6 +31,12 @@ export interface SessionData {
     /** User-facing concern pattern label derived from GAD-7 score (null if no GAD-7). */
     gad7ConcernPattern: string | null;
     /**
+     * Functional impairment response from the GAD-7 follow-up question.
+     * Only present in journal mode when the user answered the question.
+     * Does NOT affect the GAD-7 score — used only for recommendation lookup.
+     */
+    functionalImpairment: string | null;
+    /**
      * Flags cases where GAD-7 and text-based claims disagree markedly.
      * high_gad7_low_text: GAD-7 ≥15 but text claims ≤1 (minimal text signal)
      * low_gad7_high_text: GAD-7 ≤4 but text has ≥4 real claims

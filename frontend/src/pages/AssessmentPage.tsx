@@ -16,6 +16,7 @@ import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import Layout from '../components/Layout';
 import Gad7Form from '../components/Gad7Form';
+import FunctionalImpairmentForm, { type FunctionalImpairment } from '../components/FunctionalImpairmentForm';
 import { runWorkflow } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { validateText, VALIDATION_MIN_CHARS, VALIDATION_MAX_CHARS } from '../utils/validateText';
@@ -50,7 +51,7 @@ const AGENT_STEPS = [
 // Approximate time (ms) each agent step takes — for animation pacing
 const STEP_DURATIONS = [8000, 7000, 6000, 9000, 14000];
 
-type PageView = 'input' | 'gad7' | 'analyzing' | 'done';
+type PageView = 'input' | 'gad7' | 'functional-impairment' | 'analyzing' | 'done';
 
 // ── GAD-7 display helper ───────────────────────────────────────────────────────
 // anxietyLabel  — published GAD-7 interpretation (Spitzer et al., 2006).
@@ -98,10 +99,11 @@ export default function AssessmentPage() {
   const isJournal = mode === 'journal';
 
   // ── Form state ────────────────────────────────────────────────────────────
-  const [userText,      setUserText]      = useState('');
-  const [gad7Answers,   setGad7Answers]   = useState<number[] | null>(null);
-  const [clinicianMode, setClinicianMode] = useState(false);
-  const [saveSession,   setSaveSession]   = useState(!user?.isGuest);
+  const [userText,             setUserText]             = useState('');
+  const [gad7Answers,          setGad7Answers]          = useState<number[] | null>(null);
+  const [functionalImpairment, setFunctionalImpairment] = useState<FunctionalImpairment | null>(null);
+  const [clinicianMode,        setClinicianMode]        = useState(false);
+  const [saveSession,          setSaveSession]          = useState(!user?.isGuest);
 
   // ── View ──────────────────────────────────────────────────────────────────
   const [view, setView] = useState<PageView>('input');
@@ -133,10 +135,11 @@ export default function AssessmentPage() {
     try {
       const result = await runWorkflow({
         mode,
-        userText: userText.trim(),
-        gad7Answers:   gad7Answers ?? undefined,
-        clinicianMode: clinicianMode || undefined,
-        saveSession:   saveSession || undefined,
+        userText:            userText.trim(),
+        gad7Answers:         gad7Answers          ?? undefined,
+        functionalImpairment: functionalImpairment ?? undefined,
+        clinicianMode:       clinicianMode         || undefined,
+        saveSession:         saveSession            || undefined,
       });
       setView('done');
       setTimeout(() => navigate(`/report/${result.reportId}`, { state: { report: result } }), 700);
@@ -146,15 +149,27 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── GAD-7 completed ───────────────────────────────────────────────────────
+  // ── GAD-7 completed → move to functional impairment question ─────────────
   function onGad7Complete(answers: number[]) {
     setGad7Answers(answers);
-    setView('input');
+    setView('functional-impairment');
   }
 
   function onGad7Skip() {
     setGad7Answers(null);
+    setFunctionalImpairment(null);
     setView('input');
+  }
+
+  // ── Functional impairment completed ──────────────────────────────────────
+  function onImpairmentComplete(value: FunctionalImpairment) {
+    setFunctionalImpairment(value);
+    setView('input');
+  }
+
+  function onImpairmentBack() {
+    // Go back to redo the GAD-7
+    setView('gad7');
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
@@ -187,6 +202,32 @@ export default function AssessmentPage() {
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
               <Gad7Form onComplete={onGad7Complete} onSkip={onGad7Skip} required />
+            </CardContent>
+          </Card>
+        </Box>
+      </Layout>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Functional impairment screen
+  // ─────────────────────────────────────────────────────────────────────────
+  if (view === 'functional-impairment') {
+    return (
+      <Layout>
+        <Box maxWidth={600} mx="auto">
+          <Box mb={3}>
+            <Typography variant="h3" gutterBottom>One More Question</Typography>
+            <Typography variant="body2" color="text.secondary">
+              This is the final question from the GAD-7 screening questionnaire.
+            </Typography>
+          </Box>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+              <FunctionalImpairmentForm
+                onComplete={onImpairmentComplete}
+                onBack={onImpairmentBack}
+              />
             </CardContent>
           </Card>
         </Box>
@@ -358,8 +399,10 @@ export default function AssessmentPage() {
                           }} />
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {gad7Answers
-                          ? `Completed — ${gad7Answers.length} questions answered`
+                        {gad7Answers && functionalImpairment
+                          ? `Completed — ${gad7Answers.length} questions + functional impairment answered`
+                          : gad7Answers
+                          ? 'GAD-7 done — answer the functional impairment question to continue'
                           : 'Complete the questionnaire to enable analysis'}
                       </Typography>
                     </Box>
@@ -482,7 +525,8 @@ export default function AssessmentPage() {
               disabled={
                 userText.trim().length < MIN_CHARS ||
                 userText.length > MAX_CHARS ||
-                (isJournal && !gad7Answers)
+                (isJournal && !gad7Answers) ||
+                (isJournal && gad7Answers !== null && !functionalImpairment)
               }
               sx={{ px: 4, py: 1.4, minWidth: 200 }}
             >
@@ -491,6 +535,11 @@ export default function AssessmentPage() {
             {isJournal && !gad7Answers && userText.trim().length >= MIN_CHARS && userText.length <= MAX_CHARS && (
               <Typography variant="caption" color="text.secondary">
                 Complete the GAD-7 questionnaire above to run analysis
+              </Typography>
+            )}
+            {isJournal && gad7Answers && !functionalImpairment && userText.trim().length >= MIN_CHARS && (
+              <Typography variant="caption" color="text.secondary">
+                Answer the functional impairment question to complete the questionnaire
               </Typography>
             )}
           </Box>

@@ -4,6 +4,7 @@ import db from '../db.js';
 import { validateText } from '../utils/validateText.js';
 import { preAssess } from '../utils/preAssess/pipeline.js';
 import { evaluateGrounding, calibrateConfidence } from '../utils/preAssess/grounding.js';
+import { checkSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
 
 const router   = Router();
 const MASTRA   = process.env.MASTRA_URL ?? 'http://localhost:4111';
@@ -107,17 +108,19 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   const requestStart = Date.now();
 
   const {
-    mode          = 'journal',
+    mode                = 'journal',
     userText,
     gad7Answers,
-    clinicianMode = false,
-    saveSession   = false,
+    functionalImpairment,
+    clinicianMode       = false,
+    saveSession         = false,
   } = req.body as {
-    mode?:          'journal' | 'social-media';
-    userText?:      string;
-    gad7Answers?:   number[];
-    clinicianMode?: boolean;
-    saveSession?:   boolean;
+    mode?:                  'journal' | 'social-media';
+    userText?:              string;
+    gad7Answers?:           number[];
+    functionalImpairment?:  string;
+    clinicianMode?:         boolean;
+    saveSession?:           boolean;
   };
 
   const validation = validateText(userText ?? '');
@@ -136,6 +139,55 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   }
   // Use preprocessed text for the Mastra workflow call
   const analysisText = preResult.processedText;
+
+  // ── Safety check — runs on raw text BEFORE calling Mastra ────────────────
+  // Checks for credible high-risk language (suicidal ideation/intent, self-harm,
+  // hopelessness, worthlessness, planning, severe distress).
+  // If detected, bypass the AI pipeline entirely and return the crisis response.
+  const safety = checkSafety(userText!);
+  if (safety.isCrisis) {
+    const crisisReport =
+      `# AnxioSense Screening Support Report\n\n` +
+      `## Important — Safety Alert\n\n` +
+      `${CRISIS_RESPONSE_TEXT}\n\n` +
+      `---\n\n` +
+      `*This screening tool is not a crisis service. If you are in immediate danger, ` +
+      `please call your local emergency number now.*\n\n` +
+      `*This report has not been generated. When a safety concern is identified, ` +
+      `your wellbeing takes priority. Please seek support now.*`;
+
+    const crisisReportId = uuid();
+    const crisicSummary  = CRISIS_RESPONSE_TEXT.slice(0, 200);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user?.userId as string | undefined;
+    if (saveSession && userId) {
+      try {
+        db.prepare(`
+          INSERT INTO reports
+            (id, user_id, mode, concern_pattern, referral_level, summary, full_report, clinician_mode)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          crisisReportId, userId, mode,
+          'Urgent Safety Notice', 'urgent',
+          crisicSummary, crisisReport,
+          clinicianMode ? 1 : 0
+        );
+      } catch (dbErr) {
+        console.error('[safety] DB save failed (non-fatal):', dbErr);
+      }
+    }
+
+    res.json({
+      reportId:      crisisReportId,
+      finalReport:   crisisReport,
+      concernPattern: 'Urgent Safety Notice',
+      referralLevel: 'urgent',
+      summary:       crisicSummary,
+      _meta: { safetyOverride: true, safetyCategory: safety.category },
+    });
+    return;
+  }
 
   // ── 1. Create run ─────────────────────────────────────────────────────
   const mastraStart = Date.now();
@@ -156,7 +208,7 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   try {
     startResult = await mastraPost(
       `workflows/${WF_ID}/start?runId=${runId}`,
-      { inputData: { mode, userText: analysisText, gad7Answers, clinicianMode } }
+      { inputData: { mode, userText: analysisText, gad7Answers, functionalImpairment, clinicianMode } }
     );
     console.log('[mastra] start result keys:', Object.keys(startResult as object ?? {}));
   } catch (err) {
@@ -205,7 +257,9 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   //   b) Journal + GAD-7     → compute from score (same thresholds as gad7-scorer.ts)
   //   c) Text-only / social  → proxy from riskLevel the pipeline produced
   //
-  const isUrgentReport = finalReport.includes('## Important — Urgent Safety Notice');
+  const isUrgentReport =
+    finalReport.includes('## Important — Urgent Safety Notice') ||
+    finalReport.includes('## Important — Safety Alert');
 
   let concernPattern: string;
   let referralLevel: 'low' | 'moderate' | 'urgent';
