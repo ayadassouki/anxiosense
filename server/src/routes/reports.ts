@@ -7,15 +7,16 @@ const router = Router();
 
 function toApi(row: ReportRow) {
   return {
-    id:             row.id,
-    userId:         row.user_id,
-    mode:           row.mode,
-    createdAt:      row.created_at,
-    concernPattern: row.concern_pattern,
-    referralLevel:  row.referral_level,
-    summary:        row.summary,
-    fullReport:     row.full_report,
-    clinicianMode:  Boolean(row.clinician_mode),
+    id:                   row.id,
+    userId:               row.user_id,
+    mode:                 row.mode,
+    createdAt:            row.created_at,
+    concernPattern:       row.concern_pattern,
+    referralLevel:        row.referral_level,
+    summary:              row.summary,
+    fullReport:           row.full_report,
+    clinicianMode:        Boolean(row.clinician_mode),
+    functionalImpairment: row.functional_impairment ?? null,
   };
 }
 

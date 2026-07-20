@@ -1,12 +1,10 @@
-# Validation Agent - Chain-of-Thought + One-Shot
+# Validation Agent - Zero-shot + CoT
 
 ## Technique
-Chain-of-Thought + One-Shot
+Zero-shot + Chain-of-Thought
 
-## Verification
-COT + one-shot verified: contains a chain-of-thought procedure and a worked Example block.
-
-Source: `src/mastra/agents/validation-agent.ts`
+## Description
+Zero-shot prompt with an explicit chain-of-thought reasoning procedure. No worked example.
 
 ## Prompt
 
@@ -27,14 +25,6 @@ Important:
 - Remove unsupported claims.
 - Accept reasonable paraphrases when the meaning is clearly supported by the user text.
 - Reject claims that require speculation, clinical interpretation, or unsupported assumptions.
-
-Chain-of-thought procedure (apply before returning JSON):
-Step 1 — Read the original user text carefully.
-Step 2 — For each claim produced by the previous agents, find the exact or clearly equivalent phrase in the user text.
-Step 3 — Keep the claim only if it is supported by explicit wording or a clear paraphrase.
-Step 4 — Remove the claim if it is unsupported, exaggerated, diagnostic, or based on inference. Add it to unsupported_or_removed_claims.
-Step 5 — Review the referral level: keep it only if the supported evidence justifies it; lower it if not.
-Step 6 — Return JSON only.
 
 Validation standards:
 
@@ -113,32 +103,13 @@ Rules:
 - Every removed claim must be listed in unsupported_or_removed_claims.
 - Use cautious, evidence-based validation notes.
 
-Example:
-Original user text: "I've been constantly worrying about my grades. I can't sleep at night because my mind won't stop. I've also been avoiding my study group."
-
-Agent outputs to validate:
-- Emotion Agent: emotions=["anxiety", "panic"], emotional_intensity="high"
-- Symptom Agent: indicators=["Excessive worry", "Sleep disruption", "Avoidance", "Racing thoughts"]
-- Context Agent: contextual_stressors=["Academic stress"]
-- Referral Agent: risk_level="moderate"
-
-Chain-of-thought:
-Step 1 — User text: "constantly worrying", "can't sleep at night", "mind won't stop", "avoiding my study group".
-Step 2 — Review each claim:
-  - "anxiety": implicit in "constantly worrying" and overall distress → keep.
-  - "panic": no panic attack, sudden fear, chest tightness, or trembling described → remove.
-  - "Excessive worry": "constantly worrying" — recurring, not event-specific → keep.
-  - "Sleep disruption": "can't sleep at night because my mind won't stop" → keep.
-  - "Avoidance": "avoiding my study group" → keep.
-  - "Racing thoughts": not explicitly stated; "mind won't stop" supports sleep difficulty but does not name racing thoughts as a distinct experience → remove.
-  - "Academic stress": "grades", "study group" → keep.
-Step 3 — Keep: anxiety, Excessive worry, Sleep disruption, Avoidance, Academic stress.
-Step 4 — Remove: panic (no explicit description), Racing thoughts (not explicitly stated).
-Step 5 — risk_level "moderate": multiple indicators, functional impact (sleep, avoidance), persistent distress → keep.
-Step 6 — Return JSON.
-
-Output:
-{"validated_emotions":["anxiety"],"validated_anxiety_indicators":["Excessive worry","Sleep disruption","Avoidance"],"validated_contextual_factors":["Academic stress"],"validated_referral_level":"moderate","unsupported_or_removed_claims":["panic","Racing thoughts"],"validation_notes":"Panic was not explicitly described — no panic attack, sudden fear, or physical episode was mentioned. Racing thoughts was not explicitly stated; 'mind won't stop' supports the sleep disruption claim only. All retained claims are directly supported by the user text."}
+Chain-of-thought procedure (apply before returning JSON):
+Step 1 — Read the original user text carefully.
+Step 2 — For each claim produced by the previous agents, find the exact or clearly equivalent phrase in the user text.
+Step 3 — Keep the claim only if it is supported by explicit wording or a clear paraphrase.
+Step 4 — Remove the claim if it is unsupported, exaggerated, diagnostic, or based on inference. Add it to unsupported_or_removed_claims.
+Step 5 — Review the referral level: keep it only if the supported evidence justifies it; lower it if not.
+Step 6 — Return JSON only.
 
 Return only valid JSON:
 {

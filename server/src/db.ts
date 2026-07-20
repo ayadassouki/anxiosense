@@ -28,12 +28,26 @@ db.exec(`
     concern_pattern TEXT    NOT NULL,
     referral_level  TEXT    NOT NULL CHECK(referral_level IN ('low','moderate','urgent')),
     summary         TEXT    NOT NULL,
-    full_report     TEXT    NOT NULL,
-    clinician_mode  INTEGER NOT NULL DEFAULT 0
+    full_report            TEXT    NOT NULL,
+    clinician_mode         INTEGER NOT NULL DEFAULT 0,
+    functional_impairment  TEXT
   );
 
   CREATE INDEX IF NOT EXISTS idx_reports_user ON reports(user_id);
   CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC);
 `);
+
+// Migration: add functional_impairment column to existing databases.
+// SQLite does not support IF NOT EXISTS on ALTER TABLE — catch the error if
+// the column already exists (SQLITE_ERROR: duplicate column name).
+try {
+  db.prepare('ALTER TABLE reports ADD COLUMN functional_impairment TEXT').run();
+} catch (err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (!msg.includes('duplicate column name')) {
+    throw err; // surface unexpected migration errors
+  }
+  // Column already present — nothing to do.
+}
 
 export default db;

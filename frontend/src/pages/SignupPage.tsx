@@ -72,7 +72,7 @@ export default function SignupPage() {
             </Box>
             <Typography variant="h2" gutterBottom>Create an account</Typography>
             <Typography color="text.secondary" variant="body2">
-              Free to use. Your data stays on your device.
+              Free to use. Research prototype — analysis is performed server-side.
             </Typography>
           </Box>
 
@@ -166,8 +166,10 @@ export default function SignupPage() {
             bgcolor: 'rgba(126,200,165,0.07)', border: '1px solid rgba(126,200,165,0.2)',
           }}>
             <Typography variant="caption" color="text.secondary" display="block" textAlign="center" lineHeight={1.7}>
-              🔒 Your journal entries and GAD-7 answers are never stored.
-              Only structured report summaries are saved, with your consent.
+              🔒 Responses are transmitted to the AnxioSense server and processed using third-party AI
+              infrastructure. If report saving is enabled, the generated report may be stored in your
+              account. AnxioSense is a research prototype and should not be treated as a confidential
+              clinical service.
             </Typography>
           </Box>
 

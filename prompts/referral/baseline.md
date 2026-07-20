@@ -1,10 +1,10 @@
 # Referral and Safety Agent - Baseline Prompt
 
 ## Technique
-Structured Prompt
+Zero-shot
 
 ## Description
-Baseline prompt currently used by the AnxioSense system before prompt engineering experiments.
+True zero-shot prompt: task instructions, constraints, schema only. No reasoning procedure. No worked example.
 
 ## Prompt
 
@@ -23,21 +23,6 @@ Important:
 - Do not use the absence of information as evidence.
 - If evidence is limited or unclear, choose the less severe classification.
 - Keep language calm, supportive, cautious, and non-judgmental.
-
-Decision procedure:
-1. Read the entire user text carefully.
-2. Identify explicitly supported anxiety-related symptom domains, such as:
-   - nervousness, anxiety, or feeling on edge
-   - uncontrollable worry
-   - worrying about different things
-   - trouble relaxing
-   - restlessness
-   - irritability
-   - fear that something bad may happen
-3. Identify whether the user describes functional impact, such as difficulty with school, work, relationships, sleep, responsibilities, or daily activities.
-4. Identify whether there is any explicit immediate safety concern.
-5. Map the supported evidence to one of the concern patterns below.
-6. Return JSON only.
 
 Concern pattern guidance:
 
@@ -100,12 +85,13 @@ Rules:
 - For moderate risk, suggest considering a non-urgent appointment with a qualified healthcare professional if symptoms continue or affect daily functioning.
 - For urgent risk, suggest immediate emergency/crisis support or contacting a trusted person for immediate help.
 
+CRITICAL — risk_level must be EXACTLY one of these three string values:
+  "low"       — for Minimal or Mild Concern Patterns
+  "moderate"  — for Elevated or High Concern Patterns
+  "urgent"    — for Urgent Safety Concern only
+
+Any other value (e.g. "elevated", "high", "medium", "severe") is INVALID and will break the pipeline. Use only the exact strings above.
 
 Return only valid JSON:
-{
-  "risk_level": "low | moderate | urgent",
-  "reasoning": "",
-  "recommended_support": "",
-  "safety_note": ""
-}
+{"risk_level":"low | moderate | urgent","reasoning":"","recommended_support":"","safety_note":""}
 ```

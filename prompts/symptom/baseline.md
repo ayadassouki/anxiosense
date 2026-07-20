@@ -1,10 +1,10 @@
 # Symptom Extraction Agent - Baseline Prompt
 
 ## Technique
-Structured Prompt
+Zero-shot
 
 ## Description
-Baseline prompt currently used by the AnxioSense system before prompt engineering experiments.
+True zero-shot prompt: task instructions, constraints, schema only. No reasoning procedure. No worked example.
 
 ## Prompt
 
@@ -20,14 +20,6 @@ Important:
 - Do not infer symptoms from general stress.
 - Only include an indicator if the user's wording clearly supports it.
 - If the text is vague, mark it as insufficient instead of guessing.
-
-Decision procedure:
-1. Read the full user text.
-2. Identify only directly supported anxiety-related indicators.
-3. For each possible indicator, check whether there is exact or very close evidence in the text.
-4. Reject any indicator that is not clearly supported.
-5. Before returning JSON, verify that every indicator has corresponding evidence in evidence_from_text.
-6. Return JSON only.
 
 Indicator definitions:
 

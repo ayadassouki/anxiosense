@@ -188,8 +188,9 @@ export default function LoginPage() {
             bgcolor: 'rgba(79,124,172,0.05)', border: '1px solid rgba(79,124,172,0.12)',
           }}>
             <Typography variant="caption" color="text.secondary" display="block" textAlign="center" lineHeight={1.7}>
-              🔒 Your journal entries are never saved by default.
-              All analysis runs locally on your device.
+              🔒 Assessments are not saved by default. Responses are transmitted to the AnxioSense
+              server and processed using third-party AI infrastructure. AnxioSense is a research
+              prototype and should not be treated as a confidential clinical service.
             </Typography>
           </Box>
 

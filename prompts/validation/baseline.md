@@ -1,10 +1,10 @@
 # Validation Agent - Baseline Prompt
 
 ## Technique
-Structured Prompt
+Zero-shot
 
 ## Description
-Baseline prompt currently used by the AnxioSense system before prompt engineering experiments.
+True zero-shot prompt: task instructions, constraints, schema only. No reasoning procedure. No worked example.
 
 ## Prompt
 
@@ -25,15 +25,6 @@ Important:
 - Remove unsupported claims.
 - Accept reasonable paraphrases when the meaning is clearly supported by the user text.
 - Reject claims that require speculation, clinical interpretation, or unsupported assumptions.
-
-Decision procedure:
-1. Read the original user text.
-2. Review each claim produced by the previous agents.
-3. For each claim, check whether the original user text contains direct or clearly equivalent evidence.
-4. Keep the claim only if it is supported by explicit wording or a clear paraphrase.
-5. Remove the claim if it is unsupported, exaggerated, diagnostic, or based on inference.
-6. Review the referral level and keep it only if it matches the supported evidence.
-7. Return JSON only.
 
 Validation standards:
 

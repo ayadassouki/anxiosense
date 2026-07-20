@@ -359,3 +359,53 @@ describe('safety override contract — fires regardless of GAD-7 score', () => {
     });
   }
 });
+
+// ── Non-crisis result has no category field ───────────────────────────────────
+
+describe('checkSafety — result shape', () => {
+  test('non-crisis result: isCrisis=false and category is undefined', () => {
+    const r = checkSafety('I feel a bit anxious about my upcoming exam.');
+    assert.equal(r.isCrisis, false);
+    assert.equal(r.category, undefined);
+  });
+
+  test('crisis result: isCrisis=true and category is defined', () => {
+    const r = checkSafety('I want to kill myself.');
+    assert.equal(r.isCrisis, true);
+    assert.ok(r.category !== undefined, 'category must be set on crisis result');
+  });
+});
+
+// ── Social-media mode — typical public post must not trigger crisis ────────────
+// In social-media mode functional_impairment is null (not collected).
+// The safety check still runs on the text — these typical posts must not fire.
+
+describe('checkSafety — social-media mode typical posts do not trigger', () => {
+  test('generic anxiety post about university', () => {
+    const r = checkSafety(
+      "Exam season is absolutely destroying me right now. Three finals in two days " +
+      "and I haven't slept properly in a week. Anyone else feel like they're falling apart?"
+    );
+    assert.equal(r.isCrisis, false);
+  });
+
+  test('post expressing general stress and burnout', () => {
+    const r = checkSafety(
+      "Working two jobs while finishing my degree. I'm completely exhausted and barely " +
+      "holding it together but pushing through."
+    );
+    assert.equal(r.isCrisis, false);
+  });
+
+  test('post about panic attacks without crisis language', () => {
+    const r = checkSafety(
+      "Had another panic attack on the subway today. My chest got so tight I had to get " +
+      "off at the next stop and wait for it to pass."
+    );
+    assert.equal(r.isCrisis, false);
+  });
+});
+
+// (Same-day UUID uniqueness and social-media null-impairment tests have been
+// moved to server/src/utils/__tests__/impairmentValidation.test.ts where they
+// are tested against the real implementations, not fake helpers.)

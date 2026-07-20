@@ -213,8 +213,10 @@ export default function DashboardPage() {
           <Box sx={{ mt: 2.5, p: 2, borderRadius: 2.5,
             bgcolor: 'rgba(79,124,172,0.05)', border: '1px solid rgba(79,124,172,0.12)' }}>
             <Typography variant="caption" color="text.secondary" lineHeight={1.7} display="block">
-              🔒 <strong>Privacy:</strong> Your raw text is not saved.
-              Only structured report summaries are stored, and only with your explicit consent.
+              🔒 <strong>Privacy:</strong> Responses are transmitted to the AnxioSense server and
+              processed using third-party AI infrastructure. If report saving is enabled, the generated
+              report may be stored in your account. AnxioSense is a research prototype and should not
+              be treated as a confidential clinical service.
             </Typography>
           </Box>
         </DialogContent>

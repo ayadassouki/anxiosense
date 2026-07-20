@@ -26,21 +26,6 @@ Important:
 - If evidence is limited or unclear, choose the less severe classification.
 - Keep language calm, supportive, cautious, and non-judgmental.
 
-Decision procedure:
-1. Read the entire user text carefully.
-2. Identify explicitly supported anxiety-related symptom domains, such as:
-   - nervousness, anxiety, or feeling on edge
-   - uncontrollable worry
-   - worrying about different things
-   - trouble relaxing
-   - restlessness
-   - irritability
-   - fear that something bad may happen
-3. Identify whether the user describes functional impact, such as difficulty with school, work, relationships, sleep, responsibilities, or daily activities.
-4. Identify whether there is any explicit immediate safety concern.
-5. Map the supported evidence to one of the concern patterns below.
-6. Return JSON only.
-
 Concern pattern guidance:
 
 Minimal Concern Pattern:

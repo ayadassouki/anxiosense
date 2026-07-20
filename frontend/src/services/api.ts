@@ -23,15 +23,17 @@ async function handleResponse<T>(res: Response): Promise<T> {
 // ── Report types ─────────────────────────────────────────────────────────────
 
 export interface ReportSummary {
-  id:             string;
-  userId:         string;
-  mode:           'journal' | 'social-media';
-  createdAt:      string;
-  concernPattern: string;
-  referralLevel:  'low' | 'moderate' | 'urgent';
-  summary:        string;   // first 2-3 sentences
-  fullReport:     string;
-  clinicianMode:  boolean;
+  id:                   string;
+  userId:               string;
+  mode:                 'journal' | 'social-media';
+  createdAt:            string;
+  concernPattern:       string;
+  referralLevel:        'low' | 'moderate' | 'urgent';
+  summary:              string;   // first 2-3 sentences
+  fullReport:           string;
+  clinicianMode:        boolean;
+  /** Functional impairment answer — absent or null for social-media mode, crisis overrides, and pre-migration rows */
+  functionalImpairment?: 'not_difficult_at_all' | 'somewhat_difficult' | 'very_difficult' | 'extremely_difficult' | null;
 }
 
 // ── Reports API ───────────────────────────────────────────────────────────────
@@ -70,10 +72,12 @@ export interface RunWorkflowParams {
 }
 
 export interface WorkflowResult {
-  reportId:    string;
-  finalReport: string;
-  concernPattern: string;
-  referralLevel: string;
+  reportId:             string;
+  finalReport:          string;
+  concernPattern:       string;
+  referralLevel:        string;
+  /** null for social-media mode, crisis overrides; present for self-assessment */
+  functionalImpairment?: string | null;
 }
 
 export async function runWorkflow(params: RunWorkflowParams): Promise<WorkflowResult> {

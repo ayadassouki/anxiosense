@@ -1,6 +1,10 @@
 import { LibSQLVector } from "@mastra/libsql";
+import path from "path";
 
-const DB_URL = process.env.ANXIOSENSE_VECTOR_DB_URL ?? "file:/Users/ayadassouki/anxiosense/data/anxiosense-vectors.db";
+// Resolve to <project-root>/data/anxiosense-vectors.db when no env var is set.
+// process.cwd() is the project root in all environments (local dev and Railway).
+const DB_URL = process.env.ANXIOSENSE_VECTOR_DB_URL
+  ?? `file:${path.join(process.cwd(), "data", "anxiosense-vectors.db")}`;
 const AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 export const KB_INDEX_NAME = "anxiosense_kb";

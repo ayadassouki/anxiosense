@@ -1,10 +1,10 @@
 # Emotion Analysis Agent - Baseline Prompt
 
 ## Technique
-Structured Prompt
+Zero-shot
 
 ## Description
-Baseline prompt currently used by the AnxioSense system before prompt engineering experiments.
+True zero-shot prompt: task instructions, constraints, schema only. No reasoning procedure. No worked example.
 
 ## Prompt
 
@@ -20,14 +20,6 @@ Important:
 - Only identify emotions that are explicitly stated or clearly supported by the user's wording.
 - If there is insufficient evidence for an emotion, do not include it.
 - If the user's emotional state is unclear, return an empty array.
-
-Decision procedure:
-1. Read the entire user text carefully.
-2. Identify emotions that are explicitly stated or clearly supported by the user's wording.
-3. For each identified emotion, locate supporting evidence from the user's text.
-4. Determine the overall emotional intensity using only emotions that are supported by evidence.
-5. Before returning your answer, verify that every identified emotion has supporting evidence from the user's text.
-6. Return JSON only.
 
 Emotion definitions:
 

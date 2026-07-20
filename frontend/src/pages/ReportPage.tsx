@@ -158,7 +158,18 @@ function SectionCard({ index, heading, body }: { index: number; heading: string;
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ReportPage() {
   const { id } = useParams<{ id: string }>();
-  const { state } = useLocation() as { state?: { report?: { finalReport?: string; concernPattern?: string; referralLevel?: string } } };
+  const { state } = useLocation() as {
+    state?: {
+      report?: {
+        finalReport?:          string;
+        concernPattern?:       string;
+        referralLevel?:        string;
+        mode?:                 string;
+        clinicianMode?:        boolean;
+        functionalImpairment?: string | null;
+      };
+    };
+  };
   const navigate = useNavigate();
 
   const [report,  setReport]  = useState<ReportSummary | null>(null);
@@ -175,15 +186,16 @@ export default function ReportPage() {
         // Fall back to navigation state if available (e.g. guest mode, no server yet)
         if (state?.report?.finalReport) {
           setReport({
-            id:             id,
-            userId:         'guest',
-            mode:           'journal',
-            createdAt:      new Date().toISOString(),
-            concernPattern: state.report.concernPattern ?? '',
-            referralLevel:  (state.report.referralLevel ?? 'moderate') as 'low' | 'moderate' | 'urgent',
-            summary:        '',
-            fullReport:     state.report.finalReport,
-            clinicianMode:  false,
+            id:                   id,
+            userId:               'guest',
+            mode:                 (state.report.mode ?? 'journal') as 'journal' | 'social-media',
+            createdAt:            new Date().toISOString(),
+            concernPattern:       state.report.concernPattern ?? '',
+            referralLevel:        (state.report.referralLevel ?? 'moderate') as 'low' | 'moderate' | 'urgent',
+            summary:              '',
+            fullReport:           state.report.finalReport,
+            clinicianMode:        state.report.clinicianMode ?? false,
+            functionalImpairment: (state.report.functionalImpairment as ReportSummary['functionalImpairment']) ?? null,
           });
         } else {
           setError('Could not load this report.');
@@ -219,6 +231,19 @@ export default function ReportPage() {
     const { body: clinicalContent } = splitPipelinePerformance(mainWithTiming);
     const sections = parseSections(clinicalContent);
 
+    // ── HTML escaper — applied to ALL AI-generated text before insertion ────
+    // Prevents XSS if the model output contains raw HTML or script tags.
+    // Must run BEFORE Markdown inline transformations so that * and ** survive
+    // unescaped (they are not HTML-special) while < > & " ' are neutralised.
+    function escapeHtml(str: string): string {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // ── Markdown → HTML converter (print-safe, no raw markdown) ────────────
     function mdToHtml(text: string): string {
       const lines = text.split('\n');
@@ -240,31 +265,31 @@ export default function ReportPage() {
           continue;
         }
 
-        // Headings
+        // Headings — escape raw text first, then apply inline Markdown
         const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)/);
         if (headingMatch) {
           if (inList) { out.push('</ul>'); inList = false; }
           const level = headingMatch[1].length + 1; // ## → h3
-          const headingText = headingMatch[2]
+          const headingText = escapeHtml(headingMatch[2])
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>');
           out.push(`<h${level} class="md-heading">${headingText}</h${level}>`);
           continue;
         }
 
-        // Bullet
+        // Bullet — escape raw text first, then apply inline Markdown
         if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
           if (!inList) { out.push('<ul>'); inList = true; }
-          const content = trimmed.slice(2)
+          const content = escapeHtml(trimmed.slice(2))
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>');
           out.push(`<li>${content}</li>`);
           continue;
         }
 
-        // Plain paragraph
+        // Plain paragraph — escape raw text first, then apply inline Markdown
         if (inList) { out.push('</ul>'); inList = false; }
-        const content = trimmed
+        const content = escapeHtml(trimmed)
           .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.+?)\*/g, '<em>$1</em>');
         out.push(`<p>${content}</p>`);
@@ -275,13 +300,15 @@ export default function ReportPage() {
     }
 
     // ── Clinical sections ────────────────────────────────────────────────────
+    // s.heading is escaped before injection — it is not run through mdToHtml,
+    // so escapeHtml must be applied explicitly here.
     const sectionsHtml = sections
       .map((s, i) => `
         <div class="section">
           ${s.heading ? `
           <div class="section-heading">
             <span class="section-num">${i + 1}</span>
-            <h2>${s.heading}</h2>
+            <h2>${escapeHtml(s.heading)}</h2>
           </div>` : ''}
           <div class="section-body">${mdToHtml(s.body)}</div>
         </div>`)
@@ -468,8 +495,7 @@ export default function ReportPage() {
   ${clinicianHtml}
 
   <div class="footer">
-    AnxioSense Research Prototype · Generated ${dateStr} · Raw text was not retained
-    ${report.clinicianMode ? ' · Clinician copy — not for distribution to patients' : ''}
+    AnxioSense Research Prototype · Generated ${dateStr}${report.clinicianMode ? ' · Clinician copy — not for distribution to patients' : ''}
   </div>
 </body>
 </html>`;
@@ -700,9 +726,11 @@ export default function ReportPage() {
           <Box sx={{ mt: 1, mb: 4, p: 2, borderRadius: 2.5,
             bgcolor: 'rgba(79,124,172,0.04)', border: '1px solid rgba(79,124,172,0.1)' }}>
             <Typography variant="caption" color="text.secondary" lineHeight={1.8} display="block">
-              🔒 Your raw text was not saved. This report was generated using a multi-agent
-              AI pipeline with evidence retrieval and validation. AnxioSense is a research prototype.
-              Where applicable, GAD-7 scores and clinical severity categories are included in the Assessment Overview section of this report.
+              🔒 Responses are transmitted to the AnxioSense server and processed using third-party AI
+              infrastructure. If report saving is enabled, the generated report may be stored in your
+              account. The report may include questionnaire responses and analysis derived from your
+              submitted text. AnxioSense is a research prototype and should not be treated as a
+              confidential clinical service.
             </Typography>
           </Box>
 

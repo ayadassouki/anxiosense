@@ -5,6 +5,7 @@ import { validateText } from '../utils/validateText.js';
 import { preAssess } from '../utils/preAssess/pipeline.js';
 import { evaluateGrounding, calibrateConfidence } from '../utils/preAssess/grounding.js';
 import { checkSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
+import { validateFunctionalImpairment } from '../utils/validateFunctionalImpairment.js';
 
 const router   = Router();
 const MASTRA   = process.env.MASTRA_URL ?? 'http://localhost:4111';
@@ -165,13 +166,14 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
       try {
         db.prepare(`
           INSERT INTO reports
-            (id, user_id, mode, concern_pattern, referral_level, summary, full_report, clinician_mode)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (id, user_id, mode, concern_pattern, referral_level, summary, full_report, clinician_mode, functional_impairment)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           crisisReportId, userId, mode,
           'Urgent Safety Notice', 'urgent',
           crisicSummary, crisisReport,
-          clinicianMode ? 1 : 0
+          clinicianMode ? 1 : 0,
+          null // safety override — no impairment answer relevant
         );
       } catch (dbErr) {
         console.error('[safety] DB save failed (non-fatal):', dbErr);
@@ -179,15 +181,26 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     }
 
     res.json({
-      reportId:      crisisReportId,
-      finalReport:   crisisReport,
-      concernPattern: 'Urgent Safety Notice',
-      referralLevel: 'urgent',
-      summary:       crisicSummary,
+      reportId:            crisisReportId,
+      finalReport:         crisisReport,
+      concernPattern:      'Urgent Safety Notice',
+      referralLevel:       'urgent',
+      summary:             crisicSummary,
+      functionalImpairment: null,
       _meta: { safetyOverride: true, safetyCategory: safety.category },
     });
     return;
   }
+
+  // ── Functional impairment validation ──────────────────────────────────────
+  // Runs AFTER the safety check so crisis submissions (which return early above)
+  // bypass this validation — they always store null.
+  const impairmentResult = validateFunctionalImpairment(mode, functionalImpairment);
+  if (!impairmentResult.ok) {
+    res.status(400).json({ message: impairmentResult.message });
+    return;
+  }
+  const validatedImpairment = impairmentResult.value;
 
   // ── 1. Create run ─────────────────────────────────────────────────────
   const mastraStart = Date.now();
@@ -324,9 +337,10 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     try {
       db.prepare(`
         INSERT INTO reports
-          (id, user_id, mode, concern_pattern, referral_level, summary, full_report, clinician_mode)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(reportId, userId, mode, concernPattern, referralLevel, summary, finalReport, clinicianMode ? 1 : 0);
+          (id, user_id, mode, concern_pattern, referral_level, summary, full_report, clinician_mode, functional_impairment)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(reportId, userId, mode, concernPattern, referralLevel, summary, finalReport, clinicianMode ? 1 : 0,
+        validatedImpairment);
       console.log(`[mastra] saved report ${reportId} for user ${userId}`);
     } catch (dbErr) {
       console.error('[mastra] DB save failed (non-fatal):', dbErr);
@@ -339,6 +353,7 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     concernPattern,
     referralLevel,
     summary,
+    functionalImpairment: validatedImpairment,
     // Research metadata — not displayed in the UI, inspectable via network tools.
     // timings covers the three server-measured phases; the Mastra workflow's
     // internal agent timings are logged separately to the console and eval exports.

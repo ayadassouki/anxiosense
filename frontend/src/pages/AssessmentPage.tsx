@@ -142,7 +142,9 @@ export default function AssessmentPage() {
         saveSession:         saveSession            || undefined,
       });
       setView('done');
-      setTimeout(() => navigate(`/report/${result.reportId}`, { state: { report: result } }), 700);
+      setTimeout(() => navigate(`/report/${result.reportId}`, {
+        state: { report: { ...result, mode, clinicianMode } },
+      }), 700);
     } catch (err: unknown) {
       setView('input');
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -178,7 +180,7 @@ export default function AssessmentPage() {
   const modeIcon     = isJournal ? <BookOutlinedIcon />      : <ArticleOutlinedIcon />;
   const modeLabel    = isJournal ? 'Self-Assessment mode'    : 'Social Media mode';
   const placeholder  = isJournal
-    ? "How have you been feeling lately? Write freely — no one will read this text. The AI analyses language patterns and emotional tone, not specific details."
+    ? "How have you been feeling lately? Write freely — your text is processed by AI on our servers and is not retained after your report is generated. The AI analyses language patterns and emotional tone, not specific details."
     : "Paste a Reddit post, social media caption, or public text here. The AI will analyse language patterns for indicators of anxiety-related themes.\n\nNote: this mode does not include GAD-7 and applies extra conservatism to referral recommendations.";
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -196,7 +198,7 @@ export default function AssessmentPage() {
             <Typography variant="h3" gutterBottom>GAD-7 Questionnaire</Typography>
             <Typography variant="body2" color="text.secondary">
               This validated screening tool helps contextualise your self-assessment.
-              Your answers are processed locally and not stored.
+              Your responses are sent to our server to compute your score and are not stored individually.
             </Typography>
           </Box>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -468,11 +470,11 @@ export default function AssessmentPage() {
                 <Box display="flex" alignItems="center" gap={1}>
                   <LockOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>Save report summary</Typography>
+                    <Typography variant="body2" fontWeight={500}>Save report to my account</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {user?.isGuest
                         ? 'Sign in to enable saving'
-                        : 'Your raw text is never saved — only the structured output'}
+                        : 'The AI-generated report is saved to your account'}
                     </Typography>
                   </Box>
                 </Box>
@@ -548,10 +550,11 @@ export default function AssessmentPage() {
           <Box sx={{ mt: 3, p: 2, borderRadius: 2.5,
             bgcolor: 'rgba(79,124,172,0.04)', border: '1px solid rgba(79,124,172,0.1)' }}>
             <Typography variant="caption" color="text.secondary" lineHeight={1.8} display="block">
-              🔒 <strong>Privacy:</strong> Your text is sent only to the local Mastra server for analysis
-              and is not stored anywhere by default. GAD-7 answers are processed in memory and discarded
-              after the report is generated. If "Save report summary" is on, only the structured output
-              (not your raw text) is saved to your account.
+              🔒 <strong>Privacy:</strong> Responses are transmitted to the AnxioSense server and
+              processed using third-party AI infrastructure. If report saving is enabled, the generated
+              report may be stored in your account. The report may include questionnaire responses and
+              analysis derived from your submitted text. AnxioSense is a research prototype and should
+              not be treated as a confidential clinical service.
             </Typography>
           </Box>
 

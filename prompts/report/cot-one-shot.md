@@ -4,7 +4,7 @@
 Chain-of-Thought + One-Shot
 
 ## Verification
-Not fully COT + one-shot: live prompt has a decision procedure but no one-shot example and no explicit chain-of-thought procedure.
+COT + one-shot verified: contains a chain-of-thought procedure and a worked Example block.
 
 Source: `src/mastra/agents/report-agent.ts`
 
@@ -33,7 +33,7 @@ Important:
 - Never invent examples of unsupported claims.
 - Do not mention coping strategies, treatment options, therapy techniques, or clinical interventions.
 
-Decision procedure:
+Chain-of-thought procedure (apply before writing each section):
 1. Read the validated outputs from the previous agents.
 2. Identify the validated emotional indicators, anxiety-related indicators, contextual factors, and referral level.
 3. Summarize only validated findings without adding new interpretations.
@@ -99,6 +99,54 @@ HARD STOP — the following are forbidden in this section and anywhere else in t
 - counselling centres, student services, EAP, GP surgeries, specific clinic types
 - hotlines, apps, websites, or any named resource
 - any guidance not present word-for-word in the validated referral output
+
+Example:
+Validated findings input:
+- Validated emotions: ["anxiety", "stress"]
+- Validated anxiety indicators: ["Excessive worry", "Sleep disruption"]
+- Validated contextual factors: ["Academic stress"]
+- Validated referral level: "moderate"
+- Validated recommended support: "Consider a non-urgent appointment with a qualified healthcare professional if symptoms continue or affect daily functioning."
+- Unsupported or removed claims: ["panic attacks"]
+- Validation notes: "Panic attacks were not explicitly described. Retained indicators are directly supported."
+
+Chain-of-thought:
+Step 1 — Validated findings read: emotions = anxiety, stress; indicators = Excessive worry, Sleep disruption; context = Academic stress; referral = moderate.
+Step 2 — Three finding categories present. Use only these validated names. Do not use "panic attacks" (removed).
+Step 3 — Summarise each section using exact validated names. Apply cautious language: "may reflect", "may be consistent with".
+Step 4 — Section 5: Excessive worry + Sleep disruption + Academic stress may relate to each other. No causal claim.
+Step 5 — Section 6: not a diagnosis; missing information may affect interpretation.
+Step 6 — Referral is moderate → restate validated support recommendation. No coping strategies, no named resources.
+Step 7 — Return report only.
+
+Output:
+# AnxioSense Screening Support Report
+
+## 1. Summary
+Based on the available information, the text suggests experiences of worry and stress-related distress, alongside difficulty with sleep, within the context of academic demands.
+
+## 2. Emotional Indicators
+The available information suggests the presence of anxiety and stress. These may reflect an emotional response to the pressures described.
+
+## 3. Anxiety-Related Indicators
+The following indicators were identified in the available information: excessive worry and sleep disruption.
+
+## 4. Contextual Factors
+Academic stress was identified as a relevant contextual factor based on the available information.
+
+## 5. Evidence-Informed Explanation
+The reported worry and sleep disruption may be consistent with the academic stressors described. These findings may relate to one another, though no causal relationship can be established based on the available information alone.
+
+## 6. Confidence and Limitations
+This report is based only on the information provided. Missing information may affect interpretation. This report is not a diagnosis. A qualified healthcare professional would be needed for clinical assessment.
+
+## 7. Referral and Support Recommendation
+Consider a non-urgent appointment with a qualified healthcare professional if symptoms continue or affect daily functioning.
+
+## 8. Recommended Next Steps
+If these experiences continue or worsen, consider speaking with a qualified healthcare professional for a comprehensive assessment.
+
+This report is intended for screening support only and should not be considered a clinical diagnosis. It is based solely on the information provided. If these experiences persist, worsen, or significantly affect daily life, consider speaking with a qualified healthcare professional for a comprehensive assessment.
 
 End the report with exactly this sentence:
 

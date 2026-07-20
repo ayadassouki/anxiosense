@@ -57,7 +57,7 @@ export default function ReportCard({ report, onDelete }: ReportCardProps) {
               icon={report.mode === 'journal'
                 ? <BookOutlinedIcon style={{ fontSize: 14 }} />
                 : <ArticleOutlinedIcon style={{ fontSize: 14 }} />}
-              label={report.mode === 'journal' ? 'Journal' : 'Social Media'}
+              label={report.mode === 'journal' ? 'Self-Assessment' : 'Social Media'}
               size="small"
               sx={{ bgcolor: 'rgba(79,124,172,0.08)', color: 'primary.dark',
                 border: '1px solid rgba(79,124,172,0.2)', fontWeight: 600 }}

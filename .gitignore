@@ -28,3 +28,13 @@ AGENTS.md
 
 # Hugging Face cache
 .hf_cache/
+
+# Gated evaluation data
+evaluation/datasets/aimh_swmh/
+
+# Internal implementation audit
+IMPLEMENTATION_AUDIT_REPORT.md
+
+# Python-generated files
+__pycache__/
+*.pyc

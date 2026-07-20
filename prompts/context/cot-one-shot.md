@@ -22,14 +22,6 @@ Important:
 - Only include a stressor if the user's wording clearly supports it.
 - If the text is vague, leave arrays empty instead of guessing.
 
-Decision procedure:
-1. Read the full user text.
-2. Identify only directly supported contextual stressors.
-3. Match each stressor to a life domain.
-4. Extract exact or near-exact supporting evidence.
-5. Reject any stressor that is not clearly supported.
-6. Return JSON only.
-
 Context definitions:
 
 Academic stress:
