@@ -25,3 +25,6 @@ src/mastra/public/evaluation/
 *.backup.ts
 *.bak
 AGENTS.md
+
+# Hugging Face cache
+.hf_cache/
