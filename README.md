@@ -26,6 +26,8 @@ AnxioSense is a non-diagnostic anxiety screening support tool that combines a va
 
 ## Architecture
 
+![AnxioSense system architecture](docs/assets/anxiosense-architecture.svg)
+
 ```
 User input
     │
@@ -72,7 +74,7 @@ Orchestration: Mastra SDK v1.42
 anxiosense/
 ├── src/mastra/               # Mastra pipeline (agents, workflows, utilities)
 │   ├── agents/               # Six LLM agents
-│   ├── workflows/            # anxiosense-workflow.ts (main pipeline)
+│   ├── workflows/            # anxiety-screening-assessment-workflow.ts (main pipeline)
 │   └── utils/                # GAD-7 scorer, recommendation logic, session store
 ├── server/                   # Express API server
 │   └── src/

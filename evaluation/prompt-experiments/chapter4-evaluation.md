@@ -6,7 +6,7 @@
 
 The evaluation of AnxioSense was designed to assess the correctness and safety properties of the multi-agent pipeline across a range of clinically meaningful input scenarios. Because AnxioSense is a non-diagnostic screening support tool, the evaluation prioritises two properties above all others: the absence of false positive symptom extractions that could over-refer subclinical users, and the correct handling of urgent safety language that requires immediate crisis escalation. Secondary properties include extraction completeness, report fidelity, and schema compliance across pipeline stages.
 
-Two pipeline configurations were evaluated. The first, referred to throughout this chapter as the **baseline**, corresponds to the `rag-retrieval-agent` branch and represents the state of the system after the initial implementation of cosine similarity-based evidence validation and the urgent safety bypass mechanism. The second, referred to as **cot-oneshot-v1**, corresponds to the `cot-oneshot` branch and extends the baseline with chain-of-thought (CoT) prompting and one-shot exemplars applied to all four extraction agents, alongside a reduction in language model temperature.
+Two pipeline configurations were evaluated. The first, referred to throughout this chapter as the **baseline**, corresponds to the `rag-retrieval-agent` branch and represents the state of the system after the initial implementation of cosine similarity-based evidence validation and the urgent safety bypass mechanism. The second, referred to as **one-shot-cot-v1**, corresponds to the `cot-oneshot` branch and extends the baseline with chain-of-thought (CoT) prompting and one-shot exemplars applied to all four extraction agents, alongside a reduction in language model temperature.
 
 ### 4.1.2 Test Case Design
 
@@ -28,9 +28,9 @@ The baseline pipeline (`rag-retrieval-agent`) represents the state of the system
 
 The baseline did not include chain-of-thought prompting in any extraction agent, did not use one-shot examples, and operated at a language model temperature of 0.7. The evaluation export utility was not yet implemented for the baseline branch, meaning that intermediate agent outputs, retrieval results, and validation decisions were not systematically captured in structured form for that configuration. Consequently, formal quantitative metrics for the baseline are not reported in this chapter; the comparison between configurations in Section 4.4 is therefore qualitative where it concerns the baseline, drawing on issues observed during baseline development and testing.
 
-### 4.1.4 The CoT + One-Shot Configuration
+### 4.1.4 The One-shot + CoT Configuration
 
-The `cot-oneshot-v1` configuration extended the baseline through a set of coordinated prompt engineering changes applied simultaneously. Chain-of-thought (CoT) reasoning procedures were added to all four extraction agents, giving each agent an explicit numbered procedure to follow before producing its JSON output: identify candidate claims from the text, locate direct evidence, verify that the evidence meets the indicator's definitional criteria, and reject candidates that do not. One-shot exemplars were added to each agent, providing a concrete worked example of correct input-to-output behaviour. Language model temperature was reduced from 0.7 to 0.1. Agent system prompts were also restructured to remove example phrases that had been observed to appear verbatim in agent outputs, and the report agent received an explicit blacklist of prohibited content categories.
+The `one-shot-cot-v1` configuration extended the baseline through a set of coordinated prompt engineering changes applied simultaneously. Chain-of-thought (CoT) reasoning procedures were added to all four extraction agents, giving each agent an explicit numbered procedure to follow before producing its JSON output: identify candidate claims from the text, locate direct evidence, verify that the evidence meets the indicator's definitional criteria, and reject candidates that do not. One-shot exemplars were added to each agent, providing a concrete worked example of correct input-to-output behaviour. Language model temperature was reduced from 0.7 to 0.1. Agent system prompts were also restructured to remove example phrases that had been observed to appear verbatim in agent outputs, and the report agent received an explicit blacklist of prohibited content categories.
 
 It is important to note that these changes were applied together as a combined intervention rather than in isolation. The evaluation therefore cannot attribute observed improvements to any single change; results should be interpreted as the effect of the overall prompt engineering package rather than the contribution of any individual component.
 
@@ -38,7 +38,7 @@ The motivation for this package of changes was grounded in issues observed durin
 
 ### 4.1.5 Role of Cosine Similarity Validation
 
-It is important to note that the cosine similarity-based evidence validation layer was already present in the baseline configuration and is not a contribution of the CoT + one-shot experimental condition. This layer serves a distinct function from extraction: it assesses whether a generated claim label is semantically similar to any entry in the clinical knowledge base, assigning a support status based on configurable thresholds. It does not assess whether the user's original text actually supports the claim — a subtlety that has important consequences discussed in Section 4.4. The evaluation therefore treats extraction correctness and validation correctness as separate dimensions.
+It is important to note that the cosine similarity-based evidence validation layer was already present in the baseline configuration and is not a contribution of the One-shot + CoT experimental condition. This layer serves a distinct function from extraction: it assesses whether a generated claim label is semantically similar to any entry in the clinical knowledge base, assigning a support status based on configurable thresholds. It does not assess whether the user's original text actually supports the claim — a subtlety that has important consequences discussed in Section 4.4. The evaluation therefore treats extraction correctness and validation correctness as separate dimensions.
 
 ---
 
@@ -46,7 +46,7 @@ It is important to note that the cosine similarity-based evidence validation lay
 
 ### 4.2.1 Evaluation Procedure
 
-All five test cases were executed against the `cot-oneshot-v1` pipeline. For each run, the complete pipeline output was automatically saved to a structured Markdown file by the evaluation export utility, capturing the raw output of each agent, the structured claims set, the retrieval results including cosine similarity scores, the evidence validation decisions, and the final report text. Manual evaluation was then performed against pre-specified expected behaviours for each test case. A single evaluator assessed all runs.
+All five test cases were executed against the `one-shot-cot-v1` pipeline. For each run, the complete pipeline output was automatically saved to a structured Markdown file by the evaluation export utility, capturing the raw output of each agent, the structured claims set, the retrieval results including cosine similarity scores, the evidence validation decisions, and the final report text. Manual evaluation was then performed against pre-specified expected behaviours for each test case. A single evaluator assessed all runs.
 
 ### 4.2.2 Symptom Extraction Correctness
 
@@ -78,7 +78,7 @@ Schema compliance was assessed for the referral agent output, which is the only 
 
 Table 4.1 provides an overview of each test case, its intended purpose, the expected pipeline behaviour, and the observed outcome. Detailed discussion follows in Section 4.3.2.
 
-**Table 4.1 — Test case summary (cot-oneshot-v1)**
+**Table 4.1 — Test case summary (one-shot-cot-v1)**
 
 | Test Case | Purpose | Expected Outcome | Actual Outcome | Result |
 |-----------|---------|-----------------|----------------|--------|
@@ -102,7 +102,7 @@ Table 4.1 provides an overview of each test case, its intended purpose, the expe
 
 ### 4.3.2 Quantitative Metrics
 
-**Symptom extraction (cot-oneshot-v1).**
+**Symptom extraction (one-shot-cot-v1).**
 
 Across the five test cases, eight symptom indicator extractions were expected (TC1: 2; TC2: 0; TC3: 5; TC4: 0; TC5: 3 including the unextracted autonomic arousal indicator). Eight true positives and zero false positives were observed. Two false negatives were recorded: Sleep disruption in TC1 and autonomic arousal in TC5.
 
@@ -115,7 +115,7 @@ Across the five test cases, eight symptom indicator extractions were expected (T
 | Recall | 0.80 |
 | F1 Score | 0.89 |
 
-**Referral classification (cot-oneshot-v1).**
+**Referral classification (one-shot-cot-v1).**
 
 | TC | Expected | Actual | Correct | Schema Compliant |
 |----|----------|--------|---------|-----------------|
@@ -127,7 +127,7 @@ Across the five test cases, eight symptom indicator extractions were expected (T
 
 Referral accuracy: 4/5 (80%). Schema compliance: 4/5 (80%).
 
-**Report hallucination rate (cot-oneshot-v1).**
+**Report hallucination rate (one-shot-cot-v1).**
 
 Four reports were LLM-generated (TC4 returned a hardcoded notice). Of these, two were generated after the Section 8 hard-stop blacklist was applied (TC3 and TC5), and two were generated before (TC1 and TC2).
 
@@ -142,15 +142,15 @@ The pre-fix hallucinations consisted of specific resource type recommendations i
 
 ## 4.4 Discussion
 
-### 4.4.1 Improvements from CoT + One-Shot Prompting
+### 4.4.1 Improvements from One-shot + CoT Prompting
 
-The most significant improvement associated with the combined prompt engineering changes was the elimination of the false positive symptom extraction observed in the negative control case (TC2). During baseline development, the symptom agent generated "Excessive worry" for the input "I'm a little nervous about tomorrow's presentation." This occurred because, without structured reasoning, the model appeared to apply shallow lexical matching: the word "nervous" was sufficient to activate the Excessive worry indicator, which is semantically close to any anxiety-adjacent language. The CoT Step 3 gate — requiring the agent to explicitly check whether the worry concerns a single specific event with a clear endpoint before including the indicator — was associated with the resolution of this failure mode in the cot-oneshot-v1 runs. This improvement is clinically meaningful: a non-diagnostic screening tool that generates Excessive worry for ordinary pre-event nervousness would systematically over-refer subclinical users.
+The most significant improvement associated with the combined prompt engineering changes was the elimination of the false positive symptom extraction observed in the negative control case (TC2). During baseline development, the symptom agent generated "Excessive worry" for the input "I'm a little nervous about tomorrow's presentation." This occurred because, without structured reasoning, the model appeared to apply shallow lexical matching: the word "nervous" was sufficient to activate the Excessive worry indicator, which is semantically close to any anxiety-adjacent language. The CoT Step 3 gate — requiring the agent to explicitly check whether the worry concerns a single specific event with a clear endpoint before including the indicator — was associated with the resolution of this failure mode in the one-shot-cot-v1 runs. This improvement is clinically meaningful: a non-diagnostic screening tool that generates Excessive worry for ordinary pre-event nervousness would systematically over-refer subclinical users.
 
 The combined prompt refinements also appear to have improved instruction adherence in the report agent. Hallucinated content in recommendation sections — including coping strategy recommendations such as journaling and breathing exercises — was eliminated in the post-fix runs. Additional improvements observed across the two configurations include the elimination of internal identifier leakage (claim IDs appearing in the report text), resolution of context agent JSON truncation that caused parsing failures in some baseline inputs, and elimination of report confabulation in which the report agent reproduced example phrases from its own system prompt as if they were validated findings. Because these changes were introduced as a combined package, it is not possible to attribute any individual improvement to a specific component — whether CoT reasoning, one-shot exemplars, temperature reduction, or prompt restructuring. The results should be interpreted as evidence that the overall intervention improved pipeline behaviour, not as evidence for the independent contribution of any single change.
 
 ### 4.4.2 Remaining Limitations and Their Expected Nature
 
-Several limitations persist in the `cot-oneshot-v1` configuration. These are discussed below in relation to the architectural choices of the system and the known constraints of retrieval-assisted pipelines operating over small knowledge bases.
+Several limitations persist in the `one-shot-cot-v1` configuration. These are discussed below in relation to the architectural choices of the system and the known constraints of retrieval-assisted pipelines operating over small knowledge bases.
 
 **False negatives in symptom extraction.** Two false negatives were observed: Sleep disruption in TC1 and autonomic arousal in TC5. One possible explanation is that the Sleep disruption false negative reflects an over-generalisation of the single-event gate introduced for Excessive worry: the phrase "before exams" may have caused the agent to apply event-boundedness reasoning to a sleep symptom, where this consideration is irrelevant. This represents a prompt engineering issue rather than an architectural limitation and is amenable to correction through a more narrowly scoped CoT instruction. The autonomic arousal false negative reflects a taxonomy gap: the symptom agent's indicator list does not include a named category for physiological arousal symptoms (racing heart, palpitations, sweating in anticipation of a specific situation), despite the knowledge base containing a relevant clinical description. This is a design omission correctable through the addition of a new indicator definition.
 

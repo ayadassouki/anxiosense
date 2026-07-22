@@ -146,7 +146,7 @@ The evaluation is structured around five research questions derived from the sys
 
 Five configurations are evaluated. Each isolates one architectural variable.
 
-**Config A — Full pipeline (AnxioSense cot-oneshot-v1):** All components active: parallel multi-agent extraction with CoT + one-shot prompting, RAG retrieval, cosine similarity validation, GAD-7 integration, functional impairment, safety override. This is the primary result configuration.
+**Config A — Full pipeline (AnxioSense one-shot-cot-v1):** All components active: parallel multi-agent extraction with One-shot + CoT prompting, RAG retrieval, cosine similarity validation, GAD-7 integration, functional impairment, safety override. This is the primary result configuration.
 
 **Config B — Single-agent baseline:** A single Llama 3.3 70B call receiving all extraction instructions combined into one prompt, with no parallel agents, no RAG, no validation step. Same input as Config A. This isolates the multi-agent contribution (RQ1).
 
@@ -227,13 +227,13 @@ preAssessMs, mastraMs, groundingMs, totalRequestMs. Reported as mean ± std over
 
 *Why include:* Establishes the cost of not using structured reasoning. The chapter 4 qualitative evaluation already showed that direct prompting produces the TC2 false positive (Excessive worry for mild pre-event nervousness). Formalising this with quantitative metrics gives the CoT improvement a precise magnitude.
 
-**Strategy 2 — CoT + one-shot (Config A, primary):** Each extraction agent follows a numbered reasoning procedure before producing JSON output. One worked example is provided. Temperature 0.1.
+**Strategy 2 — One-shot + CoT (Config A, primary):** Each extraction agent follows a numbered reasoning procedure before producing JSON output. One worked example is provided. Temperature 0.1.
 
 *Why include:* This is the production configuration. It is the main result of the evaluation.
 
 **Strategy 3 — CoT only, no exemplar (ablation):** Same as Strategy 2 but with one-shot examples removed.
 
-*Why include:* Isolates whether the improvement from Strategy 2 vs. Strategy 1 comes from the reasoning procedure or from the exemplar. If CoT-only matches CoT + one-shot, the exemplars add cost without benefit. If CoT-only is substantially worse, the exemplar is load-bearing.
+*Why include:* Isolates whether the improvement from Strategy 2 vs. Strategy 1 comes from the reasoning procedure or from the exemplar. If CoT-only matches One-shot + CoT, the exemplars add cost without benefit. If CoT-only is substantially worse, the exemplar is load-bearing.
 
 Comparing these three strategies directly answers the question: "Which component of the prompt engineering package produced the improvement?" — the question the chapter 4 discussion correctly identifies as unanswerable from the combined intervention alone.
 
@@ -257,7 +257,7 @@ Comparing these three strategies directly answers the question: "Which component
 |---|---|---|
 | No RAG | Config C | Retrieval contribution |
 | No GAD-7 | Config D | Instrument contribution |
-| Direct prompt | Config E | CoT + one-shot contribution |
+| Direct prompt | Config E | One-shot + CoT contribution |
 | No validation agent | Disable validation step | Verification contribution |
 | No safety override | Disable safety check | Safety layer contribution |
 
@@ -269,7 +269,7 @@ Each ablation is run on the same input set as Config A. This creates a matched c
 Input: constructed test cases TC1–TC5 × 5 runs × 5 configurations  
 Output: Table comparing precision, recall, F1 per configuration with confidence intervals  
 Expected figure: Bar chart of F1 per configuration across test cases  
-Expected finding: Config A (CoT + one-shot) achieves higher precision than Config E (direct); the false positive in TC2 is eliminated in Config A but present in Config E.
+Expected finding: Config A (One-shot + CoT) achieves higher precision than Config E (direct); the false positive in TC2 is eliminated in Config A but present in Config E.
 
 **Experiment 2 — Severity classification on DAIC-WOZ (RQ3)**  
 Input: DAIC-WOZ sessions with GAD-7 subscores, self-assessment mode  
@@ -296,10 +296,10 @@ Expected figure: Precision-recall curve; comparison to fine-tuned BERT classifie
 Expected finding: The deterministic pattern matcher achieves high recall (safety priority) at the cost of precision; this is the desired operating point for a crisis detection system.
 
 **Experiment 6 — Prompting strategy comparison (RQ5)**  
-Input: TC1–TC5; Config A (CoT + one-shot) vs. Config E (direct) vs. CoT-only  
+Input: TC1–TC5; Config A (One-shot + CoT) vs. Config E (direct) vs. CoT-only
 Output: F1 per strategy with paired statistical test  
 Expected figure: Table of precision/recall/F1 per strategy  
-Expected finding: CoT + one-shot outperforms direct prompting; contribution of exemplar vs. reasoning structure can be decomposed.
+Expected finding: One-shot + CoT outperforms direct prompting; contribution of exemplar vs. reasoning structure can be decomposed.
 
 **Experiment 7 — Schema compliance at scale**  
 Input: All evaluation runs (all datasets, all configs)  
@@ -348,11 +348,11 @@ A file named `demo-report-viewer.html` in the root with no documentation creates
 **8. Remove `skills-lock.json`.**  
 This is a Cowork/Claude Desktop artifact. It has no relevance to the AnxioSense project and should not be in the repository.
 
-**9. Move architecture SVGs to `docs/assets/`.**  
-`anxiosense-architecture.svg` and `anxiosense-architecture-slide.svg` belong in a `docs/assets/` folder, not the root. The README can reference them from there.
+**9. Architecture SVGs moved to `docs/assets/`.**
+`docs/assets/anxiosense-architecture.svg` and `docs/assets/anxiosense-architecture-slide.svg` are stored with the other project documentation, and the README references the main diagram from there.
 
-**10. Remove or document `run-git-cleanup.sh`.**  
-A cleanup script in the root is fine for development but should be in a `scripts/` folder or removed before submission.
+**10. Removed obsolete `run-git-cleanup.sh`.**
+The one-time cleanup script was removed after its repository cleanup had been completed.
 
 **11. Consolidate the `evaluation/` structure.**  
 Currently: `evaluation/datasets/`, `evaluation/datasets copy/`, `evaluation/pre-presentation-review.md`, `evaluation/presentation-script.md`, `evaluation/prompt-experiments/`. The presentation review and script do not belong in the evaluation directory — move to `docs/` or delete. The `prompt-experiments/runs/` directory contains 65+ auto-generated run files, which are valuable research artifacts and should stay, but the directory needs a README explaining what they are.
@@ -377,7 +377,7 @@ anxiosense/
 │   ├── datasets/                      # Dataset files and scripts
 │   ├── prompt-experiments/
 │   │   ├── chapter4-evaluation.md     # Keep — primary evaluation document
-│   │   ├── evaluation-results-cot-oneshot-v1.md
+│   │   ├── evaluation-results-one-shot-cot-v1.md
 │   │   └── runs/                      # Keep all run files
 │   └── AnxioSense_Implementation_Milestone.md   # This document
 ├── package.json
@@ -396,7 +396,7 @@ anxiosense/
 | `raw-agent-prompts.txt` (root) | Same |
 | `skills-lock.json` | Cowork artifact, irrelevant to project |
 | `demo-report-viewer.html` | Undocumented, misplaced |
-| `run-git-cleanup.sh` | Move to `scripts/` or delete |
+| `run-git-cleanup.sh` | Removed after the one-time cleanup completed |
 | `evaluation/pre-presentation-review.md` | Not an evaluation artifact; misleading location |
 | `evaluation/presentation-script.md` | Same |
 | `.hf_cache/` | Hugging Face cache; should be gitignored, not committed |
@@ -431,7 +431,7 @@ Include both Railway service URLs, confirming both show "Online" status before s
 A 1–2 page PDF covering: system architecture, key components implemented, major design decisions and their rationale, known limitations, and what changes since the last presentation. Do not write this as a list — write it as a short technical narrative.
 
 **Architecture diagram:**  
-`anxiosense-architecture.svg` is already in the repository. Ensure it reflects the current pipeline including the safety override, functional impairment step, and GAD-7 integration that were added after the last presentation.
+`docs/assets/anxiosense-architecture.svg` is already in the repository. Ensure it reflects the current pipeline including the safety override, functional impairment step, and GAD-7 integration that were added after the last presentation.
 
 **Experimental setup document:**  
 The completed Task 3 section of this document, formatted as a standalone PDF. This signals to supervisors that the evaluation phase is planned and rigorous, not improvised.
@@ -475,7 +475,7 @@ The core multi-agent pipeline (six agents: emotion, symptom, context, referral, 
 All server tests pass (134 tests across validateText, preAssess, and safetyCheck). All Mastra utility tests pass (56 tests covering the recommendation logic). The CI test scripts are documented in `server/package.json` and `package.json`.
 
 **Preliminary evaluation:**  
-A structured evaluation of five test cases against the CoT + one-shot pipeline configuration is documented in `evaluation/prompt-experiments/chapter4-evaluation.md`. Summary results: symptom extraction precision 1.00, recall 0.80, F1 0.89; referral classification accuracy 80%; hallucination rate 0% post-fix. Detailed discussion of remaining limitations is included in the document.
+A structured evaluation of five test cases against the One-shot + CoT pipeline configuration is documented in `evaluation/prompt-experiments/chapter4-evaluation.md`. Summary results: symptom extraction precision 1.00, recall 0.80, F1 0.89; referral classification accuracy 80%; hallucination rate 0% post-fix. Detailed discussion of remaining limitations is included in the document.
 
 **Planned evaluation phase:**  
 The full evaluation protocol is attached. Primary datasets: DAIC-WOZ Extended (self-assessment mode) and SMHD anxiety subset (social media mode). Five ablation configurations. Five runs per input for statistical stability. Statistical tests: McNemar's, Wilcoxon signed-rank, bootstrap confidence intervals. The protocol is designed to address the four research questions agreed at the previous meeting.

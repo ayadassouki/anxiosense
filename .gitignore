@@ -1,9 +1,17 @@
-output.txt
+# Dependencies and generated build output
 node_modules
 dist
 .mastra
-.env.development
+coverage/
+*.tsbuildinfo
+.cache/
+*.log
+output.txt
+
+# Local environment files
 .env
+.env.*
+!.env.example
 
 *.db
 *.db-*
@@ -25,9 +33,6 @@ src/mastra/public/evaluation/
 *.backup.ts
 *.bak
 AGENTS.md
-
-# Hugging Face cache
-.hf_cache/
 
 # Gated evaluation data
 evaluation/datasets/aimh_swmh/

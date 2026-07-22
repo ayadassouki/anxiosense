@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "npx tsx src/mastra/utils/__tests__/recommendation-logic.test.ts",
+    "test": "npx tsx src/mastra/utils/__tests__/clinical-support-recommendation-policy.test.ts",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",

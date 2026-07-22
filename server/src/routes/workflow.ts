@@ -267,7 +267,7 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   // 'Mild Concern Pattern'. Fix: derive from data we already have in the request.
   //
   //   a) Urgent safety path  → detect by report body header string
-  //   b) Journal + GAD-7     → compute from score (same thresholds as gad7-scorer.ts)
+  //   b) Journal + GAD-7     → compute from score (same thresholds as gad7-assessment-scorer.ts)
   //   c) Text-only / social  → proxy from riskLevel the pipeline produced
   //
   const isUrgentReport =
