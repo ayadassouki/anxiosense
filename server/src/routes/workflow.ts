@@ -162,6 +162,7 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (req as any).user?.userId as string | undefined;
+    let persisted = false;
     if (saveSession && userId) {
       try {
         db.prepare(`
@@ -175,8 +176,13 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
           clinicianMode ? 1 : 0,
           null // safety override — no impairment answer relevant
         );
+        persisted = true;
       } catch (dbErr) {
-        console.error('[safety] DB save failed (non-fatal):', dbErr);
+        // Non-fatal: the user still receives the crisis response. But log the
+        // actual message — an unlogged reason here is how a schema mismatch
+        // stays invisible while every save silently fails.
+        const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+        console.error(`[safety] DB save FAILED for report ${crisisReportId}: ${msg}`);
       }
     }
 
@@ -187,6 +193,8 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
       referralLevel:       'urgent',
       summary:             crisicSummary,
       functionalImpairment: null,
+      /** False when the report was not written to the database (see server logs). */
+      persisted,
       _meta: { safetyOverride: true, safetyCategory: safety.category },
     });
     return;
@@ -333,6 +341,7 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   // ── 6. Persist if authenticated ───────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userId = (req as any).user?.userId as string | undefined;
+  let persisted = false;
   if (saveSession && userId) {
     try {
       db.prepare(`
@@ -341,9 +350,14 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(reportId, userId, mode, concernPattern, referralLevel, summary, finalReport, clinicianMode ? 1 : 0,
         validatedImpairment);
+      persisted = true;
       console.log(`[mastra] saved report ${reportId} for user ${userId}`);
     } catch (dbErr) {
-      console.error('[mastra] DB save failed (non-fatal):', dbErr);
+      // Non-fatal: the user still receives the report. But log the actual
+      // message — an unlogged reason here is how a schema mismatch stays
+      // invisible while every save silently fails.
+      const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+      console.error(`[mastra] DB save FAILED for report ${reportId}: ${msg}`);
     }
   }
 
@@ -354,6 +368,8 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     referralLevel,
     summary,
     functionalImpairment: validatedImpairment,
+    /** False when the report was not written to the database (see server logs). */
+    persisted,
     // Research metadata — not displayed in the UI, inspectable via network tools.
     // timings covers the three server-measured phases; the Mastra workflow's
     // internal agent timings are logged separately to the console and eval exports.

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { applyColumnMigrations, verifyReportsSchema } from './dbMigrations.js';
 
 const DB_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
@@ -37,17 +38,25 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC);
 `);
 
-// Migration: add functional_impairment column to existing databases.
-// SQLite does not support IF NOT EXISTS on ALTER TABLE — catch the error if
-// the column already exists (SQLITE_ERROR: duplicate column name).
-try {
-  db.prepare('ALTER TABLE reports ADD COLUMN functional_impairment TEXT').run();
-} catch (err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (!msg.includes('duplicate column name')) {
-    throw err; // surface unexpected migration errors
-  }
-  // Column already present — nothing to do.
+// ── Migrations ────────────────────────────────────────────────────────────────
+// Databases created before a column was introduced need it added. See
+// dbMigrations.ts for the registry and for why presence is detected via
+// PRAGMA table_info rather than by matching ALTER TABLE error text.
+const appliedMigrations = applyColumnMigrations(db);
+if (appliedMigrations.length > 0) {
+  console.log(`[db] applied column migration(s): ${appliedMigrations.join(', ')}`);
+}
+
+// Fail loudly — but do not crash — if the write path's columns are still missing.
+// A missing column makes every report INSERT throw, and those throws are caught
+// as non-fatal in routes/workflow.ts, so without this check the only symptom is
+// reports silently never being saved.
+const schemaCheck = verifyReportsSchema(db);
+if (!schemaCheck.ok) {
+  console.error(
+    `[db] SCHEMA MISMATCH — reports table is missing: ${schemaCheck.missing.join(', ')}. ` +
+    `Report saves WILL fail until this is resolved.`
+  );
 }
 
 export default db;
