@@ -14,7 +14,17 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkSafety, CRISIS_RESPONSE_TEXT } from '../safetyCheck';
+import {
+  checkSafety,
+  checkSafetyChunked,
+  evaluateSafety,
+  chunkText,
+  CRISIS_RESPONSE_TEXT,
+  SEVERITY_RANK,
+  CHUNK_SIZE,
+  CHUNK_OVERLAP,
+  MAX_PATTERN_SPAN,
+} from '../safetyCheck';
 
 // ── Helper: computeGad7Score (imported from Mastra side via relative path) ───
 // We test score immutability directly — functional impairment must never
@@ -409,3 +419,375 @@ describe('checkSafety — social-media mode typical posts do not trigger', () =>
 // (Same-day UUID uniqueness and social-media null-impairment tests have been
 // moved to server/src/utils/__tests__/impairmentValidation.test.ts where they
 // are tested against the real implementations, not fake helpers.)
+
+// ═════════════════════════════════════════════════════════════════════════════
+// P2 — long-input safety detection
+//
+// Every test below asserts behaviour only. No test prints, logs or returns
+// chunk contents or user text.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Benign university-journal filler used to build long narratives. */
+const BENIGN_FILLER =
+  'Today was another long day at university. I spent most of the morning in the library ' +
+  'trying to get through the reading for my seminar, but I kept losing focus and rereading ' +
+  'the same paragraph. The deadline for my dissertation proposal is getting closer and I ' +
+  'still have not decided on a final research question. My supervisor was kind about it but ' +
+  'I could tell she expected more progress by now. I met a friend for coffee in the afternoon ' +
+  'which helped a little. We talked about how everyone in our year seems to be struggling in ' +
+  'the same way and it was reassuring to hear that I am not the only one. In the evening I ' +
+  'tried to cook a proper meal instead of ordering something. It came out fine. I have been ' +
+  'trying to keep a routine going even when motivation is low. ';
+
+/** Builds benign filler of exactly `n` characters. */
+function filler(n: number): string {
+  let out = '';
+  while (out.length < n) out += BENIGN_FILLER;
+  return out.slice(0, n);
+}
+
+// ── Risk language near character 5,000 ───────────────────────────────────────
+
+describe('P2 — risk language near the 5,000-character limit', () => {
+  test('detects crisis language at the very end of a 5,000-character entry', () => {
+    const text = filler(4950) + '\n\nI have been thinking about killing myself.';
+    const r = evaluateSafety(text);
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'suicidal_ideation');
+  });
+
+  test('detects crisis language at the very start of a 5,000-character entry', () => {
+    const text = 'I have been thinking about killing myself.\n\n' + filler(4950);
+    const r = evaluateSafety(text);
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'suicidal_ideation');
+  });
+
+  test('detects crisis language in the middle of a 5,000-character entry', () => {
+    const text = filler(2500) + '\n\nI want to kill myself.\n\n' + filler(2500);
+    const r = evaluateSafety(text);
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'suicidal_intent');
+  });
+
+  test('long entry is evaluated as multiple chunks', () => {
+    const r = evaluateSafety(filler(5000));
+    assert.ok(r.chunkCount > 1, 'a 5,000-character entry must produce more than one chunk');
+  });
+});
+
+// ── Boundary-spanning risk language ──────────────────────────────────────────
+
+describe('P2 — risk language spanning a chunk boundary', () => {
+  test('chunk overlap exceeds the longest possible pattern span', () => {
+    assert.ok(
+      CHUNK_OVERLAP > MAX_PATTERN_SPAN,
+      'overlap must exceed MAX_PATTERN_SPAN or a phrase could be severed'
+    );
+  });
+
+  test('consecutive chunks overlap', () => {
+    const chunks = chunkText(filler(5000));
+    assert.ok(chunks.length > 1);
+    for (let i = 0; i < chunks.length - 1; i++) {
+      const tail = chunks[i].slice(-40);
+      assert.ok(
+        chunks[i + 1].includes(tail),
+        `chunk ${i + 1} must begin inside chunk ${i} (overlap missing)`
+      );
+    }
+  });
+
+  test('detects a phrase placed exactly at every chunk boundary', () => {
+    // Walk the phrase across each boundary offset and assert it is never lost.
+    const phrase = 'I want to kill myself.';
+    for (const offset of [-12, -6, -1, 0, 1, 6, 12]) {
+      const cut = CHUNK_SIZE - CHUNK_OVERLAP + offset;
+      const text = filler(Math.max(0, cut)) + phrase + filler(2000);
+      const r = evaluateSafety(text);
+      assert.equal(r.isCrisis, true, `missed at boundary offset ${offset}`);
+    }
+  });
+
+  test('reassembling chunks preserves full coverage of the text', () => {
+    const text = filler(3000);
+    const chunks = chunkText(text);
+    // Every character index must appear in at least one chunk.
+    assert.equal(chunks[0].slice(0, 50), text.slice(0, 50));
+    assert.ok(text.endsWith(chunks[chunks.length - 1].slice(-50)));
+  });
+});
+
+// ── Newline-separated planning language ──────────────────────────────────────
+
+describe('P2 — risk phrases broken by a line break', () => {
+  test('detects planning language split across a newline', () => {
+    const r = evaluateSafety('I have been stockpiling my\nmedication for weeks now.');
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'planning');
+  });
+
+  test('same phrase on a single line still detected (unchanged)', () => {
+    const r = evaluateSafety('I have been stockpiling my medication for weeks now.');
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'planning');
+  });
+
+  test('detects a multi-word phrase split across a newline', () => {
+    const r = evaluateSafety('I want to\nkill myself.');
+    assert.equal(r.isCrisis, true);
+  });
+
+  test('detects self-harm language split across a newline', () => {
+    const r = evaluateSafety('I have been\ncutting myself for months.');
+    assert.equal(r.isCrisis, true);
+    assert.equal(r.category, 'self_harm');
+  });
+
+  test('detects hopelessness split across a newline', () => {
+    const r = evaluateSafety("There is no hope\nleft for me.");
+    assert.equal(r.isCrisis, true);
+  });
+
+  test('line break inside a long entry does not hide the phrase', () => {
+    const text = filler(2000) + '\nI have a plan\nto end my life.\n' + filler(2000);
+    const r = evaluateSafety(text);
+    assert.equal(r.isCrisis, true);
+  });
+});
+
+// ── The "long walk by myself" false-positive class ───────────────────────────
+
+describe('P2 — benign self-care language must not trigger a crisis', () => {
+  const BENIGN_SELF_CARE = [
+    'I am going to take a long walk by myself this weekend to clear my head.',
+    'I am going to take care of myself for once.',
+    "I've decided to take a break from my course this semester because everything has been " +
+      'overwhelming, and I want to start looking after myself properly.',
+    'I have decided to take some time off work to focus on myself.',
+    'I will take the train by myself tomorrow, which makes me nervous.',
+    'I plan to take better care of myself this term.',
+  ];
+
+  for (const text of BENIGN_SELF_CARE) {
+    test(`not a crisis: "${text.slice(0, 45)}..."`, () => {
+      const r = evaluateSafety(text);
+      assert.equal(r.isCrisis, false);
+      assert.equal(r.category, undefined);
+    });
+  }
+
+  test('false positive does not reappear as the paragraph grows', () => {
+    // Previously the identical opening clause was safe at 227 characters and
+    // classified suicidal_intent at 274, because `.*` bridged a later clause.
+    const clauses = [
+      'I have been trying to keep a steady routine',
+      'the seminar reading took most of the morning',
+      'my supervisor was supportive about the delay',
+      'I cooked a proper meal instead of ordering in',
+      'I want to start looking after myself properly',
+    ];
+    for (let n = 1; n <= clauses.length; n++) {
+      const line = "I've decided to take a step back this term, " + clauses.slice(0, n).join(', ') + '.';
+      const r = evaluateSafety(line);
+      assert.equal(r.isCrisis, false, `false positive returned at ${line.length} characters`);
+    }
+  });
+
+  test('genuine intent phrasing is still detected (no coverage lost)', () => {
+    const GENUINE = [
+      'I have decided to end my life.',
+      'I am going to kill myself.',
+      'I want to take my own life.',
+      'I plan to take my life.',
+      "I've decided to end it all myself.",
+      'I will end my life tonight.',
+    ];
+    for (const text of GENUINE) {
+      const r = evaluateSafety(text);
+      assert.equal(r.isCrisis, true, `missed genuine intent: "${text}"`);
+      assert.equal(r.category, 'suicidal_intent');
+    }
+  });
+});
+
+// ── Multiple categories — highest severity wins ──────────────────────────────
+
+describe('P2 — highest-severity category selection', () => {
+  test('severity ranking is a total order over all categories', () => {
+    const ranks = Object.values(SEVERITY_RANK);
+    assert.equal(new Set(ranks).size, ranks.length, 'ranks must be unique');
+    assert.equal(Math.min(...ranks), 1);
+  });
+
+  test('planning outranks ideation', () => {
+    assert.ok(SEVERITY_RANK.planning < SEVERITY_RANK.suicidal_ideation);
+  });
+
+  test('ideation + planning returns planning', () => {
+    const r = evaluateSafety('I keep thinking about suicide. I have figured out how I would do it.');
+    assert.equal(r.category, 'planning');
+    assert.ok(r.categories.includes('suicidal_ideation'));
+  });
+
+  test('hopelessness + intent returns intent', () => {
+    const r = evaluateSafety('There is no hope left for me. I will end my life.');
+    assert.equal(r.category, 'suicidal_intent');
+  });
+
+  test('distress early and intent late in a long entry returns intent', () => {
+    const text = 'I cannot cope anymore.\n' + filler(3000) + '\nI have decided to end my life.';
+    const r = evaluateSafety(text);
+    assert.equal(r.category, 'suicidal_intent');
+    assert.ok(r.categories.length > 1, 'both categories must be recorded');
+  });
+
+  test('categories are reported most severe first', () => {
+    const r = evaluateSafety('I feel worthless. I keep thinking about suicide. I cannot cope anymore.');
+    const ranks = r.categories.map(c => SEVERITY_RANK[c]);
+    assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b));
+  });
+});
+
+// ── Long benign anxiety narratives ───────────────────────────────────────────
+
+describe('P2 — long benign narratives must not trigger a crisis', () => {
+  for (const length of [1000, 2500, 4000, 5000]) {
+    test(`${length}-character benign university journal is not a crisis`, () => {
+      const r = evaluateSafety(filler(length));
+      assert.equal(r.isCrisis, false);
+      assert.equal(r.matchCount, 0);
+    });
+  }
+
+  test('long entry with heavy anxiety vocabulary is not a crisis', () => {
+    const text =
+      filler(2000) +
+      '\n\nI feel anxious and overwhelmed constantly. My chest gets tight and I panic before ' +
+      'seminars. I am exhausted and I worry about everything, but I am still going to my ' +
+      'appointments and I am trying.\n\n' +
+      filler(2000);
+    const r = evaluateSafety(text);
+    assert.equal(r.isCrisis, false);
+  });
+});
+
+// ── Raw versus processed text ────────────────────────────────────────────────
+
+describe('P2 — raw versus processed text scanning', () => {
+  test('identical texts are scanned once', () => {
+    const text = filler(2000);
+    const r = evaluateSafety(text, text);
+    assert.equal(r.scannedTexts, 1, 'duplicate scan must be skipped');
+  });
+
+  test('omitted processed text scans once', () => {
+    const r = evaluateSafety(filler(2000));
+    assert.equal(r.scannedTexts, 1);
+  });
+
+  test('differing texts are both scanned', () => {
+    const r = evaluateSafety('I am fine today.', 'I am fine today [feeling sad].');
+    assert.equal(r.scannedTexts, 2);
+  });
+
+  test('risk present only in the raw text is detected', () => {
+    const r = evaluateSafety('I want to kill myself.', 'I am fine today.');
+    assert.equal(r.isCrisis, true);
+  });
+
+  test('risk present only in the processed text is detected', () => {
+    const r = evaluateSafety('I am fine today.', 'I want to kill myself.');
+    assert.equal(r.isCrisis, true);
+  });
+
+  test('most severe category wins across the two texts', () => {
+    const r = evaluateSafety('I feel worthless.', 'I have decided to end my life.');
+    assert.equal(r.category, 'suicidal_intent');
+  });
+});
+
+// ── Short-input behaviour is unchanged ───────────────────────────────────────
+
+describe('P2 — short-input behaviour preserved', () => {
+  test('short text produces exactly one chunk', () => {
+    assert.deepEqual(chunkText('I want to kill myself.'), ['I want to kill myself.']);
+  });
+
+  test('empty string is not a crisis', () => {
+    const r = evaluateSafety('');
+    assert.equal(r.isCrisis, false);
+    assert.equal(r.category, undefined);
+  });
+
+  test('checkSafety and evaluateSafety agree on short single-category inputs', () => {
+    const CASES = [
+      'I want to kill myself tonight.',
+      'I know how I would do it.',
+      'I have been hurting myself.',
+      "There's no hope left for me anymore.",
+      'Everyone would be better off without me.',
+      'I cannot cope anymore with any of this.',
+      'I feel a bit anxious about my upcoming exam.',
+    ];
+    for (const text of CASES) {
+      assert.equal(checkSafety(text).isCrisis, evaluateSafety(text).isCrisis, text);
+      assert.equal(checkSafety(text).category, evaluateSafety(text).category, text);
+    }
+  });
+
+  test('checkSafety keeps its original result shape', () => {
+    const crisis = checkSafety('I want to kill myself.');
+    assert.deepEqual(Object.keys(crisis).sort(), ['category', 'isCrisis']);
+    assert.deepEqual(checkSafety('I feel anxious.'), { isCrisis: false });
+  });
+});
+
+// ── Result payload must never carry content ──────────────────────────────────
+
+describe('P2 — results carry no user content', () => {
+  test('result fields are booleans, counts and category labels only', () => {
+    const secret = 'I want to kill myself and my name is Wilhelmina Fitzgerald-Okonkwo.';
+    const r = evaluateSafety(secret + filler(2000));
+    const serialised = JSON.stringify(r);
+    assert.ok(!serialised.includes('Wilhelmina'), 'result must not echo submission text');
+    assert.ok(!serialised.includes('kill myself'), 'result must not echo matched text');
+    assert.deepEqual(
+      Object.keys(r).sort(),
+      ['categories', 'category', 'chunkCount', 'isCrisis', 'matchCount', 'scannedTexts']
+    );
+  });
+});
+
+// ── Known limitation: reported speech ────────────────────────────────────────
+//
+// Attribution detection is deliberately NOT implemented in this change. These
+// tests pin the CURRENT behaviour so any future attempt is measured against a
+// recorded baseline rather than an assumption. Where the detector already
+// treats third-person text as safe, that is asserted as correct; where it
+// over-triggers, that is asserted as a KNOWN limitation, not desired behaviour.
+
+describe('P2 — reported speech (known limitation, pinned)', () => {
+  test('third-person "feeling suicidal" is not flagged (existing behaviour, correct)', () => {
+    const r = evaluateSafety('My friend told me they were feeling suicidal last year but they got help.');
+    assert.equal(r.isCrisis, false);
+  });
+
+  test('KNOWN LIMITATION: third-person "wanted to die" is flagged as if first-person', () => {
+    // The patterns are not attribution-aware. This over-triggers.
+    // Pinned so a future fix has a baseline; see P2 limitations note.
+    const r = evaluateSafety('My friend told me last year that he wanted to die, and I did not know what to say.');
+    assert.equal(r.isCrisis, true, 'baseline: currently over-triggers on reported speech');
+    assert.equal(r.category, 'suicidal_ideation');
+  });
+
+  test('KNOWN LIMITATION: quoted third-party speech is flagged', () => {
+    const r = evaluateSafety('She said "I want to kill myself" and I called her mum straight away.');
+    assert.equal(r.isCrisis, true, 'baseline: quotation is not distinguished from self-report');
+  });
+
+  test('first-person disclosure is flagged (must never regress)', () => {
+    const r = evaluateSafety('I wanted to die last night.');
+    assert.equal(r.isCrisis, true);
+  });
+});

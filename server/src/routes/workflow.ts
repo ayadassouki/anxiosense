@@ -4,7 +4,7 @@ import db from '../db.js';
 import { validateText } from '../utils/validateText.js';
 import { preAssess } from '../utils/preAssess/pipeline.js';
 import { evaluateGrounding, calibrateConfidence } from '../utils/preAssess/grounding.js';
-import { checkSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
+import { evaluateSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
 import { validateFunctionalImpairment } from '../utils/validateFunctionalImpairment.js';
 
 const router   = Router();
@@ -141,11 +141,15 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   // Use preprocessed text for the Mastra workflow call
   const analysisText = preResult.processedText;
 
-  // ── Safety check — runs on raw text BEFORE calling Mastra ────────────────
+  // ── Safety check — runs BEFORE calling Mastra ────────────────────────────
   // Checks for credible high-risk language (suicidal ideation/intent, self-harm,
   // hopelessness, worthlessness, planning, severe distress).
   // If detected, bypass the AI pipeline entirely and return the crisis response.
-  const safety = checkSafety(userText!);
+  //
+  // Evaluates BOTH the raw submission and the pre-processed text the pipeline
+  // analyses, in overlapping chunks, returning the highest-severity category
+  // found anywhere. The second scan is skipped when the two texts are identical.
+  const safety = evaluateSafety(userText!, analysisText);
   if (safety.isCrisis) {
     const crisisReport =
       `# AnxioSense Screening Support Report\n\n` +
@@ -162,7 +166,6 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userId = (req as any).user?.userId as string | undefined;
-    let persisted = false;
     if (saveSession && userId) {
       try {
         db.prepare(`
@@ -176,13 +179,8 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
           clinicianMode ? 1 : 0,
           null // safety override — no impairment answer relevant
         );
-        persisted = true;
       } catch (dbErr) {
-        // Non-fatal: the user still receives the crisis response. But log the
-        // actual message — an unlogged reason here is how a schema mismatch
-        // stays invisible while every save silently fails.
-        const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
-        console.error(`[safety] DB save FAILED for report ${crisisReportId}: ${msg}`);
+        console.error('[safety] DB save failed (non-fatal):', dbErr);
       }
     }
 
@@ -193,9 +191,15 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
       referralLevel:       'urgent',
       summary:             crisicSummary,
       functionalImpairment: null,
-      /** False when the report was not written to the database (see server logs). */
-      persisted,
-      _meta: { safetyOverride: true, safetyCategory: safety.category },
+      _meta: {
+        safetyOverride: true,
+        safetyCategory: safety.category,
+        // Counts only — never chunk text or matched substrings.
+        safetyCategories:   safety.categories,
+        safetyMatchCount:   safety.matchCount,
+        safetyChunkCount:   safety.chunkCount,
+        safetyScannedTexts: safety.scannedTexts,
+      },
     });
     return;
   }
@@ -341,7 +345,6 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   // ── 6. Persist if authenticated ───────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userId = (req as any).user?.userId as string | undefined;
-  let persisted = false;
   if (saveSession && userId) {
     try {
       db.prepare(`
@@ -350,14 +353,9 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(reportId, userId, mode, concernPattern, referralLevel, summary, finalReport, clinicianMode ? 1 : 0,
         validatedImpairment);
-      persisted = true;
       console.log(`[mastra] saved report ${reportId} for user ${userId}`);
     } catch (dbErr) {
-      // Non-fatal: the user still receives the report. But log the actual
-      // message — an unlogged reason here is how a schema mismatch stays
-      // invisible while every save silently fails.
-      const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
-      console.error(`[mastra] DB save FAILED for report ${reportId}: ${msg}`);
+      console.error('[mastra] DB save failed (non-fatal):', dbErr);
     }
   }
 
@@ -368,8 +366,6 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
     referralLevel,
     summary,
     functionalImpairment: validatedImpairment,
-    /** False when the report was not written to the database (see server logs). */
-    persisted,
     // Research metadata — not displayed in the UI, inspectable via network tools.
     // timings covers the three server-measured phases; the Mastra workflow's
     // internal agent timings are logged separately to the console and eval exports.
