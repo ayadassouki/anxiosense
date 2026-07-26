@@ -446,7 +446,7 @@ export default function AssessmentPage() {
                       {/* Disclaimer */}
                       <Typography variant="caption"
                         sx={{ color: 'text.disabled', fontSize: 10, display: 'block', lineHeight: 1.5 }}>
-                        This score is from the GAD-7 screening questionnaire (Spitzer et al., 2006) and
+                        This score is from the GAD-7 screening questionnaire and
                         indicates a possible level of anxiety. It is not a clinical diagnosis — only a
                         qualified healthcare professional can make a clinical assessment.
                       </Typography>

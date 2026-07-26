@@ -560,6 +560,8 @@ ${indicatorLines}
 **Differential Considerations:**
 ${differentialText}
 ${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
+**Instrument provenance:** GAD-7 — Spitzer RL, Kroenke K, Williams JBW, Löwe B (2006), *Archives of Internal Medicine* 166(10):1092–1097. Items reproduced for educational and research use.
+
 *This section is intended for qualified clinicians only and must not be shared with the patient as part of the screening output.*`;
 
                 finalReport += clinicianBlock;

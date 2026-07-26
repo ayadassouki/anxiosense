@@ -17,31 +17,26 @@ import { getReport, type ReportSummary } from '../services/api';
 
 // ── Concern pattern config — labels and descriptions per supervisor guidance ──
 const CONCERN_CONFIG: Record<string, {
-  label: string; color: string; bg: string; border: string; description: string; citation?: string;
+  label: string; color: string; bg: string; border: string; description: string;
 }> = {
   'Minimal Concern Pattern': {
     label: 'Minimal Concern Pattern', color: '#059669', bg: '#ECFDF5', border: '#059669',
-    citation: 'Spitzer et al. (2006) · screening purposes only',
     description: 'Your responses suggest that experiences commonly associated with anxiety are currently limited. Occasional stress or worry is a normal part of life. If these feelings become more frequent or begin affecting your daily activities, you may wish to check in with a healthcare professional.',
   },
   'Mild Concern Pattern': {
     label: 'Mild Concern Pattern', color: '#D97706', bg: '#FFFBEB', border: '#D97706',
-    citation: 'Spitzer et al. (2006) · screening purposes only',
     description: 'Your responses indicate the presence of some anxiety-related experiences. While these feelings may not currently be causing substantial difficulties, monitoring how they change over time may be helpful. Consider using healthy coping strategies and seeking support if symptoms become more frequent or distressing.',
   },
   'Elevated Concern Pattern': {
     label: 'Elevated Concern Pattern', color: '#EA580C', bg: '#FFF7ED', border: '#EA580C',
-    citation: 'Spitzer et al. (2006) · screening purposes only',
     description: 'Your responses suggest several experiences that are commonly associated with anxiety and may be affecting your well-being. It may be beneficial to discuss these concerns with a healthcare professional who can provide a more comprehensive assessment and appropriate guidance.',
   },
   'High Concern Pattern': {
     label: 'High Concern Pattern', color: '#DC2626', bg: '#FEF2F2', border: '#DC2626',
-    citation: 'Spitzer et al. (2006) · screening purposes only',
     description: 'Your responses indicate a substantial number of experiences commonly associated with anxiety. Seeking support from a qualified healthcare professional may be beneficial. Effective treatments and support options are available, and discussing your concerns with a professional can help determine the most appropriate next steps.',
   },
   'Urgent Safety Notice': {
     label: 'Urgent Safety Notice', color: '#991B1B', bg: '#FEF2F2', border: '#991B1B',
-    // No Spitzer citation — this is a safety override, not a GAD-7 band
     description: 'Based on what you shared, there may be an immediate safety concern. This screening tool cannot provide crisis support — please reach out for help right away.',
   },
 };
@@ -61,8 +56,17 @@ function parseSections(text: string): { heading: string; body: string }[] {
 
   const headingRe = /^(?:#{1,3}\s+|[\d]+\.\s+)(.+)/;
 
+  // Lines inside a fenced block are literal content (the Submitted Input
+  // section) and must never be parsed as report structure.
+  let inFence = false;
+
   for (const line of lines) {
-    const match = line.match(headingRe);
+    if (/^\s*`{3,}\s*$/.test(line)) {
+      inFence = !inFence;
+      if (current) current.body.push(line);
+      continue;
+    }
+    const match = inFence ? null : line.match(headingRe);
     if (match) {
       if (current) result.push({ heading: current.heading, body: current.body.join('\n').trim() });
       current = { heading: match[1].replace(/\*\*/g, '').trim(), body: [] };
@@ -81,7 +85,38 @@ function parseSections(text: string): { heading: string; body: string }[] {
   return result.filter(s => s.heading || s.body);
 }
 
-function renderBody(text: string) {
+function renderBody(text: string): React.ReactNode {
+  // Pull out fenced blocks first — their contents are reproduced verbatim as
+  // preformatted text, never interpreted as markdown.
+  const fenceMatch = text.match(/^([\s\S]*?)\n?(`{3,})\n([\s\S]*?)\n\2\s*$/);
+  if (fenceMatch) {
+    const [, before, , quoted] = fenceMatch;
+    return (
+      <>
+        {before.trim() ? renderBody(before) : null}
+        <Box
+          component="pre"
+          sx={{
+            mt: 1.5, mb: 0, p: 2,
+            bgcolor: 'rgba(79,124,172,0.04)',
+            border: '1px solid rgba(79,124,172,0.15)',
+            borderRadius: 2,
+            fontFamily: 'inherit',
+            fontSize: 14,
+            lineHeight: 1.8,
+            color: 'text.secondary',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            maxHeight: 420,
+            overflowY: 'auto',
+          }}
+        >
+          {quoted}
+        </Box>
+      </>
+    );
+  }
+
   return text.split('\n').map((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) return <Box key={i} mb={1} />;
@@ -250,8 +285,25 @@ export default function ReportPage() {
       const out: string[] = [];
       let inList = false;
 
+      let inFence = false;
+      let fenceBuffer: string[] = [];
+
       for (const line of lines) {
         const trimmed = line.trim();
+
+        // Fenced block — emit as preformatted, escaped, uninterpreted text.
+        if (/^`{3,}$/.test(trimmed)) {
+          if (inFence) {
+            out.push(`<pre class="submitted-input">${escapeHtml(fenceBuffer.join('\n'))}</pre>`);
+            fenceBuffer = [];
+            inFence = false;
+          } else {
+            if (inList) { out.push('</ul>'); inList = false; }
+            inFence = true;
+          }
+          continue;
+        }
+        if (inFence) { fenceBuffer.push(line); continue; }
 
         if (!trimmed) {
           if (inList) { out.push('</ul>'); inList = false; }
@@ -295,6 +347,10 @@ export default function ReportPage() {
         out.push(`<p>${content}</p>`);
       }
 
+      if (inFence && fenceBuffer.length) {
+        // Unterminated fence — emit what we have rather than dropping it.
+        out.push(`<pre class="submitted-input">${escapeHtml(fenceBuffer.join('\n'))}</pre>`);
+      }
       if (inList) out.push('</ul>');
       return out.join('\n');
     }
@@ -426,6 +482,23 @@ export default function ReportPage() {
     .section-body ul li::before { content: "·  "; color: #4F7CAC; }
     .section-body hr  { border: none; border-top: 1px solid #e5e7eb; margin: 8px 0; }
     .section-body .md-heading { font-size: 11pt; color: #333; margin: 8px 0 4px; }
+    /* Submitted Input — verbatim user text. Allowed to break across pages,
+       unlike the other sections, because it can run to 5,000 characters. */
+    .section-body .submitted-input {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: 'Georgia', serif;
+      font-size: 10pt;
+      line-height: 1.7;
+      color: #444;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      page-break-inside: auto;
+    }
+    .section:has(.submitted-input) { page-break-inside: auto; }
     /* Clinician section */
     .clinician-section {
       page-break-before: always;
@@ -477,7 +550,6 @@ export default function ReportPage() {
     <p class="concern-label">CONCERN PATTERN</p>
     <p class="concern-value">${concern.label}</p>
     <p class="concern-desc">${concern.description}</p>
-    ${concern.citation ? `<p class="concern-cite">${concern.citation}</p>` : ''}
   </div>
 
   <div class="referral-box">
@@ -623,11 +695,6 @@ export default function ReportPage() {
                     sx={{ color: concern.color, opacity: 0.85, mb: 1 }}>
                     {concern.description}
                   </Typography>
-                  {concern.citation && (
-                    <Typography variant="caption" sx={{ color: concern.color, opacity: 0.55, fontSize: 10 }}>
-                      {concern.citation}
-                    </Typography>
-                  )}
                 </Box>
 
                 {/* Referral level */}

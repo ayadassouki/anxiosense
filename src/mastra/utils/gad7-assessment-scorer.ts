@@ -161,7 +161,7 @@ export function formatGad7ForReport(result: Gad7Result): string {
         `Your responses over the past two weeks:`,
         itemLines,
         ``,
-        `This score is derived from the GAD-7 screening questionnaire (Spitzer et al., 2006). ` +
+        `This score is derived from the GAD-7 screening questionnaire. ` +
         `It indicates a possible level of anxiety and is intended for screening purposes only. ` +
         `It is not a clinical diagnosis — only a qualified healthcare professional can make a clinical assessment.`,
     ].join('\n');

@@ -6,6 +6,7 @@ import { preAssess } from '../utils/preAssess/pipeline.js';
 import { evaluateGrounding, calibrateConfidence } from '../utils/preAssess/grounding.js';
 import { evaluateSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
 import { validateFunctionalImpairment } from '../utils/validateFunctionalImpairment.js';
+import { insertSubmittedInput } from '../utils/submittedInput.js';
 
 const router   = Router();
 const MASTRA   = process.env.MASTRA_URL ?? 'http://localhost:4111';
@@ -341,6 +342,19 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
 
   const summary  = extractSummary(finalReport);
   const reportId = uuid();
+
+  // ── 5b. Submitted Input section ───────────────────────────────────
+  // Added LAST, after concern-pattern/referral derivation, the grounding
+  // evaluation and summary extraction have all read the report. Order matters:
+  // inserting earlier would put the user's own words inside the text the
+  // grounding evaluator scores, driving lexical overlap towards 1.0 and
+  // invalidating that research metric. Nothing below reads the report again,
+  // so no assessment output can be affected by this.
+  //
+  // Uses the RAW submission (userText), not the pre-processed analysisText, so
+  // the reader sees exactly what they typed. The crisis path returns earlier and
+  // deliberately does not include this section.
+  finalReport = insertSubmittedInput(finalReport, userText!, mode);
 
   // ── 6. Persist if authenticated ───────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
