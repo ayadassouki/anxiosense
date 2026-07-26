@@ -11,7 +11,12 @@ import {
     getPatientRecommendation,
     getStandardClinicalRecommendation,
     getFunctionalImpairmentLabel,
+    buildRecommendationDirective,
+    renderRecommendationPrompt,
+    enforceRecommendation,
     type FunctionalImpairment,
+    type ConcernPattern,
+    type ReferralLevel,
 } from '../utils/clinical-support-recommendation-policy';
 
 // ── Input schema ─────────────────────────────────────────────────────────────
@@ -311,45 +316,30 @@ Based on what you shared, there may be an immediate safety concern that requires
 
             const gad7Severity = session?.gad7Severity ?? null;
 
-            let recommendationInstruction: string;
+            // ── Recommendation directive ──────────────────────────────────────
+            // The anchor is selected exactly as before: the severity × impairment
+            // lookup when journal mode supplied both, otherwise the concern-pattern
+            // anchor. Severity, concern pattern and referral level are already
+            // decided here — the LLM never chooses any of them, it only writes
+            // context around a fixed sentence, and enforceRecommendation() below
+            // restores the anchor if it strays.
+            const recommendationDirective = buildRecommendationDirective({
+                mode,
+                severity:       gad7Severity as Parameters<typeof getPatientRecommendation>[0] | null,
+                impairment:     functionalImpairment as FunctionalImpairment | null,
+                referralLevel:  inputData.riskLevel as ReferralLevel,
+                concernPattern: concernPatternForReport as ConcernPattern,
+                // Labels only — toSafeLabels() drops the GEN-1 fallback claim and
+                // anything sentence-shaped, so no user sentence reaches the prompt.
+                symptomClaims: inputData.claimValidations.filter(
+                    v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'symptom'
+                ),
+                stressorClaims: inputData.claimValidations.filter(
+                    v => v.supportStatus !== 'unsupported' && v.sourceAgent === 'context'
+                ),
+            });
 
-            if (
-                mode === 'journal' &&
-                gad7Severity &&
-                functionalImpairment &&
-                ['minimal','mild','moderate','severe'].includes(gad7Severity) &&
-                ['not_difficult_at_all','somewhat_difficult','very_difficult','extremely_difficult'].includes(functionalImpairment)
-            ) {
-                // Deterministic lookup — exact text from PDF specification.
-                // Tell LLM to include this verbatim without any modification.
-                const exactText = getPatientRecommendation(
-                    gad7Severity as 'minimal' | 'mild' | 'moderate' | 'severe',
-                    functionalImpairment as FunctionalImpairment
-                );
-                recommendationInstruction =
-                    `Include the following patient-facing recommendation VERBATIM — do not paraphrase, ` +
-                    `shorten, expand, or rewrite it in any way:\n\n"${exactText}"`;
-            } else if (concernPatternForReport === 'Minimal Concern Pattern') {
-                recommendationInstruction =
-                    'State that no immediate follow-up is indicated. Note that occasional mild experiences are a normal part of life. ' +
-                    'Suggest monitoring how these experiences change over time and considering speaking with a healthcare professional ' +
-                    'only if they become more frequent, worsen, or begin affecting daily functioning.';
-            } else if (concernPatternForReport === 'Mild Concern Pattern') {
-                recommendationInstruction =
-                    'Use monitoring language only — do NOT recommend professional consultation as the default outcome. ' +
-                    'Include this wording verbatim: "Monitoring how these experiences change over time may be helpful. ' +
-                    'Consider speaking with a healthcare professional if they become more frequent, worsen, or begin affecting daily functioning." ' +
-                    'Do not add language implying referral is necessary or urgent.';
-            } else if (concernPatternForReport === 'Elevated Concern Pattern') {
-                recommendationInstruction =
-                    'State that it may be beneficial to discuss these concerns with a qualified healthcare professional who can ' +
-                    'provide a comprehensive assessment and appropriate guidance. Keep tone helpful and non-urgent.';
-            } else {
-                // High Concern Pattern
-                recommendationInstruction =
-                    'State that seeking support from a qualified healthcare professional may be beneficial. Note that effective support ' +
-                    'options are available and that discussing these concerns with a professional can help determine the most appropriate next steps.';
-            }
+            const recommendationInstruction = renderRecommendationPrompt(recommendationDirective);
 
             // ── LLM generates Supporting Findings + Recommendation + Limitations ─
             // Supporting Findings are generated by the LLM (not TypeScript) so it can
@@ -414,6 +404,21 @@ CRITICAL RULES — any violation makes the report unusable:
                 llmBody = recIdx !== -1
                     ? fallback + '\n\n' + llmBody.slice(recIdx)
                     : fallback + '\n\n' + llmBody;
+            }
+
+            // ── Enforce the recommendation (deterministic) ────────────────────
+            // Rejects a Recommendation section that dropped or altered the anchor,
+            // or that changed the level of concern, added a diagnosis, or
+            // introduced techniques/resources. On rejection the anchor is restored
+            // verbatim and the model's addition is discarded — so the clinical
+            // classification cannot be moved by generation.
+            const enforcement = enforceRecommendation(llmBody, recommendationDirective);
+            llmBody = enforcement.body;
+            if (enforcement.enforced) {
+                console.warn(
+                    `[AnxioSense] Recommendation rejected and reset to the deterministic anchor ` +
+                    `(${recommendationDirective.anchorSource}); violations: ${enforcement.violations.join(', ')}`
+                );
             }
 
             // ── Build Assessment Overview (deterministic TypeScript) ──────────
