@@ -41,10 +41,8 @@ Structural rules:
 - Follow the exact section numbering and headings provided in the prompt.
 - If a section's claim list is "None", write the prescribed placeholder sentence.
 - The final sentence of the report must be exactly:
-  "This report is intended for screening support only and should not be considered
-  a clinical diagnosis. It is based solely on the information provided. If these
-  experiences persist, worsen, or significantly affect daily life, consider speaking
-  with a qualified healthcare professional for a comprehensive assessment."
+  "This report is intended for screening support only, is not a clinical diagnosis, and cannot replace a comprehensive assessment by a qualified healthcare professional."
+- Do not restate a disclaimer that this closing sentence already makes.
 
 Mode-specific rules:
 - Journal mode: treat text as first-person self-disclosure.

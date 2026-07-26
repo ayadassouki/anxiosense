@@ -1,6 +1,7 @@
 import 'dotenv/config'; // MUST be first — loads server/.env before any other module reads process.env
 import express from 'express';
 import cors from 'cors';
+import { buildCorsOptions } from './utils/corsOrigin.js';
 
 import authRoutes     from './routes/auth.js';
 import reportsRoutes  from './routes/reports.js';
@@ -14,15 +15,9 @@ const app  = express();
 const PORT = Number(process.env.PORT ?? 3001);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'https://anxiosense.vercel.app',
-  ...(process.env.EXTRA_CORS_ORIGINS
-    ? process.env.EXTRA_CORS_ORIGINS.split(',').map(o => o.trim())
-    : []),
-];
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+// Exact-match allowlist plus a scoped hostname pattern for Vercel previews,
+// whose per-deployment URLs change on every build. See utils/corsOrigin.ts.
+app.use(cors(buildCorsOptions()));
 app.use(express.json({ limit: '1mb' }));
 
 // Basic rate-limit (simple in-memory, dev-grade)

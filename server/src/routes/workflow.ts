@@ -7,6 +7,7 @@ import { evaluateGrounding, calibrateConfidence } from '../utils/preAssess/groun
 import { evaluateSafety, CRISIS_RESPONSE_TEXT } from '../utils/safetyCheck.js';
 import { validateFunctionalImpairment } from '../utils/validateFunctionalImpairment.js';
 import { insertSubmittedInput } from '../utils/submittedInput.js';
+import { buildCrisisReport } from '../utils/crisisReport.js';
 
 const router   = Router();
 const MASTRA   = process.env.MASTRA_URL ?? 'http://localhost:4111';
@@ -152,15 +153,11 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
   // found anywhere. The second scan is skipped when the two texts are identical.
   const safety = evaluateSafety(userText!, analysisText);
   if (safety.isCrisis) {
-    const crisisReport =
-      `# AnxioSense Screening Support Report\n\n` +
-      `## Important — Safety Alert\n\n` +
-      `${CRISIS_RESPONSE_TEXT}\n\n` +
-      `---\n\n` +
-      `*This screening tool is not a crisis service. If you are in immediate danger, ` +
-      `please call your local emergency number now.*\n\n` +
-      `*This report has not been generated. When a safety concern is identified, ` +
-      `your wellbeing takes priority. Please seek support now.*`;
+    // Crisis override report. Guidance wording is unchanged and pinned by tests;
+    // the Submitted Input section is added for traceability through the SAME
+    // helper normal reports use, so sanitisation is identical. Everything else
+    // the normal pipeline produces stays bypassed.
+    const crisisReport = buildCrisisReport(userText!, mode);
 
     const crisisReportId = uuid();
     const crisicSummary  = CRISIS_RESPONSE_TEXT.slice(0, 200);

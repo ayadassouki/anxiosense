@@ -369,8 +369,9 @@ Rules:
 ${recommendationInstruction}
 
 ## Limitations
-State that: (a) the report is based only on the information provided; (b) missing context may affect interpretation; (c) this is not a clinical diagnosis; (d) a qualified healthcare professional is needed for a clinical assessment.${mode === 'social-media' ? ' Also note that social media text adds additional uncertainty to the analysis.' : ''}
-End with exactly: "This report is intended for screening support only and should not be considered a clinical diagnosis."
+Write exactly TWO sentences, and do not repeat an idea that the other sentence already covers.
+Sentence 1: state that the report is based only on the information provided and that missing context may affect interpretation.${mode === 'social-media' ? ' In this sentence also note that social media text adds further uncertainty.' : ''}
+Sentence 2: end with exactly this wording — "This report is intended for screening support only, is not a clinical diagnosis, and cannot replace a comprehensive assessment by a qualified healthcare professional."
 
 CRITICAL RULES — any violation makes the report unusable:
 - Do NOT include a document title, Assessment Overview, or Evidence Agreement
