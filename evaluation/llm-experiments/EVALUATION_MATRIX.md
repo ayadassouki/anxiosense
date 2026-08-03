@@ -92,3 +92,49 @@ Status: pre-experiment (no paid API calls made)
 3. **Cross-split overlaps reported, not removed**: 3 Dreaddit + 18 GoEmotions train/val texts also appear in the test set. These are logged in `exclusion_log.json` under `cross_split_overlaps` and are retained in the dataset. They do not affect test-split integrity; removing them from train would artificially shrink training diversity without improving evaluation rigour.
 
 4. **Failure rate is a first-class metric**: Parse failures (referralLevel missing, emotion_agent_raw null, hallucinated labels) are counted in a separate failure rate column and never silently counted as incorrect predictions.
+
+---
+
+## Decoding parameters (frozen 2026-08-03)
+
+Identical for **every model and every prompting strategy**. Before this date neither
+parameter was sent to the API, so each provider's own defaults applied and were never
+recorded.
+
+| Parameter | Value | Applies to |
+|---|---|---|
+| `temperature` | **0.0** | all 5 models × 3 strategies |
+| `max_tokens` | **4096** | all 5 models × 3 strategies |
+| `seed` | unset | moot at temperature 0 |
+
+**Why 0.0.** Temperature was previously unset, so OpenRouter's default of 1.0 applied —
+confirmed from the API's own response echo. At that setting sampling noise is comparable
+in size to the effects under study: across 200 repeated calls on a single GoEmotions
+sample the pipeline returned the in-vocabulary label `anxiety` ~70% of the time and the
+out-of-vocabulary word `worried` ~26%, a 26% label flip from sampling alone, against an
+interim macro-F1 spread between strategies of .372 / .469 / .464. Temperature is also not
+comparable across model families — 1.0 on Llama and 1.0 on Mistral are different entropy
+regimes — so 0.0 is the only value that denotes the same condition for all five models.
+
+*Consequence, stated explicitly:* with temperature at 0 the five runs per cell no longer
+estimate sampling variance. What they capture is residual provider nondeterminism
+(batching and kernel scheduling), which is real but small. Reported variability must be
+described as decoding nondeterminism on a fixed evaluation set, not as sampling
+uncertainty. A single sensitivity cell at temperature 1.0 is retained for the appendix to
+show the strategy ranking is stable.
+
+**Why 4096.** Uniform across models and strategies. It sits far above the longest observed
+output (report step ~100 completion tokens, chain-of-thought prose ~250) and inside every
+configured model's limit. The bias direction is what matters: a binding cap truncates the
+longest outputs first, and those are the CoT strategies — precisely the comparison this
+study makes, so a low cap would penalise CoT systematically. Values previously differed
+per model (16384 / 32768 / 65536), which never bound in practice but was an unjustifiable
+inconsistency.
+
+**Where enforced.** `src/mastra/utils/model-provider.ts`
+(`DECODING_TEMPERATURE`, `DECODING_MAX_TOKENS`) injects both into every outgoing request,
+for the OpenRouter, Groq and Mistral providers alike.
+`config/experiment_config.yaml` carries the same values, and the runner copies them into
+each cell's `*_meta.json` under `decoding`, so every result file records the parameters it
+was produced under. The two locations must be kept identical; verify with
+`scripts/verify_provider_routing.ts`, which prints the actual outgoing request body.

@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.51",
+    "@ai-sdk/mistral": "^4.0.17",
+    "@ai-sdk/openai": "^4.0.24",
     "@mastra/core": "^1.42.0",
     "@mastra/duckdb": "^1.4.2",
     "@mastra/evals": "^1.3.0",

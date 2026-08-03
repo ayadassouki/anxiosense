@@ -1,7 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
-
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+import { createConfiguredModel } from '../utils/model-provider';
 
 export const emotionAnalysisAgent = new Agent({
     id: 'emotion-agent',
@@ -97,5 +95,5 @@ Step 6 — Return:
 Return only valid compact JSON. No other text.
 
 {"emotions":[],"emotional_intensity":"low | moderate | high","evidence_from_text":[]}`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });

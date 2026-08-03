@@ -1,7 +1,8 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
+import { createConfiguredModel } from '../utils/model-provider';
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
+
 
 export const crossAgentOutputValidationAgent = new Agent({
     id: 'validation-agent',
@@ -118,5 +119,5 @@ Return only valid JSON:
   "unsupported_or_removed_claims": [],
   "validation_notes": ""
 }`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });

@@ -1,7 +1,8 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
+import { createConfiguredModel } from '../utils/model-provider';
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
+
 
 export const contextualStressorAnalysisAgent = new Agent({
     id: 'context-agent',
@@ -77,5 +78,5 @@ Step 5 — Return:
 
 Return only compact valid JSON. The JSON must be complete — it must have a closing } bracket.
 Do not truncate or leave the JSON open. Always close every bracket and brace.`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });

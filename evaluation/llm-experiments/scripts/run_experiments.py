@@ -90,6 +90,8 @@ Run compute_metrics.py after all cells are complete to aggregate results.
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
 import json
 import logging
 import os
@@ -122,6 +124,31 @@ CONFIG_PATH = REPO_ROOT / "evaluation" / "llm-experiments" / "config" / "experim
 # "emotions" array is truncated away and the record becomes unrecoverable.
 # Set to None to disable truncation entirely.
 EMOTION_RAW_STORAGE_CAP = 20000
+
+
+def _read_id_file(path: Path) -> list[str]:
+    """
+    Read sample_ids from a plain list (one per line, '#' comments allowed) or
+    from a CSV carrying a 'sample_id' column. Order is preserved; duplicates
+    are dropped, keeping first occurrence.
+    """
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    first = lines[0] if lines else ""
+    ids: list[str] = []
+    if "sample_id" in first and "," in first:
+        with path.open(encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                sid = (row.get("sample_id") or "").strip()
+                if sid:
+                    ids.append(sid)
+    else:
+        for ln in lines:
+            ln = ln.strip()
+            if ln and not ln.startswith("#"):
+                ids.append(ln)
+    seen: set[str] = set()
+    return [i for i in ids if not (i in seen or seen.add(i))]
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +193,12 @@ def write_cell_metadata(
     sample_ids: list[str],
     gt_label_distribution: dict,
     exclude_ids: list[str],
-    phase: str,  # "dry_run" or "live"
+    phase: str,  # "dry_run" | "live" | "rerun_subset"
+    only_ids: list[str] | None = None,
+    full_draw_ids: list[str] | None = None,
+    sampling_mode: str = "stratified_draw",
+    sample_ids_sha256: str = "",
+    decoding: dict | None = None,
 ) -> Path:
     """
     Write a per-cell metadata JSON file to meta_dir.
@@ -198,7 +230,20 @@ def write_cell_metadata(
         "run": run,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "exclude_ids": exclude_ids,
+        # Targeted re-collection provenance. When only_ids is set, sample_ids is
+        # the DISPATCHED subset, not the full draw — full_draw_ids records the
+        # complete stratified draw so the subset can be audited against it.
+        "only_ids": sorted(only_ids) if only_ids else [],
+        "sampling_mode": sampling_mode,
+        "sample_ids_sha256": sample_ids_sha256,
+        "full_draw_count": len(full_draw_ids) if full_draw_ids else len(sample_ids),
+        "full_draw_ids": list(full_draw_ids) if full_draw_ids else list(sample_ids),
+        "is_partial_cell": bool(only_ids),
         "gt_label_distribution": gt_label_distribution,
+        # Frozen decoding parameters actually in force for this cell, copied from
+        # config/experiment_config.yaml. Enforced server-side in
+        # src/mastra/utils/model-provider.ts — the two must match.
+        "decoding": decoding or {},
         "pricing": {
             "input_price_per_million_usd":  INPUT_PRICE_PER_MILLION,
             "output_price_per_million_usd": OUTPUT_PRICE_PER_MILLION,
@@ -480,6 +525,15 @@ def run_one_cell(
         model_actual      = normalize_model_id(raw_model_actual)
         strategy_actual   = meta_block.get("strategy_used", strategy)
 
+        # Upstream provider that actually served this sample's agent calls.
+        # OpenRouter routes one model across several upstreams; on 2026-08-03 the
+        # `Google` upstream was found to return token-dropped output. Routing is pinned
+        # in src/mastra/utils/model-provider.ts — this column is the per-row proof the
+        # pin held. "MIXED" means one assessment hit more than one upstream.
+        upstream_provider      = meta_block.get("upstream_provider") or None
+        upstream_providers_raw = meta_block.get("upstream_providers") or []
+        upstream_providers_all = ";".join(upstream_providers_raw) if upstream_providers_raw else None
+
         # Internal quality flags from the server (set by Mastra workflow steps).
         # Present only when the server runs the updated workflow; default False on
         # safety-override path or legacy server versions.
@@ -557,6 +611,8 @@ def run_one_cell(
             "dataset":                    dataset_name,
             "model_id":                   normalize_model_id(model_id),  # normalised
             "model_actual":               model_actual,                   # normalised
+            "upstream_provider":          upstream_provider,
+            "upstream_providers_all":     upstream_providers_all,
             "strategy":                   strategy,
             "strategy_actual":            strategy_actual,
             "run":                        run_number,
@@ -689,8 +745,40 @@ def main() -> None:
              "Default: 42 (Stage B used 42; Stage C should use a different value). "
              "Recorded in every result record.",
     )
+    parser.add_argument(
+        "--only-ids", default=None,
+        help="Comma-separated sample_id values to KEEP. Applied AFTER the "
+             "stratified draw, so the draw itself is unchanged and the retained "
+             "rows carry the same text and ground truth as the original run. "
+             "Use for targeted re-collection of specific failed records.",
+    )
+    parser.add_argument(
+        "--only-ids-file", default=None,
+        help="Path to a file of sample_id values to KEEP (one per line, or a "
+             "CSV with a 'sample_id' column, e.g. reanalysis/rerun_manifest.csv). "
+             "Merged with --only-ids if both are given.",
+    )
+    parser.add_argument(
+        "--sample-ids-file", default=None,
+        help="Use EXACTLY these sample_ids as the evaluation set, bypassing the "
+             "stratified draw entirely. One id per line, or a CSV with a "
+             "'sample_id' column. Generated by scripts/build_stage_c_sample.py. "
+             "--sample-size is ignored when this is set. Aborts if any id is "
+             "missing from the split. This is the reproducible way to hold one "
+             "evaluation set fixed across runs and strategies.",
+    )
+    parser.add_argument(
+        "--run-start", type=int, default=1,
+        help="First run number to write. Runs are numbered "
+             "[run-start, run-start + runs). Use --run-start 2 --runs 4 to "
+             "produce run2..run5 without touching existing run1 files. "
+             "Default: 1.",
+    )
 
     args = parser.parse_args()
+
+    if args.run_start < 1:
+        parser.error("--run-start must be >= 1")
 
     cfg = load_config(CONFIG_PATH)
 
@@ -733,6 +821,62 @@ def main() -> None:
             len(exclude_ids_set),
         )
 
+    # ── Frozen evaluation set (--sample-ids-file) ──────────────────────────
+    # Maps dataset -> (ids, sha256). Empty when no frozen set was requested.
+    # --sample-ids-file accepts either a single file (used for every dataset
+    # selected) or a DIRECTORY, in which case '<dataset>_sample_ids.txt' is
+    # resolved per dataset — the layout build_stage_c_sample.py emits, so one
+    # flag covers a multi-dataset run.
+    frozen_sets: dict[str, tuple[list[str], str]] = {}
+    if args.sample_ids_file:
+        p = Path(args.sample_ids_file)
+        if not p.exists():
+            logger.error("--sample-ids-file not found: %s", p)
+            sys.exit(1)
+        for ds_name in datasets:
+            src = p / f"{ds_name}_sample_ids.txt" if p.is_dir() else p
+            if not src.exists():
+                logger.error(
+                    "No frozen id file for dataset '%s' (looked for %s). "
+                    "Generate it with build_stage_c_sample.py.", ds_name, src)
+                sys.exit(1)
+            ids = _read_id_file(src)
+            if not ids:
+                logger.error("Frozen id file is empty: %s", src)
+                sys.exit(1)
+            sha = hashlib.sha256("\n".join(ids).encode("utf-8")).hexdigest()
+            frozen_sets[ds_name] = (ids, sha)
+            logger.info(
+                "--sample-ids-file: %s -> %d id(s) from %s (sha256=%s)",
+                ds_name, len(ids), src.name, sha[:16],
+            )
+        logger.info("  (--sample-size is ignored when --sample-ids-file is set)")
+
+    # ── Inclusion list (targeted re-collection) ────────────────────────────
+    # Applied AFTER the stratified draw so the draw is byte-for-byte the one the
+    # original run used; this only narrows which of those rows are dispatched.
+    only_ids_set: set[str] = set()
+    if args.only_ids:
+        only_ids_set |= {s.strip() for s in args.only_ids.split(",") if s.strip()}
+    if args.only_ids_file:
+        p = Path(args.only_ids_file)
+        if not p.exists():
+            logger.error("--only-ids-file not found: %s", p)
+            sys.exit(1)
+        only_ids_set |= set(_read_id_file(p))
+    if only_ids_set:
+        logger.info(
+            "--only-ids: restricting dispatch to %d sample_id(s) after the draw.",
+            len(only_ids_set),
+        )
+        if only_ids_set & exclude_ids_set:
+            logger.error(
+                "These sample_id(s) appear in BOTH --only-ids and --exclude-ids "
+                "and would yield an empty set: %s",
+                sorted(only_ids_set & exclude_ids_set),
+            )
+            sys.exit(1)
+
     if not models:
         logger.error("No models matched --model %s. Available: %s",
                      args.model, [m.id for m in cfg.models])
@@ -740,10 +884,27 @@ def main() -> None:
 
     # ── Cost estimate and safety gate ──────────────────────────────────────
     total_cells       = len(datasets) * len(models) * len(strategies) * n_runs
-    total_assessments = total_cells * sample_size
+    # --only-ids narrows each cell to the requested IDs, so the billable count
+    # is the size of that list, not the full draw. Without this the estimate
+    # (and --max-cost-usd) would be computed against sample_size and overstate
+    # a targeted re-collection by an order of magnitude.
+    if frozen_sets:
+        sizes = {len(v[0]) for v in frozen_sets.values()}
+        effective_sample_size = max(sizes)
+        if len(sizes) > 1:
+            logger.warning(
+                "Frozen sets differ in size %s; cost estimate uses the largest.",
+                sorted(sizes))
+    elif only_ids_set:
+        effective_sample_size = min(sample_size, len(only_ids_set))
+    else:
+        effective_sample_size = sample_size
+    total_assessments = total_cells * effective_sample_size
     total_llm_calls   = total_assessments * 5  # 5 agents per assessment
 
-    projected_cost = print_cost_estimate(datasets, models, strategies, n_runs, sample_size)
+    projected_cost = print_cost_estimate(
+        datasets, models, strategies, n_runs, effective_sample_size
+    )
 
     logger.info(
         "Plan: %d datasets × %d models × %d strategies × %d runs = %d cells  "
@@ -799,12 +960,31 @@ def main() -> None:
             n_after_excl = len(df_preview)
 
             # ── Stratified sample ─────────────────────────────────────────────
-            preview_sample = sample_dataset(
-                df_preview,
-                n=sample_size,
-                random_state=args.sample_seed,
-                stratify_col=ds_cfg_preview.label_column,
-            )
+            # Mirror the live sampling path exactly, or the dry-run projection
+            # describes a different evaluation set than the one that would run.
+            pv_ids, _pv_sha = frozen_sets.get(preview_dataset, ([], ""))
+            if pv_ids:
+                present_p = set(df_preview["sample_id"].astype(str))
+                wanted_p = [s for s in pv_ids if s in present_p]
+                miss_p = [s for s in pv_ids if s not in present_p]
+                if miss_p:
+                    logger.error(
+                        "  %d id(s) from --sample-ids-file are not in the %s "
+                        "'%s' split: %s",
+                        len(miss_p), preview_dataset, args.split, miss_p[:10],
+                    )
+                    sys.exit(1)
+                preview_sample = (
+                    df_preview[df_preview["sample_id"].astype(str).isin(wanted_p)]
+                    .reset_index(drop=True)
+                )
+            else:
+                preview_sample = sample_dataset(
+                    df_preview,
+                    n=sample_size,
+                    random_state=args.sample_seed,
+                    stratify_col=ds_cfg_preview.label_column,
+                )
 
             # Ground-truth distribution
             gt_dist: Counter = Counter()
@@ -855,7 +1035,16 @@ def main() -> None:
                     i, row["sample_id"], row.get("split", "?"), str(gt), dup_flag, text_preview,
                 )
 
-            grand_total_samples += len(preview_sample)
+            # Mirror the live --only-ids narrowing so the dry-run projection
+            # matches what a live run with the same flags would actually spend.
+            if only_ids_set:
+                n_in_draw = sum(
+                    1 for s in preview_sample["sample_id"].astype(str)
+                    if s in only_ids_set
+                )
+                grand_total_samples += n_in_draw
+            else:
+                grand_total_samples += len(preview_sample)
             _dry_run_samples[preview_dataset] = (preview_sample, gt_dist)
 
         # ── Write per-cell metadata JSON (dry-run phase) ──────────────────────
@@ -866,7 +1055,7 @@ def main() -> None:
             for model_cfg in models:
                 m_slug = model_cfg.id.replace("/", "_").replace(":", "_")
                 for strat in strategies:
-                    for run_n in range(1, n_runs + 1):
+                    for run_n in range(args.run_start, args.run_start + n_runs):
                         meta_path = write_cell_metadata(
                             meta_dir=meta_dir,
                             dataset=ds_name,
@@ -880,6 +1069,14 @@ def main() -> None:
                             gt_label_distribution=dict(sorted(ds_gt_dist.items())),
                             exclude_ids=sorted(exclude_ids_set),
                             phase="dry_run",
+                            sampling_mode=("frozen_ids" if ds_name in frozen_sets
+                                           else "stratified_draw"),
+                            sample_ids_sha256=frozen_sets.get(ds_name, ([], ""))[1],
+                            decoding={
+                                "temperature": model_cfg.temperature,
+                                "max_tokens":  model_cfg.max_tokens,
+                                "seed":        model_cfg.seed,
+                            },
                         )
                         written_meta.append(str(meta_path))
 
@@ -898,8 +1095,10 @@ def main() -> None:
 
         logger.info("=" * 84)
         logger.info("DRY-RUN COST PROJECTION  (all datasets, strategies, models, runs)")
-        logger.info("  Samples (sum across datasets): %d  (%d each × %d datasets)",
-                    grand_total_samples, sample_size, len(datasets))
+        _per_ds = ("frozen id list per dataset" if frozen_sets
+                   else f"{sample_size} each")
+        logger.info("  Samples (sum across datasets): %d  (%s × %d datasets)",
+                    grand_total_samples, _per_ds, len(datasets))
         logger.info("  × strategies   : %d  %s", len(strategies), strategies)
         logger.info("  × models       : %d", len(models))
         logger.info("  × runs         : %d", n_runs)
@@ -973,20 +1172,85 @@ def main() -> None:
             if n_excl:
                 logger.info("  Excluded %d sample_id(s) from sampling.", n_excl)
 
-        sampled = sample_dataset(
-            df,
-            n=sample_size,
-            random_state=args.sample_seed,
-            stratify_col=ds_cfg.label_column,
-        )
-        logger.info(
-            "  Sampled %d / %d rows (split='%s', seed=%d, stratified by '%s')",
-            len(sampled), len(df), args.split or "all", args.sample_seed, ds_cfg.label_column,
-        )
+        frozen_ids, frozen_sha = frozen_sets.get(dataset_name, ([], ""))
+        if frozen_ids:
+            # ── Frozen evaluation set: select exactly these ids, no draw ────
+            # The set was generated once by build_stage_c_sample.py with the
+            # min-length exclusion and anxiety enrichment already applied, so
+            # re-deriving it here would risk drift. Selecting by id keeps every
+            # run and strategy on a byte-identical evaluation set.
+            present = set(df["sample_id"].astype(str))
+            wanted = [s for s in frozen_ids if s in present]
+            missing = [s for s in frozen_ids if s not in present]
+            if missing:
+                logger.error(
+                    "  %d id(s) from --sample-ids-file are not in the %s '%s' "
+                    "split: %s",
+                    len(missing), dataset_name, args.split, missing[:10],
+                )
+                logger.error(
+                    "  Refusing to run on a partial evaluation set. "
+                    "Regenerate with build_stage_c_sample.py or check --split."
+                )
+                sys.exit(1)
+            sampled = (
+                df[df["sample_id"].astype(str).isin(wanted)]
+                .set_index(df[df["sample_id"].astype(str).isin(wanted)]["sample_id"]
+                           .astype(str))
+                .loc[wanted]
+                .reset_index(drop=True)
+            )
+            logger.info(
+                "  Frozen set: %d / %d rows selected by id (sha256=%s)",
+                len(sampled), len(df), frozen_sha[:16],
+            )
+        else:
+            sampled = sample_dataset(
+                df,
+                n=sample_size,
+                random_state=args.sample_seed,
+                stratify_col=ds_cfg.label_column,
+            )
+            logger.info(
+                "  Sampled %d / %d rows (split='%s', seed=%d, stratified by '%s')",
+                len(sampled), len(df), args.split or "all", args.sample_seed,
+                ds_cfg.label_column,
+            )
+
+        # ── Targeted re-collection: narrow the draw to specific sample_ids ───
+        # Deliberately applied AFTER sample_dataset(): the stratified draw runs
+        # identically to the original run, so every retained row keeps the same
+        # text and ground truth. Filtering before the draw would change the
+        # stratification and produce a different sample set entirely.
+        full_draw_ids = list(sampled["sample_id"].astype(str))
+        if only_ids_set:
+            missing = only_ids_set - set(full_draw_ids)
+            if missing:
+                logger.error(
+                    "  %d --only-ids value(s) are not in the %s draw for seed=%d, "
+                    "size=%d: %s",
+                    len(missing), dataset_name, args.sample_seed,
+                    sample_size, sorted(missing)[:10],
+                )
+                logger.error(
+                    "  Refusing to run: the sample set does not match the one "
+                    "these IDs came from. Check --sample-seed / --sample-size / --split."
+                )
+                sys.exit(1)
+            sampled = sampled[
+                sampled["sample_id"].astype(str).isin(only_ids_set)
+            ].reset_index(drop=True)
+            logger.info(
+                "  --only-ids: dispatching %d of the %d drawn rows.",
+                len(sampled), len(full_draw_ids),
+            )
+            if sampled.empty:
+                logger.error("  Nothing left to run after --only-ids filter.")
+                sys.exit(1)
 
         for model_cfg in models:
             for strategy in strategies:
-                for run_num in range(1, n_runs + 1):
+                for run_num in range(args.run_start, args.run_start + n_runs):
 
                     # Stop if global api-call limit reached
                     if (args.max_api_calls is not None and
@@ -1002,9 +1266,17 @@ def main() -> None:
                     jsonl_path = raw_dir / jsonl_name
 
                     logger.info(
-                        "==> %s | %s | %s | run %d/%d",
-                        dataset_name, model_cfg.name, strategy, run_num, n_runs,
+                        "==> %s | %s | %s | run %d  (writing runs %d..%d)",
+                        dataset_name, model_cfg.name, strategy, run_num,
+                        args.run_start, args.run_start + n_runs - 1,
                     )
+                    if jsonl_path.exists() and not args.resume:
+                        logger.warning(
+                            "    %s already exists — ResultStore appends, so this "
+                            "would ADD to it. Move it aside, pass --resume, or use "
+                            "--run-start to pick unused run numbers.",
+                            jsonl_path.name,
+                        )
 
                     with ResultStore(jsonl_path) as store:
                         stats = run_one_cell(
@@ -1046,7 +1318,17 @@ def main() -> None:
                         sample_ids=list(sampled["sample_id"].astype(str)),
                         gt_label_distribution=dict(sorted(live_gt_dist.items())),
                         exclude_ids=sorted(exclude_ids_set),
-                        phase="live",
+                        phase="rerun_subset" if only_ids_set else "live",
+                        only_ids=sorted(only_ids_set) if only_ids_set else None,
+                        full_draw_ids=full_draw_ids,
+                        sampling_mode=("frozen_ids" if frozen_ids
+                                       else "stratified_draw"),
+                        sample_ids_sha256=frozen_sha,
+                        decoding={
+                            "temperature": model_cfg.temperature,
+                            "max_tokens":  model_cfg.max_tokens,
+                            "seed":        model_cfg.seed,
+                        },
                     )
 
                     logger.info(

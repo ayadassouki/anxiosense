@@ -46,41 +46,56 @@ prompts_dir: "prompts"
 primary_agent: "emotion"
 
 models:
+  # FROZEN DECODING PARAMETERS (2026-08-03) — temperature 0.0, max_tokens 4096 for
+  # every model and every prompting strategy. These are enforced in
+  # src/mastra/utils/model-provider.ts (DECODING_TEMPERATURE / DECODING_MAX_TOKENS)
+  # and must be kept identical to the values below; the runner copies these into each
+  # cell's *_meta.json, so a drift between the two makes the recorded methodology wrong.
+  #
+  # Rationale:
+  #   temperature 0.0 — previously unset, so the provider default (1.0) applied and was
+  #     never recorded. Temperature is not comparable across model families, so 0 is the
+  #     only value that means the same thing for all five models. Trade-off: between-run
+  #     variance now reflects provider nondeterminism, not sampling.
+  #   max_tokens 4096 — uniform across models and strategies. Well above the longest
+  #     observed output; a binding cap truncates the longest outputs first, which are the
+  #     CoT strategies, biasing the comparison the study is making. Previously these
+  #     differed per model (16384/32768/65536) and were never sent to the API at all.
   # NOTE: :free models share rate-limited upstream pools (confirmed exhausted in smoke tests).
   # For reliable experiments use paid routing (drop :free suffix) or Mistral direct API.
   - id: "meta-llama/llama-4-scout"
     name: "Llama 4 Scout (paid)"
     provider: "openrouter"
-    temperature: null
-    max_tokens: 16384
+    temperature: 0.0
+    max_tokens: 4096
     seed: null
 
   - id: "mistral-small-2603"
     name: "Mistral Small 4"
     provider: "mistral"
-    temperature: null
-    max_tokens: 32768
+    temperature: 0.0
+    max_tokens: 4096
     seed: null
 
   - id: "google/gemma-3-27b-it:free"
     name: "Gemma 3 27B IT"
     provider: "openrouter"
-    temperature: null
-    max_tokens: 16384
+    temperature: 0.0
+    max_tokens: 4096
     seed: null
 
   - id: "deepseek/deepseek-v4-flash"
     name: "DeepSeek V4 Flash"
     provider: "openrouter"
-    temperature: null
-    max_tokens: 65536
+    temperature: 0.0
+    max_tokens: 4096
     seed: null
 
   - id: "microsoft/phi-4:free"
     name: "Phi-4"
     provider: "openrouter"
-    temperature: null
-    max_tokens: 16384
+    temperature: 0.0
+    max_tokens: 4096
     seed: null
 
 strategies:

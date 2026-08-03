@@ -3,8 +3,9 @@ import { assessmentClaimConstructionStep } from './assessment-claim-construction
 import { knowledgeEvidenceRetrievalStep } from './knowledge-evidence-retrieval-step';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { loadAgentInstructions, type PromptStrategy } from '../utils/prompt-strategy-loader';
 import { ValidationAgentOutputSchema } from '../../kb/types';
-import { writeSession, readSession, clearSession, type SessionData } from '../utils/anxiety-assessment-session-store';
+import { writeSession, readSession, clearSession, accumulateTokenUsage, type SessionData } from '../utils/anxiety-assessment-session-store';
 import { exportWorkflowRun } from '../utils/workflow-evaluation-run-exporter';
 import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-assessment-scorer';
 import {
@@ -63,14 +64,53 @@ const inputSchema = z.object({
         'very_difficult',
         'extremely_difficult',
     ]).optional(),
+
+    /**
+     * Prompting strategy to apply to all agents in this workflow run.
+     * Loaded from prompts/{agentName}/{strategy}.md at generate() time.
+     *   zero-shot      — task + schema only
+     *   zero-shot-cot  — adds chain-of-thought reasoning procedure
+     *   one-shot-cot   — adds reasoning procedure + worked example (default)
+     */
+    strategy: z.enum(['zero-shot', 'zero-shot-cot', 'one-shot-cot']).optional().default('one-shot-cot'),
 });
 
 // ── Shared step schemas ───────────────────────────────────────────────────────
+
+/**
+ * Which upstream provider OpenRouter actually routed this call to (DeepInfra, Groq,
+ * Novita, Google, …). Recorded per agent call so a routing change is visible in the
+ * data instead of being an invisible confound.
+ *
+ * Context: on 2026-08-03 the `Google` upstream was found to return token-dropped
+ * output for meta-llama/llama-4-scout — 21/21 corrupted vs 179/179 clean across the
+ * other three upstreams. Routing is now pinned in model-provider.ts; this field is
+ * how we verify the pin held for every row.
+ *
+ * Only the OpenAI-compatible Chat Completions shape carries `provider`; returns
+ * undefined for providers or endpoints that do not.
+ */
+function extractUpstreamProvider(response: unknown): string | undefined {
+    const body = (response as { response?: { body?: unknown } })?.response?.body;
+    if (!body) return undefined;
+    try {
+        const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+        const p = (parsed as { provider?: unknown })?.provider;
+        return typeof p === 'string' && p.length > 0 ? p : undefined;
+    } catch {
+        return undefined;
+    }
+}
 
 const agentOutputSchema = z.object({
     result: z.string(),
     /** Wall-clock duration of agent.generate() in milliseconds. */
     durationMs: z.number(),
+    /** Token usage reported by the provider for this generate() call. */
+    inputTokens:  z.number().optional(),
+    outputTokens: z.number().optional(),
+    /** Upstream provider OpenRouter routed this call to (see extractUpstreamProvider). */
+    upstreamProvider: z.string().optional(),
 });
 
 const combinedAnalysisSchema = z.object({
@@ -87,6 +127,11 @@ const combinedAnalysisSchema = z.object({
         context: z.number(),
         referral: z.number(),
     }),
+    /** Summed token usage from the four parallel agents (to be added to session in Map 2). */
+    parallelTokenUsage: z.object({
+        inputTokens:  z.number(),
+        outputTokens: z.number(),
+    }).optional(),
 });
 
 const validatedAnalysisSchema = combinedAnalysisSchema.extend({
@@ -95,6 +140,27 @@ const validatedAnalysisSchema = combinedAnalysisSchema.extend({
 
 const finalReportSchema = z.object({
     finalReport: z.string(),
+    /**
+     * Aggregate token usage across all agent.generate() calls in this run.
+     * Parallel-step usage is summed in Map 1 and written to the session store.
+     * Report-step usage is added here.  Values come from LanguageModelV2Usage
+     * (inputTokens / outputTokens); undefined if the provider did not return them.
+     */
+    tokenUsage: z.object({
+        inputTokens:  z.number(),
+        outputTokens: z.number(),
+    }).optional(),
+    /**
+     * Observable internal quality flags accumulated during this run.
+     * Included in the workflow output so the evaluation runner can record them
+     * without re-running.  All flags default to false on the normal path.
+     */
+    qualityFlags: z.object({
+        agent_json_parse_failed:     z.boolean(),
+        fallback_claim_injected:     z.boolean(),
+        referral_risk_fallback_used: z.boolean(),
+        recommendation_rejected:     z.boolean(),
+    }).optional(),
 });
 
 // ── Mode context helpers ──────────────────────────────────────────────────────
@@ -123,9 +189,16 @@ const emotionStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('emotionAgent');
         if (!agent) throw new Error('Emotion agent not found');
+        const strategy = (inputData.strategy ?? 'one-shot-cot') as PromptStrategy;
+        const instructions = loadAgentInstructions('emotion', strategy) ?? undefined;
         const t0 = Date.now();
-        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text, durationMs: Date.now() - t0 };
+        const response = await agent.generate(
+            modePrefix(inputData.mode) + inputData.userText,
+            { instructions },
+        );
+        const usage = response.usage;
+        console.log(`[usage] emotion: input=${usage?.inputTokens ?? '?'} output=${usage?.outputTokens ?? '?'}`);
+        return { result: response.text, durationMs: Date.now() - t0, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, upstreamProvider: extractUpstreamProvider(response) };
     },
 });
 
@@ -136,9 +209,16 @@ const symptomStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('symptomAgent');
         if (!agent) throw new Error('Symptom agent not found');
+        const strategy = (inputData.strategy ?? 'one-shot-cot') as PromptStrategy;
+        const instructions = loadAgentInstructions('symptom', strategy) ?? undefined;
         const t0 = Date.now();
-        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text, durationMs: Date.now() - t0 };
+        const response = await agent.generate(
+            modePrefix(inputData.mode) + inputData.userText,
+            { instructions },
+        );
+        const usage = response.usage;
+        console.log(`[usage] symptom: input=${usage?.inputTokens ?? '?'} output=${usage?.outputTokens ?? '?'}`);
+        return { result: response.text, durationMs: Date.now() - t0, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, upstreamProvider: extractUpstreamProvider(response) };
     },
 });
 
@@ -149,9 +229,16 @@ const contextStep = createStep({
     execute: async ({ inputData, mastra }) => {
         const agent = mastra?.getAgent('contextAgent');
         if (!agent) throw new Error('Context agent not found');
+        const strategy = (inputData.strategy ?? 'one-shot-cot') as PromptStrategy;
+        const instructions = loadAgentInstructions('context', strategy) ?? undefined;
         const t0 = Date.now();
-        const response = await agent.generate(modePrefix(inputData.mode) + inputData.userText);
-        return { result: response.text, durationMs: Date.now() - t0 };
+        const response = await agent.generate(
+            modePrefix(inputData.mode) + inputData.userText,
+            { instructions },
+        );
+        const usage = response.usage;
+        console.log(`[usage] context: input=${usage?.inputTokens ?? '?'} output=${usage?.outputTokens ?? '?'}`);
+        return { result: response.text, durationMs: Date.now() - t0, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, upstreamProvider: extractUpstreamProvider(response) };
     },
 });
 
@@ -171,11 +258,16 @@ const referralStep = createStep({
                   'safety signals in the text itself.\n\n'
                 : '';
 
+        const strategy = (inputData.strategy ?? 'one-shot-cot') as PromptStrategy;
+        const instructions = loadAgentInstructions('referral', strategy) ?? undefined;
         const t0 = Date.now();
         const response = await agent.generate(
-            socialMediaNote + modePrefix(inputData.mode) + inputData.userText
+            socialMediaNote + modePrefix(inputData.mode) + inputData.userText,
+            { instructions },
         );
-        return { result: response.text, durationMs: Date.now() - t0 };
+        const usage = response.usage;
+        console.log(`[usage] referral: input=${usage?.inputTokens ?? '?'} output=${usage?.outputTokens ?? '?'}`);
+        return { result: response.text, durationMs: Date.now() - t0, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, upstreamProvider: extractUpstreamProvider(response) };
     },
 });
 
@@ -383,7 +475,21 @@ CRITICAL RULES — any violation makes the report unusable:
 - Keep tone supportive, cautious, and non-judgmental
 `;
 
-            const response = await agent.generate(prompt);
+            // Strategy is written to the session store in Map 2 (which has getInitData).
+            // We read it back here so the report step doesn't need getInitData.
+            const reportSession = readSession(inputData.sessionId);
+            const reportStrategy = (reportSession?.promptStrategy ?? 'one-shot-cot') as PromptStrategy;
+            const reportInstructions = loadAgentInstructions('report', reportStrategy) ?? undefined;
+            const response = await agent.generate(
+                prompt,
+                { instructions: reportInstructions },
+            );
+            const reportUsage = response.usage;
+            console.log(`[usage] report: input=${reportUsage?.inputTokens ?? '?'} output=${reportUsage?.outputTokens ?? '?'}`);
+            const reportUpstreamProvider = extractUpstreamProvider(response);
+            console.log(`[provider] report served by ${reportUpstreamProvider ?? 'unknown'}`);
+            // Add report-step usage to the running total in the session store.
+            accumulateTokenUsage(inputData.sessionId, reportUsage?.inputTokens, reportUsage?.outputTokens);
 
             // ── Post-process LLM output ───────────────────────────────────────
             let llmBody = response.text.trim()
@@ -420,6 +526,13 @@ CRITICAL RULES — any violation makes the report unusable:
                     `[AnxioSense] Recommendation rejected and reset to the deterministic anchor ` +
                     `(${recommendationDirective.anchorSource}); violations: ${enforcement.violations.join(', ')}`
                 );
+                // Update quality flag in session store.
+                const _qfSession = readSession(inputData.sessionId);
+                if (_qfSession?.qualityFlags) {
+                    writeSession(inputData.sessionId, {
+                        qualityFlags: { ..._qfSession.qualityFlags, recommendation_rejected: true },
+                    });
+                }
             }
 
             // ── Build Assessment Overview (deterministic TypeScript) ──────────
@@ -646,7 +759,24 @@ ${assessmentNotes ? `\n**Assessment Notes:**\n${assessmentNotes}\n` : ''}
             }
         }
 
-        return { finalReport };
+        // ── Total token usage summary ─────────────────────────────────────────
+        // exportSession was captured before clearSession() above — use it directly.
+        // Re-reading after clearSession always returns undefined.
+        const tokenUsage = exportSession?.tokenUsage;
+        console.log(
+            `[usage] total: input=${tokenUsage?.inputTokens ?? '?'} output=${tokenUsage?.outputTokens ?? '?'}`
+        );
+
+        // Quality flags are accumulated across workflow steps via the session store.
+        // Default all to false so the field is always present in the output.
+        const qualityFlags = exportSession?.qualityFlags ?? {
+            agent_json_parse_failed:     false,
+            fallback_claim_injected:     false,
+            referral_risk_fallback_used: false,
+            recommendation_rejected:     false,
+        };
+
+        return { finalReport, tokenUsage, qualityFlags };
     },
 });
 
@@ -662,19 +792,26 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
     // ── Map 1: merge parallel outputs → combinedAnalysisSchema ───────────────
     .map(async ({ inputData, getInitData }) => {
         const originalInput = getInitData() as z.infer<typeof inputSchema>;
+        const e = inputData['emotion-analysis-step'];
+        const s = inputData['symptom-extraction-step'];
+        const c = inputData['context-reasoning-step'];
+        const r = inputData['referral-safety-step'];
+        const parallelInput  = (e.inputTokens  ?? 0) + (s.inputTokens  ?? 0) + (c.inputTokens  ?? 0) + (r.inputTokens  ?? 0);
+        const parallelOutput = (e.outputTokens ?? 0) + (s.outputTokens ?? 0) + (c.outputTokens ?? 0) + (r.outputTokens ?? 0);
         return {
             mode:             originalInput.mode ?? 'journal',
             userText:         originalInput.userText,
-            emotionAnalysis:  inputData['emotion-analysis-step'].result,
-            symptomAnalysis:  inputData['symptom-extraction-step'].result,
-            contextAnalysis:  inputData['context-reasoning-step'].result,
-            referralAnalysis: inputData['referral-safety-step'].result,
+            emotionAnalysis:  e.result,
+            symptomAnalysis:  s.result,
+            contextAnalysis:  c.result,
+            referralAnalysis: r.result,
             agentTimingsMs: {
-                emotion:  inputData['emotion-analysis-step'].durationMs,
-                symptom:  inputData['symptom-extraction-step'].durationMs,
-                context:  inputData['context-reasoning-step'].durationMs,
-                referral: inputData['referral-safety-step'].durationMs,
+                emotion:  e.durationMs,
+                symptom:  s.durationMs,
+                context:  c.durationMs,
+                referral: r.durationMs,
             },
+            parallelTokenUsage: { inputTokens: parallelInput, outputTokens: parallelOutput },
         };
     })
     .then(assessmentClaimConstructionStep)
@@ -685,6 +822,7 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
         const VALID_RISK_LEVELS = ['low', 'moderate', 'urgent'] as const;
         type RiskLevel = typeof VALID_RISK_LEVELS[number];
         let riskLevel: RiskLevel = 'moderate';
+        let referral_risk_fallback_used = false;
         try {
             const referral = JSON.parse(inputData.referralAnalysis);
             const raw = referral.risk_level;
@@ -694,9 +832,11 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
                 console.warn(
                     `[AnxioSense] Invalid risk_level "${raw}" from referral agent — defaulting to "moderate".`
                 );
+                referral_risk_fallback_used = true;
             }
         } catch {
             console.warn('[AnxioSense] Referral JSON parse failed — defaulting risk_level to "moderate".');
+            referral_risk_fallback_used = true;
         }
 
         // ── GAD-7 (journal mode only) ─────────────────────────────────────────
@@ -704,6 +844,7 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
         const mode                = originalInput.mode                ?? 'journal';
         const clinicianMode       = originalInput.clinicianMode       ?? false;
         const functionalImpairment = originalInput.functionalImpairment ?? null;
+        const promptStrategy      = (originalInput.strategy ?? 'one-shot-cot') as PromptStrategy;
 
         let gad7Block:      string | null   = null;
         let gad7Score:      number | null   = null;
@@ -760,6 +901,7 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
             mode,
             clinicianMode,
             functionalImpairment,
+            promptStrategy,
             userText:          inputData.userText,
             emotionAnalysis:   inputData.emotionAnalysis,
             symptomAnalysis:   inputData.symptomAnalysis,
@@ -775,6 +917,16 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
             // Timing: parallel agent durations + start mark for retrieval
             agentTimingsMs:    inputData.agentTimingsMs,
             retrievalStartMs:  Date.now(),
+            // Seed token usage with the parallel agents' counts; report step will add its own.
+            tokenUsage: inputData.parallelTokenUsage ?? { inputTokens: 0, outputTokens: 0 },
+            // Update quality flags with referral_risk_fallback_used (agent_json_parse_failed
+            // and fallback_claim_injected were seeded by the claim construction step).
+            qualityFlags: {
+                agent_json_parse_failed:     inputData.agent_json_parse_failed,
+                fallback_claim_injected:     inputData.fallback_claim_injected,
+                referral_risk_fallback_used,
+                recommendation_rejected:     false,  // updated by report step
+            },
         });
 
         return {

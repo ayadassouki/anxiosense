@@ -302,6 +302,78 @@ preprocessing pipeline.**
 
 ---
 
+## Step 6 — Evaluation-time exclusions (Stage C)
+
+Two exclusions are applied when the Stage C evaluation sample is drawn, rather
+than when the cleaned CSVs are generated. They are recorded here because they
+are preprocessing decisions, not analysis decisions, and both must be disclosed.
+
+Applied by `evaluation/llm-experiments/scripts/build_stage_c_sample.py`.
+The cleaned CSVs in `processed/` are **not** modified by either exclusion.
+
+### 6.1 Minimum-length exclusion (both datasets)
+
+The AnxioSense Express server rejects any assessment whose text fails
+
+```
+text.trim().length < 10        →  HTTP 400
+```
+
+(`server/src/routes/workflow.ts:476`). Such rows can never produce a model
+prediction, so dispatching them would record an input-validation rejection as a
+model failure and depress the reported failure rate for reasons unrelated to
+model behaviour.
+
+The rule is applied **a priori over the whole test split**, not as a list of IDs
+observed to have failed, so it reproduces identically regardless of sampling seed.
+
+| Dataset | Test rows | Excluded (<10 chars) | Eligible pool |
+|---|---|---|---|
+| dreaddit | 324 | **0** | 324 |
+| goemotions | 2 627 | **29** | 2 598 |
+
+The 29 excluded GoEmotions rows are 26 `non_distress` and 3 `frustration` — no
+`anxiety`, `fear`, or `sadness` rows are lost. Full list with texts and lengths:
+`outputs/stage_c_final/sample/goemotions_excluded_min_length.csv`.
+
+Dreaddit is unaffected (minimum text length 115 characters).
+
+**Thesis disclosure:** these rows are excluded as failing a documented API
+precondition, and are reported separately from model failures. The durable fix
+is a minimum-length filter in `preprocess_datasets.py`; until then the exclusion
+lives at sampling time and is logged per run.
+
+### 6.2 Anxiety enrichment (goemotions only)
+
+The GoEmotions test split contains only **16 rows** mapping to the `anxiety`
+eval class — 0.61%, all from `nervousness`. Proportional stratification at
+n=100 yields **anxiety n=1**, which cannot support a per-class F1 estimate.
+Because every run uses the same fixed sample set, repeating the evaluation five
+times does not add anxiety samples; it re-evaluates the same single row.
+
+The Stage C sample therefore takes **all 16 surviving anxiety rows** and fills
+the remaining 84 proportionally (stratified on `emotion_names`, seed 100).
+
+| | anxiety | fear | sadness | frustration | non_distress |
+|---|---|---|---|---|---|
+| Eligible pool (2 598) | 16 (0.6%) | 69 (2.7%) | 235 (9.0%) | 407 (15.7%) | 1 871 (72.0%) |
+| **Stage C sample (100)** | **16** | **2** | **9** | **13** | **60** |
+
+**Thesis disclosure, required:** the evaluation set is *deliberately enriched*
+and its class balance is **not** representative of the source distribution.
+Consequences:
+
+1. Accuracy must be compared against a baseline computed on the **enriched** set
+   (majority class = 60%), never against the source distribution's 72%.
+2. Macro-F1 is unaffected by the reweighting and remains the headline metric.
+3. Any statement about real-world prevalence must use the pool proportions, not
+   the sample proportions.
+4. `fear` support drops to **n=2** as a side effect of reallocating 15 slots to
+   anxiety. Per-class F1 for `fear` is correspondingly unreliable and should be
+   reported with its support or omitted.
+
+---
+
 ## Deliverable checksums (row counts)
 
 | File | Source rows | Excluded | Processed rows |

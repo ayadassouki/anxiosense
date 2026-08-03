@@ -42,6 +42,21 @@ export interface SessionData {
      * low_gad7_high_text: GAD-7 ≤4 but text has ≥4 real claims
      */
     discordanceNote: 'high_gad7_low_text' | 'low_gad7_high_text' | null;
+    /**
+     * Prompting strategy active for this workflow run.
+     * Written by Map 2 (which has access to getInitData) so that the report
+     * step can read it from the session without requiring getInitData.
+     */
+    promptStrategy?: 'zero-shot' | 'zero-shot-cot' | 'one-shot-cot';
+    /**
+     * Accumulated token usage across all agent.generate() calls in this run.
+     * Written incrementally by parallel steps and the report step.
+     * Fields mirror LanguageModelV2Usage: inputTokens / outputTokens.
+     */
+    tokenUsage?: {
+        inputTokens:  number;
+        outputTokens: number;
+    };
 
     // ── Timing scratch fields (internal — written by workflow map steps) ─────
     /** Wall-clock ms for each parallel agent's generate() call. */
@@ -70,6 +85,23 @@ export interface SessionData {
         reportMs:      number;
         totalMs:       number;
     };
+
+    /**
+     * Internal quality flags — observable side-effects that occurred during the run.
+     * Written incrementally by workflow steps; read by the report step and included in
+     * the workflow output so the evaluation runner can record them without re-running.
+     * These flags do NOT change any pipeline behaviour — they are pure observability.
+     */
+    qualityFlags?: {
+        /** True if any agent's text output could not be parsed as JSON by extractJson(). */
+        agent_json_parse_failed: boolean;
+        /** True if GEN-1 fallback claim was injected because all agents returned empty arrays. */
+        fallback_claim_injected: boolean;
+        /** True if the Referral Agent JSON parse failed and risk_level was defaulted to "moderate". */
+        referral_risk_fallback_used: boolean;
+        /** True if the Report step's recommendation was rejected and reset to the deterministic anchor. */
+        recommendation_rejected: boolean;
+    };
 }
 
 const store = new Map<string, Partial<SessionData>>();
@@ -77,6 +109,27 @@ const store = new Map<string, Partial<SessionData>>();
 export function writeSession(sessionId: string, data: Partial<SessionData>): void {
     const existing = store.get(sessionId) ?? {};
     store.set(sessionId, { ...existing, ...data });
+}
+
+/**
+ * Atomically adds `inputTokens` and `outputTokens` to the running token-usage
+ * accumulator for the session.  Safe to call from concurrent parallel steps
+ * because JavaScript is single-threaded; no await between read and write.
+ */
+export function accumulateTokenUsage(
+    sessionId: string,
+    inputTokens:  number | undefined,
+    outputTokens: number | undefined,
+): void {
+    const existing = store.get(sessionId) ?? {};
+    const prev     = existing.tokenUsage ?? { inputTokens: 0, outputTokens: 0 };
+    store.set(sessionId, {
+        ...existing,
+        tokenUsage: {
+            inputTokens:  prev.inputTokens  + (inputTokens  ?? 0),
+            outputTokens: prev.outputTokens + (outputTokens ?? 0),
+        },
+    });
 }
 
 export function readSession(sessionId: string): Partial<SessionData> | undefined {

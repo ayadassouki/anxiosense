@@ -1,7 +1,8 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
+import { createConfiguredModel } from '../utils/model-provider';
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
+
 
 export const anxietySymptomExtractionAgent = new Agent({
     id: 'symptom-agent',
@@ -92,5 +93,5 @@ Output:
 
 Return only this JSON shape, compact and valid:
 {"possible_anxiety_indicators":[],"evidence_from_text":[],"not_enough_information":false}`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });

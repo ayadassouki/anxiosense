@@ -1,7 +1,8 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
+import { createConfiguredModel } from '../utils/model-provider';
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
+
 
 export const screeningReportGenerationAgent = new Agent({
     id: 'report-agent',
@@ -59,5 +60,5 @@ DECISION PROCEDURE
 4. State the referral level as provided; do not elaborate beyond it.
 5. Keep the limitations section factual and concise.
 6. Return the completed report and nothing else.`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });

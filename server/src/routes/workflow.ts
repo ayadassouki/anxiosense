@@ -43,10 +43,57 @@ function findByKey<T>(obj: unknown, keys: string[], depth = 0): T | null {
   return null;
 }
 
+/**
+ * Collect EVERY value stored under `key` anywhere in the run payload, deduplicated.
+ *
+ * findByKey returns the first match, which is wrong for per-agent fields: one
+ * assessment makes five agent calls and we need to know whether they were all served
+ * by the same upstream provider. A mixed result is itself the finding.
+ */
+function collectByKey(obj: unknown, key: string, depth = 0, acc = new Set<string>()): string[] {
+  if (depth > 10 || obj === null || typeof obj !== 'object') return [...acc];
+  const rec = obj as Record<string, unknown>;
+  const val = rec[key];
+  if (typeof val === 'string' && val.length > 0) acc.add(val);
+  for (const v of Object.values(rec)) {
+    if (typeof v === 'object' && v !== null) collectByKey(v, key, depth + 1, acc);
+  }
+  return [...acc];
+}
+
 /** Extract the final report string — only returns it when found under the right key. */
 function extractFinalReport(obj: unknown): string | null {
   const val = findByKey<string>(obj, ['finalReport', 'final_report'], 0);
   return typeof val === 'string' && val.length > 50 ? val : null;
+}
+
+/**
+ * Extract the raw Emotion Agent JSON string from the workflow run result.
+ *
+ * The Mastra workflow stores emotionAnalysis (a JSON string produced by the
+ * emotion agent) in the session store.  The session is cleared before the run
+ * result is returned to Express, so we look for it in the exportSession block
+ * that is embedded inside the workflow result under various key paths.
+ *
+ * The value is a raw string like:
+ *   '{"emotions":["anxiety","stress"],"emotional_intensity":"high","evidence_from_text":[...]}'
+ *
+ * Returns null if the field is absent (e.g. safety-override path skips the pipeline).
+ */
+function extractEmotionAgentRaw(obj: unknown): string | null {
+  const val = findByKey<string>(obj, ['emotionAnalysis', 'emotion_analysis'], 0);
+  if (typeof val === 'string' && val.length > 2) return val;
+  return null;
+}
+
+/** Extract token usage from the workflow result (Mastra v1.42 FullOutput path). */
+function extractTokenUsage(obj: unknown): { input_tokens: number; output_tokens: number } | null {
+  const tu = findByKey<Record<string, unknown>>(obj, ['tokenUsage', 'token_usage'], 0);
+  if (!tu || typeof tu !== 'object') return null;
+  const i = tu['inputTokens'];
+  const o = tu['outputTokens'];
+  if (typeof i === 'number' && typeof o === 'number') return { input_tokens: i, output_tokens: o };
+  return null;
 }
 
 function extractSummary(report: string): string {
@@ -395,6 +442,232 @@ router.post('/run', async (req: Request, res: Response): Promise<void> => {
         groundingMs,
         totalRequestMs,
       },
+    },
+  });
+});
+
+// ── POST /api/workflow/evaluate ───────────────────────────────────────────────
+// Evaluation endpoint for the AnxioSense LLM experiment pipeline.
+//
+// Accepts a raw text string plus optional model/strategy fields. Calls the same
+// Mastra workflow as /run using "social-media" mode (datasets have no GAD-7).
+//
+// Model switching: set MODEL_PROVIDER + MODEL_ID in the Mastra .env and restart
+// the Mastra dev server. The endpoint reflects what is ACTUALLY running via
+// model_actual/provider_actual in the metadata response, and logs a warning when
+// the caller-requested model differs from the active one.
+//
+// Strategy switching: the `strategy` field is forwarded directly into the
+// workflow inputData, where each agent step loads the matching prompt file from
+// prompts/{agentName}/{strategy}.md at generate() time — no restart required.
+//
+// No workflow order, RAG retrieval, safety logic, concern patterns, validation,
+// clinician mode, or agent output schemas are modified by this endpoint.
+router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
+  const requestStart = Date.now();
+
+  const {
+    text,
+    model    = `${process.env.MODEL_PROVIDER ?? 'groq'}/${process.env.MODEL_ID ?? 'llama-3.3-70b-versatile'}`,
+    strategy = process.env.ANXIOSENSE_STRATEGY  ?? 'one-shot-cot',
+    evaluation_mode = true,
+  } = req.body as {
+    text?:            string;
+    model?:           string;
+    strategy?:        string;
+    evaluation_mode?: boolean;
+  };
+
+  // Reflect what is ACTUALLY running in Mastra — set at startup via MODEL_PROVIDER + MODEL_ID.
+  const provider_actual = process.env.MODEL_PROVIDER ?? 'groq';
+  const model_id_actual = process.env.MODEL_ID       ?? 'llama-3.3-70b-versatile';
+  const model_actual    = `${provider_actual}/${model_id_actual}`;
+
+  if (model !== model_actual) {
+    console.warn(
+      `[evaluate] model mismatch — requested="${model}" actual="${model_actual}". ` +
+      `To switch models, update MODEL_PROVIDER + MODEL_ID in .env and restart Mastra.`
+    );
+  }
+  console.log(`[evaluate] model_actual="${model_actual}" strategy="${strategy}"`);
+
+  if (typeof text !== 'string' || text.trim().length < 10) {
+    res.status(400).json({
+      error: 'Field "text" must be a non-empty string of at least 10 characters.',
+    });
+    return;
+  }
+
+  const userText = text.trim();
+
+  // Safety check — crisis texts return referralLevel:"urgent" which maps to
+  // binary label 1 in Dreaddit evaluation (stressed). Kept identical to /run.
+  const safety = evaluateSafety(userText, userText);
+  if (safety.isCrisis) {
+    const crisisReport = buildCrisisReport(userText, 'social-media');
+    res.json({
+      report: {
+        finalReport:    crisisReport,
+        concernPattern: 'Urgent Safety Notice',
+        referralLevel:  'urgent',
+        summary:        CRISIS_RESPONSE_TEXT.slice(0, 200),
+      },
+      metadata: {
+        model_requested: model,
+        model_actual,
+        provider_actual,
+        // Crisis override short-circuits before any LLM call, so no upstream was used.
+        upstream_provider:  null,
+        upstream_providers: [],
+        strategy_used:   strategy,
+        evaluation_mode,
+        latency_ms:      Date.now() - requestStart,
+        token_usage:     { prompt_tokens: 0, completion_tokens: 0 },
+        safety_override: true,
+        safety_category: safety.category,
+      },
+    });
+    return;
+  }
+
+  // ── Create Mastra run ─────────────────────────────────────────────────────
+  let runId: string;
+  try {
+    const createBody = await mastraPost(
+      `workflows/${WF_ID}/create-run`, {}
+    ) as Record<string, unknown>;
+    runId = (createBody.runId as string | undefined) ?? uuid();
+    console.log(`[evaluate] created run ${runId}`);
+  } catch {
+    res.status(502).json({
+      error: 'Could not reach Mastra (port 4111). Is the Mastra dev server running?',
+    });
+    return;
+  }
+
+  // ── Start run with social-media mode + resolved strategy ────────────────
+  let startResult: unknown;
+  try {
+    startResult = await mastraPost(
+      `workflows/${WF_ID}/start?runId=${runId}`,
+      { inputData: { mode: 'social-media', userText, strategy } }
+    );
+    console.log('[evaluate] start result keys:', Object.keys(startResult as object ?? {}));
+  } catch (err) {
+    res.status(502).json({
+      error: err instanceof Error ? err.message : 'Mastra workflow start failed.',
+    });
+    return;
+  }
+
+  // ── Extract report (try start response first, then poll) ──────────────────
+  let workflowData: unknown = startResult;
+  let finalReport: string | null = extractFinalReport(startResult);
+
+  if (!finalReport) {
+    console.log('[evaluate] report not in start response — polling /runs/:runId');
+    try {
+      workflowData = await pollRun(runId);
+      finalReport  = extractFinalReport(workflowData);
+    } catch (err) {
+      res.status(504).json({
+        error: err instanceof Error ? err.message : 'Workflow polling timed out.',
+      });
+      return;
+    }
+  }
+
+  if (!finalReport) {
+    console.error('[evaluate] extractFinalReport returned null. Data:', JSON.stringify(workflowData).slice(0, 600));
+    res.status(502).json({
+      error: 'Workflow completed but finalReport was not found in response.',
+    });
+    return;
+  }
+
+  // ── Determine concernPattern + referralLevel ──────────────────────────────
+  // Mirrors the logic in /run (text-only / social-media path, no GAD-7).
+  let concernPattern: string;
+  let referralLevel: 'low' | 'moderate' | 'urgent';
+
+  const isUrgentReport = finalReport.includes('## Important — Urgent Safety Notice');
+  if (isUrgentReport) {
+    concernPattern = 'Urgent Safety Notice';
+    referralLevel  = 'urgent';
+  } else {
+    const riskHint =
+      findByKey<string>(workflowData, ['riskLevel']) ??
+      findByKey<string>(workflowData, ['risk_level']);
+
+    if      (riskHint === 'urgent')   { concernPattern = 'High Concern Pattern';      referralLevel = 'urgent';   }
+    else if (riskHint === 'moderate') { concernPattern = 'Elevated Concern Pattern';  referralLevel = 'moderate'; }
+    else                              { concernPattern = 'Minimal Concern Pattern';    referralLevel = 'low';      }
+  }
+
+  console.log(`[evaluate] concernPattern="${concernPattern}" referralLevel="${referralLevel}"`);
+
+  const latency_ms        = Date.now() - requestStart;
+  const token_usage       = extractTokenUsage(workflowData);
+  const emotion_agent_raw = extractEmotionAgentRaw(workflowData);
+
+  // Upstream provider(s) that actually served this assessment's agent calls.
+  // Pinned in model-provider.ts; recorded here so every result row proves the pin held.
+  // More than one value means routing changed mid-assessment — treat the row as suspect.
+  const upstream_providers = collectByKey(workflowData, 'upstreamProvider');
+  const upstream_provider =
+    upstream_providers.length === 1 ? upstream_providers[0]
+    : upstream_providers.length === 0 ? null
+    : 'MIXED';
+
+  // Extract internal quality flags from the workflow output.
+  // These are set by the workflow's claim-construction step, Map 2, and report step.
+  // All default to false so the field is always present even on older workflow versions.
+  const rawQf = findByKey<Record<string, unknown>>(workflowData, ['qualityFlags'], 0);
+  const quality_flags = {
+    agent_json_parse_failed:     Boolean(rawQf?.agent_json_parse_failed     ?? false),
+    fallback_claim_injected:     Boolean(rawQf?.fallback_claim_injected     ?? false),
+    referral_risk_fallback_used: Boolean(rawQf?.referral_risk_fallback_used ?? false),
+    recommendation_rejected:     Boolean(rawQf?.recommendation_rejected     ?? false),
+  };
+
+  res.json({
+    report: {
+      finalReport,
+      concernPattern,
+      referralLevel,
+      summary: extractSummary(finalReport),
+    },
+    /**
+     * emotion_agent_raw: the raw JSON string produced by the Emotion Analysis Agent.
+     * Shape: {"emotions": [...], "emotional_intensity": "...", "evidence_from_text": [...]}
+     *
+     * Used by the GoEmotions evaluation (RQ2) to compare the Emotion Agent's output
+     * directly against GoEmotions ground-truth labels, independent of the final report.
+     * This is the PRIMARY prediction source for GoEmotions evaluation.
+     * The finalReport markdown is a SECONDARY end-to-end measure.
+     *
+     * Null on the crisis-override path (no LLM agents are called).
+     * Null if the workflow result does not include the exportSession block.
+     */
+    emotion_agent_raw,
+    metadata: {
+      model_requested: model,
+      model_actual,
+      provider_actual,
+      // Upstream provider behind `provider_actual` (OpenRouter routes to DeepInfra /
+      // Groq / Novita / Google). "MIXED" if one assessment hit more than one.
+      upstream_provider,
+      upstream_providers,
+      strategy_used:   strategy,
+      evaluation_mode,
+      latency_ms,
+      // inputTokens + outputTokens from LanguageModelV2Usage (all 5 agents summed).
+      // Null when the provider does not return usage (some OpenRouter free-tier models).
+      token_usage,
+      safety_override: false,
+      // Internal quality flags — observable side-effects that occurred during the run.
+      // Recorded in result CSVs so non-clean runs are not silently treated as clean.
+      quality_flags,
     },
   });
 });

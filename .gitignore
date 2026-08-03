@@ -43,3 +43,12 @@ IMPLEMENTATION_AUDIT_REPORT.md
 # Python-generated files
 __pycache__/
 *.pyc
+
+# Evaluation outputs
+evaluation/llm-experiments/outputs/
+evaluation/llm-experiments/logs/
+# Dataset files (raw downloads)
+evaluation/data/
+# Environment
+.env
+*.env

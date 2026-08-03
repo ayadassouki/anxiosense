@@ -1,7 +1,8 @@
 import { Agent } from '@mastra/core/agent';
-import { createGroq } from '@ai-sdk/groq';
+import { createConfiguredModel } from '../utils/model-provider';
 
-const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
+
 
 export const referralSafetyAssessmentAgent = new Agent({
     id: 'referral-agent',
@@ -125,5 +126,5 @@ Any other value (e.g. "elevated", "high", "medium", "severe") is INVALID and wil
 
 Return only valid JSON:
 {"risk_level":"low | moderate | urgent","reasoning":"","recommended_support":"","safety_note":""}`,
-    model: groq('llama-3.3-70b-versatile'),
+    model: createConfiguredModel(),
 });
