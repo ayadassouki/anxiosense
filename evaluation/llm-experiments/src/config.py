@@ -33,10 +33,21 @@ class DatasetConfig:
 class ModelConfig:
     id: str
     name: str
-    provider: str           # "openrouter" | "mistral"
+    provider: str                       # "openrouter" | "mistral" | "groq"
+    # Decoding parameters. Under the provider-default methodology (2026-08-04)
+    # all three are None and are NOT sent to the API — see experiment_config.yaml.
     temperature: Optional[float] = None
-    max_tokens: int = 16384
+    max_tokens: Optional[int] = None
     seed: Optional[int] = None
+    # Upstream inference provider to pin for this model, e.g. "DeepInfra".
+    # None means no pin (OpenRouter load-balances — reintroduces the confound).
+    pin_provider: Optional[str] = None
+    # Precision filter sent with the routing directive, e.g. "fp4". Set only where
+    # the pinned provider exposes more than one endpoint. A REQUEST DIRECTIVE, not
+    # an observed value — enforced by allow_fallbacks:false failing the request.
+    pin_quantization: Optional[str] = None
+    # Precision reported by the endpoints survey, recorded for the write-up only.
+    observed_quantization: Optional[str] = None
 
 
 @dataclass
@@ -111,8 +122,11 @@ def load_config(config_path) -> ExperimentConfig:
             name=m["name"],
             provider=m["provider"],
             temperature=m.get("temperature"),
-            max_tokens=m.get("max_tokens", 16384),
+            max_tokens=m.get("max_tokens"),
             seed=m.get("seed"),
+            pin_provider=m.get("pin_provider"),
+            pin_quantization=m.get("pin_quantization"),
+            observed_quantization=m.get("observed_quantization"),
         )
         for m in raw["models"]
     ]

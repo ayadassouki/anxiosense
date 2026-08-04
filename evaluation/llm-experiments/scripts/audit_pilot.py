@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 """
-audit_pilot.py — accept/reject a Stage C pilot cell against the frozen configuration.
+audit_pilot.py — accept/reject a Stage C pilot cell against the approved configuration.
 
 Run AFTER the pilot cell finishes:
 
     cd ~/anxiosense/evaluation/llm-experiments
-    python3 scripts/audit_pilot.py outputs/stage_c_pilot
+    python3 scripts/audit_pilot.py outputs/stage_c_defaults
 
 Performs every gate in one pass and prints a single verdict. Read-only.
 
 CHECKS
   1  Corruption            no payload missing a required key; no unbalanced JSON key
-  2  Provider column       upstream_provider populated on every row, single value, pinned
-  3  Decoding recorded     temperature / max_tokens present in the cell metadata and frozen
+  2  Provider column       upstream_provider populated on every row, single value,
+                           and equal to the pin recorded for that cell's model
+  3  Decoding provenance   provider defaults in force — temperature / max_tokens /
+                           seed NOT sent, and the provenance block records that
   4  Completeness          every frozen sample id present exactly once, no duplicates
   5  Failure profile       failure counts and their composition (OOV vs unparseable)
   6  Pipeline health       quality flags, provider errors, latency
 
 Exit 0 = acceptable as the production configuration. 1 = not acceptable.
+
+METHODOLOGY 2026-08-04
+  This script previously gated on temperature == 0.0 and max_tokens == 4096. That
+  freeze is superseded: each model now uses its own provider default, which means
+  the parameters are OMITTED from the request rather than set to a value. The
+  expected pin is per-model, read from each cell's metadata, not a global constant.
 """
 from __future__ import annotations
 
@@ -31,9 +39,27 @@ import collections
 
 csv.field_size_limit(10 ** 7)
 
-EXPECTED_PROVIDER = "DeepInfra"
-EXPECTED_TEMPERATURE = 0.0
-EXPECTED_MAX_TOKENS = 4096
+# Fallback only — the authoritative pin for a cell is metadata.decoding.pin_provider,
+# written by run_experiments.py. This table is used when that field is absent
+# (e.g. a cell collected before the provenance block existed).
+FALLBACK_PIN = {
+    "meta-llama/llama-4-scout":     "DeepInfra",
+    "mistralai/mistral-small-2603": "Mistral",
+    "google/gemma-4-31b-it":        "DeepInfra",
+    "deepseek/deepseek-v4-flash":   "DeepInfra",
+    "microsoft/phi-4":              "DeepInfra",
+}
+
+# Models whose pinned provider exposes more than one endpoint. For these the cell
+# metadata MUST record an enforced precision filter, otherwise the run could have
+# been served at a different quantisation and nothing in the response would show it.
+REQUIRES_QUANT_FILTER = {
+    "google/gemma-4-31b-it": "fp4",
+}
+
+# Parameters that MUST NOT have been sent under the provider-default methodology.
+MUST_BE_UNSENT = ("temperature_sent", "max_tokens_sent", "seed_sent")
+
 REQUIRED_KEYS = ['"emotions"', '"emotional_intensity"', '"evidence_from_text"']
 
 fails: list[str] = []
@@ -56,8 +82,33 @@ def unbalanced_keys(text: str) -> list[str]:
     return sorted(hits)
 
 
+def load_metas(meta_dir: str) -> dict:
+    """stem -> parsed metadata, for every *_meta.json under meta_dir."""
+    out = {}
+    for mp in sorted(glob.glob(os.path.join(meta_dir, "*_meta.json"))):
+        stem = os.path.basename(mp)[: -len("_meta.json")]
+        try:
+            out[stem] = json.load(open(mp))
+        except Exception as exc:                                  # noqa: BLE001
+            fails.append(f"{os.path.basename(mp)}: unreadable ({exc})")
+    return out
+
+
+def expected_pin_for(meta):
+    """The upstream provider this cell should have been served by, or None."""
+    if meta:
+        dec = meta.get("decoding") or {}
+        pin = dec.get("pin_provider")
+        if pin:
+            return str(pin)
+        model = meta.get("model")
+        if model in FALLBACK_PIN:
+            return FALLBACK_PIN[model]
+    return None
+
+
 def main() -> int:
-    base = sys.argv[1] if len(sys.argv) > 1 else "outputs/stage_c_pilot"
+    base = sys.argv[1] if len(sys.argv) > 1 else "outputs/stage_c_defaults"
     raw_dir = os.path.join(base, "raw")
     meta_dir = os.path.join(base, "metadata")
 
@@ -65,6 +116,8 @@ def main() -> int:
     if not csvs:
         print(f"no CSVs under {raw_dir} — did the pilot write somewhere else?")
         return 1
+
+    metas = load_metas(meta_dir)
 
     print(f"auditing {len(csvs)} cell(s) under {base}")
     rows: list[dict] = []
@@ -75,7 +128,7 @@ def main() -> int:
         per_cell[os.path.basename(p)] = rs
         rows += rs
 
-    # ── 1. corruption ────────────────────────────────────────────────────────
+    # -- 1. corruption -------------------------------------------------------
     head("1. CORRUPTION")
     corrupt = []
     for r in rows:
@@ -93,41 +146,78 @@ def main() -> int:
     if corrupt:
         fails.append(f"{len(corrupt)} corrupted payload(s)")
 
-    # ── 2. provider column ───────────────────────────────────────────────────
+    # -- 2. provider column, checked per cell against that cell's pin --------
     head("2. UPSTREAM PROVIDER COLUMN")
-    if "upstream_provider" not in (rows[0] if rows else {}):
+    if rows and "upstream_provider" not in rows[0]:
         fails.append("upstream_provider column is absent — the server is running stale code")
         print("  COLUMN ABSENT. Restart the Mastra and Express servers and re-run the pilot.")
     else:
-        vals = collections.Counter(r.get("upstream_provider") or "<empty>" for r in rows)
-        allv = collections.Counter(r.get("upstream_providers_all") or "<empty>" for r in rows)
-        print(f"  upstream_provider      : {dict(vals)}")
-        print(f"  upstream_providers_all : {dict(allv)}")
-        empty = vals.get("<empty>", 0)
-        if empty:
-            fails.append(f"{empty} row(s) have an empty upstream_provider")
-        off = {k: v for k, v in vals.items() if k not in ("<empty>", EXPECTED_PROVIDER)}
-        if off:
-            fails.append(f"rows served by an unexpected upstream: {off}")
-        if any("MIXED" in str(k) for k in vals):
-            fails.append("at least one assessment hit more than one upstream (MIXED)")
+        for cell, rs in per_cell.items():
+            meta = metas.get(cell[:-4])
+            want = expected_pin_for(meta)
+            vals = collections.Counter(r.get("upstream_provider") or "<empty>" for r in rs)
+            allv = collections.Counter(r.get("upstream_providers_all") or "<empty>" for r in rs)
+            print(f"  {cell[:52]:52s} expected={want or '<unknown>'}")
+            print(f"      upstream_provider      : {dict(vals)}")
+            print(f"      upstream_providers_all : {dict(allv)}")
 
-    # ── 3. decoding parameters recorded ──────────────────────────────────────
-    head("3. DECODING PARAMETERS IN METADATA")
-    metas = sorted(glob.glob(os.path.join(meta_dir, "*_meta.json")))
+            empty = vals.get("<empty>", 0)
+            if empty:
+                fails.append(f"{cell}: {empty} row(s) have an empty upstream_provider")
+            if any("MIXED" in str(k) for k in vals):
+                fails.append(f"{cell}: at least one assessment hit more than one upstream (MIXED)")
+            if want is None:
+                warns.append(f"{cell}: no pin recorded in metadata — cannot verify the upstream")
+            else:
+                off = {k: v for k, v in vals.items() if k not in ("<empty>", want)}
+                if off:
+                    fails.append(f"{cell}: rows served by an unexpected upstream: {off}")
+
+    # -- 3. decoding provenance ---------------------------------------------
+    head("3. DECODING PROVENANCE (provider defaults)")
     if not metas:
         fails.append("no metadata files found")
         print(f"  none under {meta_dir}")
-    for mp in metas:
-        m = json.load(open(mp))
+    for stem, m in metas.items():
         dec = m.get("decoding") or {}
-        ok = (dec.get("temperature") == EXPECTED_TEMPERATURE
-              and dec.get("max_tokens") == EXPECTED_MAX_TOKENS)
-        print(f"  {os.path.basename(mp)[:56]:56s} decoding={dec} {'OK' if ok else 'MISMATCH'}")
-        if not ok:
-            fails.append(f"{os.path.basename(mp)}: decoding block missing or not frozen values")
+        mode = dec.get("mode")
+        sent = {k: dec.get(k) for k in MUST_BE_UNSENT}
+        unsent_ok = all(v is None for v in sent.values())
+        mode_ok = (mode == "provider_default")
+        # A legacy frozen-temperature cell is a hard fail here, not a warning:
+        # mixing the two methodologies in one output directory is exactly what
+        # this gate exists to prevent.
+        legacy = ("temperature" in dec and "temperature_sent" not in dec)
+        ok = mode_ok and unsent_ok and not legacy
+        print(f"  {stem[:52]:52s} mode={mode} sent={sent} {'OK' if ok else 'MISMATCH'}")
+        if legacy:
+            fails.append(f"{stem}: legacy frozen-decoding metadata "
+                         f"(temperature={dec.get('temperature')}) — that cell belongs in "
+                         f"outputs/stage_c_v2/, not here")
+        elif not mode_ok:
+            fails.append(f"{stem}: decoding.mode is {mode!r}, expected 'provider_default'")
+        elif not unsent_ok:
+            bad = {k: v for k, v in sent.items() if v is not None}
+            fails.append(f"{stem}: a decoding parameter was sent: {bad}")
+        doc = dec.get("temperature_documented")
+        if doc is not None:
+            print(f"      documented provider default temperature = {doc} "
+                  f"(source: {dec.get('temperature_source')})")
 
-    # ── 4. completeness ──────────────────────────────────────────────────────
+        # Precision. Only a hard requirement for models with >1 endpoint at the pin.
+        model_id = m.get("model")
+        pin_q = dec.get("pin_quantization")
+        obs_q = dec.get("observed_quantization")
+        print(f"      quantization: pinned={pin_q!r} enforced={dec.get('quantization_enforced')} "
+              f"observed={obs_q!r}")
+        need = REQUIRES_QUANT_FILTER.get(model_id)
+        if need and pin_q != need:
+            fails.append(
+                f"{stem}: {model_id} is served by multiple endpoints at its pinned provider "
+                f"and requires quantization={need!r}, but metadata records {pin_q!r} — the cell "
+                f"may have been served at another precision, and the response cannot reveal it")
+
+    # -- 4. completeness -----------------------------------------------------
     head("4. COMPLETENESS")
     # Duplicates are only meaningful WITHIN a cell — the same sample_id legitimately
     # appears once per (strategy, run), so a multi-cell directory would false-alarm.
@@ -139,10 +229,8 @@ def main() -> int:
         if dupes:
             fails.append(f"{cell}: duplicate sample ids {list(dupes)[:5]}")
 
-        stem = cell[:-4]
-        mp = os.path.join(meta_dir, stem + "_meta.json")
-        if os.path.exists(mp):
-            m = json.load(open(mp))
+        m = metas.get(cell[:-4])
+        if m:
             expected = set(map(str, m.get("sample_ids") or []))
             missing = expected - set(ids)
             print(f"    frozen set {len(expected)} ids "
@@ -150,7 +238,7 @@ def main() -> int:
             if missing:
                 fails.append(f"{cell}: {len(missing)} frozen sample id(s) produced no row")
 
-    # ── 5. failure profile ───────────────────────────────────────────────────
+    # -- 5. failure profile --------------------------------------------------
     head("5. FAILURE PROFILE")
     reasons = collections.Counter(
         (r.get("failure_reason") or "").split(":")[0].strip()
@@ -163,7 +251,7 @@ def main() -> int:
     if unparseable:
         warns.append(f"{unparseable} unparseable/truncated payload(s) — expected 0 under the fix")
 
-    # ── 6. pipeline health ───────────────────────────────────────────────────
+    # -- 6. pipeline health --------------------------------------------------
     head("6. PIPELINE HEALTH")
     def count_true(col: str) -> int:
         return sum(1 for r in rows if str(r.get(col, "")).strip().lower() in ("true", "1"))
@@ -183,7 +271,7 @@ def main() -> int:
         print(f"  projected full run (600 assessments): "
               f"{lats[len(lats)//2]*600/1000/60:.0f} min at the median")
 
-    # ── verdict ──────────────────────────────────────────────────────────────
+    # -- verdict -------------------------------------------------------------
     head("VERDICT")
     if fails:
         print("  NOT ACCEPTABLE as the production configuration:")

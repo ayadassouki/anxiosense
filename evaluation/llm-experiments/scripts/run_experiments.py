@@ -176,8 +176,101 @@ def normalize_model_id(model_id: str) -> str:
 
 MEASURED_INPUT_TOKENS_PER_ASSESSMENT  = 6_271   # Stage B measured average
 MEASURED_OUTPUT_TOKENS_PER_ASSESSMENT = 362     # Stage B measured average
-INPUT_PRICE_PER_MILLION  = 0.10   # USD — Llama 4 Scout on OpenRouter
-OUTPUT_PRICE_PER_MILLION = 0.30   # USD — Llama 4 Scout on OpenRouter
+
+# Per-model OpenRouter list price, USD per million tokens (input, output).
+# Source: catalogue snapshot outputs/catalogue/openrouter_models.json,
+# sha256 8950a2285eef034e…, retrieved 2026-08-04, cross-checked against the
+# per-endpoint pricing returned by scripts/query_endpoints.py for the pinned
+# provider. Previously a single Llama-4-Scout price was applied to every model,
+# which under-reported Mistral by 2x and over-reported Phi-4 by ~30%.
+MODEL_PRICING_PER_MILLION = {
+    "meta-llama/llama-4-scout":     (0.10, 0.30),   # DeepInfra fp8
+    "mistralai/mistral-small-2603": (0.15, 0.60),   # Mistral
+    "google/gemma-4-31b-it":        (0.09, 0.34),   # DeepInfra fp4
+    "deepseek/deepseek-v4-flash":   (0.09, 0.18),   # DeepInfra fp4
+    "microsoft/phi-4":              (0.07, 0.14),   # DeepInfra bf16
+}
+FALLBACK_PRICING_PER_MILLION = (0.10, 0.30)
+
+# Provider defaults published by OpenRouter (`default_parameters` in the same
+# catalogue snapshot). Only models that publish a NUMBER appear here; the rest
+# publish nothing and their applied value is genuinely unobservable.
+PUBLISHED_PROVIDER_DEFAULTS = {
+    "google/gemma-4-31b-it": {"temperature": 1, "top_p": 0.95, "top_k": 64},
+}
+CATALOGUE_SNAPSHOT_SHA256 = (
+    "8950a2285eef034e2b095ed021e4d925ad5233c2560c3d855a3709f71e10935d"
+)
+# Parameters deliberately omitted from every request so provider defaults apply.
+OMITTED_DECODING_PARAMS = ["temperature", "max_tokens", "seed"]
+
+
+def prices_for(model_id: str) -> tuple[float, float]:
+    """(input, output) USD per million tokens for a model id.
+
+    Explicit `is None` test — a legitimate 0.0 price (a :free tier) must not be
+    treated as "missing" and silently replaced by the fallback.
+    """
+    p = MODEL_PRICING_PER_MILLION.get(model_id)
+    if p is None:
+        logger.warning(
+            "No pricing entry for model_id=%r — cost projections use the fallback "
+            "%s and will be WRONG. Add it to MODEL_PRICING_PER_MILLION.",
+            model_id, FALLBACK_PRICING_PER_MILLION,
+        )
+        return FALLBACK_PRICING_PER_MILLION
+    return p
+
+
+def build_decoding_provenance(model_cfg) -> dict:
+    """Records HOW the decoding parameters were determined for this cell.
+
+    Under the provider-default methodology nothing is sent, so there is no
+    measured value to record — only provenance. `temperature_documented` is
+    populated ONLY where an official catalogue publishes a number; everywhere
+    else it stays None and `temperature_resolved` says so in words. Nothing here
+    is guessed or carried over from the superseded frozen-temperature table.
+    """
+    published = PUBLISHED_PROVIDER_DEFAULTS.get(model_cfg.id)
+    documented = published.get("temperature") if published else None
+    return {
+        "mode": "provider_default",
+        "model_id": model_cfg.id,
+        "provider": model_cfg.provider,
+        "pin_provider": getattr(model_cfg, "pin_provider", None),
+        # Precision. `pin_quantization` is the filter SENT with the routing
+        # directive; it is enforced by allow_fallbacks:false failing a request that
+        # cannot be served at that precision, NOT by measurement — the OpenRouter
+        # chat response carries `provider` but never `quantization`.
+        # `observed_quantization` is what the endpoints survey reported and is
+        # documentation only.
+        "pin_quantization": getattr(model_cfg, "pin_quantization", None),
+        "quantization_enforced": getattr(model_cfg, "pin_quantization", None) is not None,
+        "observed_quantization": getattr(model_cfg, "observed_quantization", None),
+        # What was actually put on the wire: nothing.
+        "temperature_sent": None,
+        "max_tokens_sent": None,
+        "seed_sent": None,
+        "params_omitted": list(OMITTED_DECODING_PARAMS),
+        # What the provider documents, where it documents anything at all.
+        "temperature_documented": documented,
+        "temperature_source": (
+            "openrouter_catalogue.default_parameters" if published else None
+        ),
+        "temperature_resolved": (
+            documented if documented is not None
+            else "unknown / provider default applied"
+        ),
+        "other_documented_defaults": (
+            {k: v for k, v in published.items() if k != "temperature"}
+            if published else {}
+        ),
+        "catalogue_snapshot_sha256": CATALOGUE_SNAPSHOT_SHA256,
+        "superseded_config": (
+            "temperature 0.0 / max_tokens 4096 frozen 2026-08-03; that dataset is "
+            "preserved at outputs/stage_c_v2/"
+        ),
+    }
 
 
 def write_cell_metadata(
@@ -212,9 +305,10 @@ def write_cell_metadata(
     filename = f"{dataset}_{model_slug}_{strategy}_run{run}_meta.json"
     meta_path = meta_dir / filename
 
+    input_price_per_million, output_price_per_million = prices_for(model_id)
     cost_per_assessment = (
-        MEASURED_INPUT_TOKENS_PER_ASSESSMENT  * INPUT_PRICE_PER_MILLION  / 1e6
-        + MEASURED_OUTPUT_TOKENS_PER_ASSESSMENT * OUTPUT_PRICE_PER_MILLION / 1e6
+        MEASURED_INPUT_TOKENS_PER_ASSESSMENT  * input_price_per_million  / 1e6
+        + MEASURED_OUTPUT_TOKENS_PER_ASSESSMENT * output_price_per_million / 1e6
     )
 
     meta = {
@@ -240,13 +334,15 @@ def write_cell_metadata(
         "full_draw_ids": list(full_draw_ids) if full_draw_ids else list(sample_ids),
         "is_partial_cell": bool(only_ids),
         "gt_label_distribution": gt_label_distribution,
-        # Frozen decoding parameters actually in force for this cell, copied from
-        # config/experiment_config.yaml. Enforced server-side in
-        # src/mastra/utils/model-provider.ts — the two must match.
+        # Decoding provenance for this cell. Under the provider-default
+        # methodology (2026-08-04) NO decoding parameter is sent; this block
+        # records that fact plus any officially published default. Enforced
+        # server-side in src/mastra/utils/model-provider.ts, which strips
+        # temperature / max_tokens / seed from every outgoing body.
         "decoding": decoding or {},
         "pricing": {
-            "input_price_per_million_usd":  INPUT_PRICE_PER_MILLION,
-            "output_price_per_million_usd": OUTPUT_PRICE_PER_MILLION,
+            "input_price_per_million_usd":  input_price_per_million,
+            "output_price_per_million_usd": output_price_per_million,
             "measured_input_tokens_per_assessment":  MEASURED_INPUT_TOKENS_PER_ASSESSMENT,
             "measured_output_tokens_per_assessment": MEASURED_OUTPUT_TOKENS_PER_ASSESSMENT,
             "cost_per_assessment_usd": round(cost_per_assessment, 9),
@@ -1072,11 +1168,7 @@ def main() -> None:
                             sampling_mode=("frozen_ids" if ds_name in frozen_sets
                                            else "stratified_draw"),
                             sample_ids_sha256=frozen_sets.get(ds_name, ([], ""))[1],
-                            decoding={
-                                "temperature": model_cfg.temperature,
-                                "max_tokens":  model_cfg.max_tokens,
-                                "seed":        model_cfg.seed,
-                            },
+                            decoding=build_decoding_provenance(model_cfg),
                         )
                         written_meta.append(str(meta_path))
 
@@ -1324,11 +1416,7 @@ def main() -> None:
                         sampling_mode=("frozen_ids" if frozen_ids
                                        else "stratified_draw"),
                         sample_ids_sha256=frozen_sha,
-                        decoding={
-                            "temperature": model_cfg.temperature,
-                            "max_tokens":  model_cfg.max_tokens,
-                            "seed":        model_cfg.seed,
-                        },
+                        decoding=build_decoding_provenance(model_cfg),
                     )
 
                     logger.info(

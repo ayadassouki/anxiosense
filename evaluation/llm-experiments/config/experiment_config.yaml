@@ -46,56 +46,94 @@ prompts_dir: "prompts"
 primary_agent: "emotion"
 
 models:
-  # FROZEN DECODING PARAMETERS (2026-08-03) — temperature 0.0, max_tokens 4096 for
-  # every model and every prompting strategy. These are enforced in
-  # src/mastra/utils/model-provider.ts (DECODING_TEMPERATURE / DECODING_MAX_TOKENS)
-  # and must be kept identical to the values below; the runner copies these into each
-  # cell's *_meta.json, so a drift between the two makes the recorded methodology wrong.
+  # ── DECODING: PROVIDER DEFAULTS (2026-08-04) ────────────────────────────────
+  # Approved methodology: each model uses its OWN default settings.
+  # temperature / max_tokens / seed are therefore null here and are NOT SENT to
+  # the API at all — src/mastra/utils/model-provider.ts strips them from every
+  # outgoing request body. "null" below means "omitted", not "sent as null".
   #
-  # Rationale:
-  #   temperature 0.0 — previously unset, so the provider default (1.0) applied and was
-  #     never recorded. Temperature is not comparable across model families, so 0 is the
-  #     only value that means the same thing for all five models. Trade-off: between-run
-  #     variance now reflects provider nondeterminism, not sampling.
-  #   max_tokens 4096 — uniform across models and strategies. Well above the longest
-  #     observed output; a binding cap truncates the longest outputs first, which are the
-  #     CoT strategies, biasing the comparison the study is making. Previously these
-  #     differed per model (16384/32768/65536) and were never sent to the API at all.
-  # NOTE: :free models share rate-limited upstream pools (confirmed exhausted in smoke tests).
-  # For reliable experiments use paid routing (drop :free suffix) or Mistral direct API.
+  # This SUPERSEDES the 2026-08-03 freeze at temperature 0.0 / max_tokens 4096.
+  # Data collected under that freeze is preserved unmodified in
+  # outputs/stage_c_v2/ and remains valid as a temperature-0 dataset. Do not mix
+  # the two in one output directory; audit_pilot.py fails a run that does.
+  #
+  # Only ONE of the five publishes a numeric default: Gemma 4 31B
+  # (temperature 1, top_p 0.95, top_k 64), per `default_parameters` in the
+  # OpenRouter catalogue snapshot sha256 8950a2285eef034e… retrieved 2026-08-04.
+  # The other four publish nothing; their applied temperature is unobservable and
+  # is recorded as "unknown / provider default applied".
+  #
+  # ── UPSTREAM PIN ────────────────────────────────────────────────────────────
+  # pin_provider fixes ONE upstream inference provider per model, verified with
+  # GET /api/v1/models/{id}/endpoints on 2026-08-04 (scripts/query_endpoints.py).
+  # Enforced as {"provider":{"order":[pin],"allow_fallbacks":false}}.
+  #
+  # Purpose: hold quantisation and sampling implementation constant WITHIN a
+  # model. It does NOT standardise across models — no single provider serves all
+  # five, so quantisation still differs BETWEEN models (fp8 / fp4 / bf16). That
+  # is a disclosed limitation, not a controlled variable.
+  #
+  # pin_quantization adds `quantizations:[...]` to the routing directive. It is set
+  # ONLY where the pinned provider exposes more than one endpoint: google/gemma-4-31b-it
+  # is served by TWO DeepInfra endpoints (fp4 and fp8) and `upstream_provider` reads
+  # "DeepInfra" for both, so a switch mid-run would otherwise be invisible.
+  # Resolved 2026-08-04: pinned to fp4. With allow_fallbacks:false an unavailable
+  # precision now ERRORS rather than being silently served at fp8.
+  #
+  # NOTE: pin_quantization is a REQUEST DIRECTIVE, not an observed value — the
+  # OpenRouter chat response carries `provider` but never `quantization`. It is
+  # enforced by hard failure, not by measurement. `observed_quantization` below is
+  # what the endpoints survey reported on 2026-08-04, recorded for the write-up.
+  #
+  # All five run through OpenRouter, so no MISTRAL_API_KEY is required.
   - id: "meta-llama/llama-4-scout"
-    name: "Llama 4 Scout (paid)"
+    name: "Llama 4 Scout"
     provider: "openrouter"
-    temperature: 0.0
-    max_tokens: 4096
-    seed: null
+    pin_provider: "DeepInfra"      # fp8   ctx 327680    uptime 99.8%
+    pin_quantization: null
+    observed_quantization: "fp8"
+    temperature: null              # omitted from the request
+    max_tokens: null               # omitted from the request
+    seed: null                     # omitted from the request
 
-  - id: "mistral-small-2603"
+  - id: "mistralai/mistral-small-2603"
     name: "Mistral Small 4"
-    provider: "mistral"
-    temperature: 0.0
-    max_tokens: 4096
+    provider: "openrouter"
+    pin_provider: "Mistral"        # ctx 262144   uptime 100.0%
+    pin_quantization: null
+    observed_quantization: "not published"
+    temperature: null
+    max_tokens: null
     seed: null
 
-  - id: "google/gemma-3-27b-it:free"
-    name: "Gemma 3 27B IT"
+  - id: "google/gemma-4-31b-it"
+    name: "Gemma 4 31B IT"
     provider: "openrouter"
-    temperature: 0.0
-    max_tokens: 4096
+    pin_provider: "DeepInfra"      # fp4   ctx 262144    uptime 99.9%  (see CAVEAT)
+    pin_quantization: "fp4"
+    observed_quantization: "fp4 (TWO endpoints: fp4, fp8 — filtered to fp4)"
+    temperature: null
+    max_tokens: null
     seed: null
 
   - id: "deepseek/deepseek-v4-flash"
     name: "DeepSeek V4 Flash"
     provider: "openrouter"
-    temperature: 0.0
-    max_tokens: 4096
+    pin_provider: "DeepInfra"      # fp4   ctx 1048576   uptime 99.7%
+    pin_quantization: null
+    observed_quantization: "fp4"
+    temperature: null
+    max_tokens: null
     seed: null
 
-  - id: "microsoft/phi-4:free"
+  - id: "microsoft/phi-4"
     name: "Phi-4"
     provider: "openrouter"
-    temperature: 0.0
-    max_tokens: 4096
+    pin_provider: "DeepInfra"      # bf16  ctx 16384     uptime 100.0%  sole provider
+    pin_quantization: null
+    observed_quantization: "bf16"
+    temperature: null
+    max_tokens: null
     seed: null
 
 strategies:
