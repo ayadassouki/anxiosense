@@ -86,6 +86,18 @@ function extractEmotionAgentRaw(obj: unknown): string | null {
   return null;
 }
 
+/**
+ * Extract the raw pre-fallback Referral Agent output from the workflow result.
+ * Persisted so the Dreaddit Mapping A evaluation can always re-derive the
+ * referral decision offline, independent of the workflow's fallback handling
+ * and of Mastra storage snapshots. Null on the crisis-override path.
+ */
+function extractReferralAgentRaw(obj: unknown): string | null {
+  const val = findByKey<string>(obj, ['referralAnalysis', 'referral_analysis'], 0);
+  if (typeof val === 'string' && val.length > 2) return val;
+  return null;
+}
+
 /** Extract token usage from the workflow result (Mastra v1.42 FullOutput path). */
 function extractTokenUsage(obj: unknown): { input_tokens: number; output_tokens: number } | null {
   const tu = findByKey<Record<string, unknown>>(obj, ['tokenUsage', 'token_usage'], 0);
@@ -609,6 +621,7 @@ router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
   const latency_ms        = Date.now() - requestStart;
   const token_usage       = extractTokenUsage(workflowData);
   const emotion_agent_raw = extractEmotionAgentRaw(workflowData);
+  const referral_agent_raw = extractReferralAgentRaw(workflowData);
 
   // Upstream provider(s) that actually served this assessment's agent calls.
   // Pinned in model-provider.ts; recorded here so every result row proves the pin held.
@@ -650,6 +663,12 @@ router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
      * Null if the workflow result does not include the exportSession block.
      */
     emotion_agent_raw,
+    /**
+     * referral_agent_raw: the verbatim Referral Agent output BEFORE fallback
+     * handling. Primary offline source for Dreaddit Mapping A re-derivation.
+     * Null on the crisis-override path (no LLM agents are called).
+     */
+    referral_agent_raw,
     metadata: {
       model_requested: model,
       model_actual,

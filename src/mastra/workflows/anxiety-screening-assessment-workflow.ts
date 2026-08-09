@@ -8,6 +8,7 @@ import { ValidationAgentOutputSchema } from '../../kb/types';
 import { writeSession, readSession, clearSession, accumulateTokenUsage, type SessionData } from '../utils/anxiety-assessment-session-store';
 import { exportWorkflowRun } from '../utils/workflow-evaluation-run-exporter';
 import { computeGad7Score, formatGad7ForReport } from '../utils/gad7-assessment-scorer';
+import { extractRiskLevel } from '../utils/referral-risk-parser';
 import {
     getPatientRecommendation,
     getStandardClinicalRecommendation,
@@ -823,19 +824,15 @@ export const anxietyScreeningAssessmentWorkflow = createWorkflow({
         type RiskLevel = typeof VALID_RISK_LEVELS[number];
         let riskLevel: RiskLevel = 'moderate';
         let referral_risk_fallback_used = false;
-        try {
-            const referral = JSON.parse(inputData.referralAnalysis);
-            const raw = referral.risk_level;
-            if (typeof raw === 'string' && (VALID_RISK_LEVELS as readonly string[]).includes(raw)) {
-                riskLevel = raw as RiskLevel;
-            } else if (typeof raw === 'string') {
-                console.warn(
-                    `[AnxioSense] Invalid risk_level "${raw}" from referral agent — defaulting to "moderate".`
-                );
-                referral_risk_fallback_used = true;
-            }
-        } catch {
-            console.warn('[AnxioSense] Referral JSON parse failed — defaulting risk_level to "moderate".');
+        // Tolerant, model-independent extraction (see referral-risk-parser.ts).
+        // Strict parse -> fence strip -> balanced-object; exact `risk_level` key,
+        // closed vocabulary only. Null means no explicit valid value exists, in
+        // which case the ORIGINAL fallback behaviour applies unchanged.
+        const extracted = extractRiskLevel(inputData.referralAnalysis);
+        if (extracted !== null) {
+            riskLevel = extracted as RiskLevel;
+        } else {
+            console.warn('[AnxioSense] No explicit valid risk_level in referral output — defaulting to "moderate".');
             referral_risk_fallback_used = true;
         }
 

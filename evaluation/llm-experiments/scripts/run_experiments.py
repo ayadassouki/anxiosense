@@ -124,6 +124,8 @@ CONFIG_PATH = REPO_ROOT / "evaluation" / "llm-experiments" / "config" / "experim
 # "emotions" array is truncated away and the record becomes unrecoverable.
 # Set to None to disable truncation entirely.
 EMOTION_RAW_STORAGE_CAP = 20000
+# Same rationale/cap for the verbatim pre-fallback Referral Agent output.
+REFERRAL_RAW_STORAGE_CAP = 20000
 
 
 def _read_id_file(path: Path) -> list[str]:
@@ -702,6 +704,13 @@ def run_one_cell(
         if emotion_raw_excerpt and EMOTION_RAW_STORAGE_CAP:
             emotion_raw_excerpt = emotion_raw_excerpt[:EMOTION_RAW_STORAGE_CAP]
 
+        # Verbatim pre-fallback Referral Agent output. Persisted per record so
+        # Dreaddit Mapping A can always be re-derived offline with the shared
+        # extraction ladder, without depending on Mastra storage snapshots.
+        referral_raw_excerpt = getattr(result, "referral_agent_raw", None) or None
+        if referral_raw_excerpt and REFERRAL_RAW_STORAGE_CAP:
+            referral_raw_excerpt = referral_raw_excerpt[:REFERRAL_RAW_STORAGE_CAP]
+
         record = {
             "sample_id":                  sample_id,
             "dataset":                    dataset_name,
@@ -731,6 +740,8 @@ def run_one_cell(
             "final_report_excerpt":       final_report_text[:400],
             # Raw Emotion Agent JSON (primary GoEmotions prediction source).
             "emotion_agent_raw":          emotion_raw_excerpt,
+            # Raw pre-fallback Referral Agent output (primary Mapping A source).
+            "referral_agent_raw":         referral_raw_excerpt,
             # Internal quality flags — observable side-effects, not prediction errors.
             # Samples with any flag set are included in metrics but flagged for review.
             "safety_override":            safety_override,

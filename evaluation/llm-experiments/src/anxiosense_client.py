@@ -64,6 +64,7 @@ class AnxioSenseResult:
     latency_ms: float                   # Wall-clock ms for the HTTP call
     token_usage: dict                   # {"input_tokens": int, "output_tokens": int}
     emotion_agent_raw: Optional[str] = None  # Raw JSON string from Emotion Agent (GoEmotions primary)
+    referral_agent_raw: Optional[str] = None  # Verbatim pre-fallback Referral Agent output (Dreaddit Mapping A)
     error: Optional[str] = None         # Error message if the call failed
     status: int = 0                     # HTTP status code (0 = connection failed)
 
@@ -231,12 +232,18 @@ def call_anxiosense(
     # None when absent (safety-override path, or server not yet updated).
     emotion_agent_raw = data.get("emotion_agent_raw")  # str | None
 
+    # Verbatim pre-fallback Referral Agent output (added 2026-08-08 alongside the
+    # tolerant risk_level extraction). None when absent (safety-override path,
+    # or server not yet updated).
+    referral_agent_raw = data.get("referral_agent_raw")  # str | None
+
     return AnxioSenseResult(
         raw_response=data,
         report_dict=data,
         latency_ms=latency_ms,
         token_usage=token_usage,
         emotion_agent_raw=emotion_agent_raw,
+        referral_agent_raw=referral_agent_raw,
         error=None,
         status=status,
     )
