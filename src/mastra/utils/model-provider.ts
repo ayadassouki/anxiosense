@@ -166,6 +166,22 @@ export const MODEL_ROUTE: Readonly<Record<string, UpstreamRoute>> = Object.freez
     'google/gemma-4-31b-it':        { provider: 'DeepInfra', quantizations: ['fp4'] },  // TWO endpoints — filtered
     'deepseek/deepseek-v4-flash':   { provider: 'DeepInfra' },                          // sole endpoint, fp4
     'microsoft/phi-4':              { provider: 'DeepInfra' },                          // sole endpoint, bf16
+    'qwen/qwen3.5-27b':             { provider: 'Alibaba'   },                          // sole endpoint, fp8 (verified 2026-08-09)
+});
+
+/**
+ * PER-MODEL request overrides beyond routing. DOCUMENTED PROTOCOL DEVIATION
+ * (2026-08-09): qwen/qwen3.5-27b smoke on the Alibaba pin produced ~30k output
+ * tokens/assessment (report step alone 15,137) and 126 s latency — ~60x the
+ * corpus average — despite the catalogue recording reasoning as NOT
+ * default-enabled. `reasoning: {enabled: false}` restores the model's
+ * catalogue-documented default; it is a reasoning toggle, NOT a sampling
+ * parameter — temperature/top_p/top_k/max_tokens/seed remain omitted
+ * (provider defaults in force). Applied per-model only; no other model's
+ * request body changes. Disclose alongside the decoding-documentation table.
+ */
+const MODEL_REQUEST_OVERRIDES: Readonly<Record<string, Record<string, unknown>>> = Object.freeze({
+    'qwen/qwen3.5-27b': { reasoning: { enabled: false } },
 });
 
 /**
@@ -236,6 +252,12 @@ function withProviderRouting(init?: RequestInit): RequestInit | undefined {
         body.provider = route.quantizations?.length
             ? { order: [route.provider], allow_fallbacks: false, quantizations: route.quantizations }
             : { order: [route.provider], allow_fallbacks: false };
+        const overrides = MODEL_REQUEST_OVERRIDES[modelId];
+        if (overrides) {
+            for (const [k, v] of Object.entries(overrides)) {
+                if (body[k] === undefined) body[k] = v;   // never clobber an explicit caller value
+            }
+        }
         return { ...init, body: JSON.stringify(body) };
     } catch {
         // Not a JSON body — leave it exactly as it was.

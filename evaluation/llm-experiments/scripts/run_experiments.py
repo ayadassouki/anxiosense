@@ -191,6 +191,7 @@ MODEL_PRICING_PER_MILLION = {
     "google/gemma-4-31b-it":        (0.09, 0.34),   # DeepInfra fp4
     "deepseek/deepseek-v4-flash":   (0.09, 0.18),   # DeepInfra fp4
     "microsoft/phi-4":              (0.07, 0.14),   # DeepInfra bf16
+    "qwen/qwen3.5-27b":             (0.195, 1.56),  # Alibaba fp8 (pinned-endpoint price, 2026-08-09)
 }
 FALLBACK_PRICING_PER_MILLION = (0.10, 0.30)
 
@@ -199,6 +200,7 @@ FALLBACK_PRICING_PER_MILLION = (0.10, 0.30)
 # publish nothing and their applied value is genuinely unobservable.
 PUBLISHED_PROVIDER_DEFAULTS = {
     "google/gemma-4-31b-it": {"temperature": 1, "top_p": 0.95, "top_k": 64},
+    "qwen/qwen3.5-27b": {"temperature": 0.6, "top_p": 0.95, "top_k": 20},
 }
 CATALOGUE_SNAPSHOT_SHA256 = (
     "8950a2285eef034e2b095ed021e4d925ad5233c2560c3d855a3709f71e10935d"
@@ -371,6 +373,7 @@ COST_PER_ASSESSMENT_USD: dict[str, float] = {
     "meta-llama/llama-4-scout":   (6271 * 0.10 + 362 * 0.30) / 1e6,   # ≈$0.000736/assessment
     "mistral-small-2603":         (6271 * 0.10 + 362 * 0.30) / 1e6,   # same rates, placeholder
     "deepseek/deepseek-v4-flash": (6271 * 0.07 + 362 * 0.28) / 1e6,   # $0.07/M in + $0.28/M out
+    "qwen/qwen3.5-27b":           (6271 * 0.195 + 517 * 1.56) / 1e6,  # Alibaba: ≈$0.00203/assessment
     "google/gemma-3-27b-it:free": 0.0,
     "meta-llama/llama-4-scout:free": 0.0,
     "microsoft/phi-4:free":       0.0,

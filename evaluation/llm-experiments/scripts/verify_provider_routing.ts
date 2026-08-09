@@ -123,6 +123,16 @@ if (route === null) {
     }
 }
 
+// 3b. documented per-model request overrides must be on the wire exactly.
+//     (2026-08-09 deviation: qwen reasoning toggle — see MODEL_REQUEST_OVERRIDES.)
+if (String(body.model) === 'qwen/qwen3.5-27b') {
+    checks.push([
+        `reasoning === {"enabled":false} (documented qwen deviation)`,
+        JSON.stringify(body.reasoning) === JSON.stringify({ enabled: false }),
+        `body.reasoning = ${JSON.stringify(body.reasoning)} — the reasoning-off override is missing/altered`,
+    ]);
+}
+
 // 4. decoding parameters must be absent.
 for (const k of MUST_BE_ABSENT) {
     checks.push([
