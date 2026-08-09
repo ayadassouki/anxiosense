@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-merge_rerun_multirun.py — run-aware variant of merge_rerun.py.
+merge_rerun_multirun.py — model- and run-aware variant of merge_rerun.py.
 
 WHY THIS EXISTS
 merge_rerun.py keys replacements on (sample_id, strategy) WITHOUT the run
-number — documented as safe only when a single run exists (the DeepSeek run-1
-case). The Gemma Dreaddit re-dispatch spans 5 runs and 14 of the 54 unique
-timed-out ids appear in MORE THAN ONE run, so the run-agnostic key would
-splice a run-1 re-collection into run 2..5 files (cross-run contamination).
-This variant keys on (sample_id, strategy, run) everywhere. All other
+number or model — safe only for a single model with a single run. Stage C
+uses the SAME frozen 100 ids for every model, and re-dispatches span 5 runs,
+so both axes must be in the key: without run, a run-1 re-collection splices
+into run 2..5; without model, a Gemma re-collection matches the same
+(id, strategy, run) slot in every other model's file (caught by --dry-run
+on 2026-08-09: 301 would-be replacements instead of 71).
+This variant keys on (sample_id, model, strategy, run) everywhere. All other
 guarantees are inherited unchanged from merge_rerun.py:
 
   * originals NEVER written; refuses output inside original dir
@@ -19,7 +21,8 @@ guarantees are inherited unchanged from merge_rerun.py:
   * --dry-run
 
 MANIFEST FORMAT
-CSV with columns: sample_id, strategy, run, reason   (run is new/required)
+CSV with columns: sample_id, model, strategy, run, reason
+(model = the model_id, e.g. google/gemma-4-31b-it; model and run required)
 
 Usage
 -----
@@ -82,7 +85,12 @@ def _load_lines(path: Path) -> List[Tuple[str, dict]]:
     return out
 
 
-Key = Tuple[str, str, int]  # (sample_id, strategy, run)
+Key = Tuple[str, str, str, int]  # (sample_id, model_slug, strategy, run)
+
+
+def _slug(model_id: str) -> str:
+    """model_id as it appears in cell filenames: '/' and ':' become '_'."""
+    return model_id.replace("/", "_").replace(":", "_")
 
 
 def main() -> None:
@@ -92,7 +100,7 @@ def main() -> None:
     ap.add_argument("--rerun-dir", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--manifest", required=True,
-                    help="CSV with sample_id, strategy, run, reason columns.")
+                    help="CSV with sample_id, model, strategy, run, reason columns.")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -113,15 +121,18 @@ def main() -> None:
     allowed: Dict[Key, str] = {}
     with Path(args.manifest).open(encoding="utf-8") as fh:
         rdr = csv.DictReader(fh)
-        if "run" not in (rdr.fieldnames or []):
-            print("REFUSING: manifest has no 'run' column. This script requires "
-                  "a run-aware manifest; a run-agnostic one is exactly the "
-                  "hazard it exists to prevent.")
+        missing_cols = {"run", "model"} - set(rdr.fieldnames or [])
+        if missing_cols:
+            print(f"REFUSING: manifest lacks column(s) {sorted(missing_cols)}. "
+                  "This script requires a model- and run-aware manifest; "
+                  "anything less is exactly the hazard it exists to prevent.")
             sys.exit(1)
         for r in rdr:
-            allowed[(r["sample_id"].strip(), r["strategy"].strip(),
-                     int(r["run"]))] = r.get("reason", "").strip()
-    print(f"Manifest: {len(allowed)} replaceable (sample_id, strategy, run) triples\n")
+            allowed[(r["sample_id"].strip(), _slug(r["model"].strip()),
+                     r["strategy"].strip(), int(r["run"]))] = \
+                r.get("reason", "").strip()
+    print(f"Manifest: {len(allowed)} replaceable "
+          f"(sample_id, model, strategy, run) tuples\n")
 
     # ── Index rerun records by (sample_id, strategy, run) ──────────────────
     # Run comes from the rerun FILENAME (the harness writes run{N} files when
@@ -132,14 +143,20 @@ def main() -> None:
         parsed = _parse_cell(f.name)
         if not parsed:
             continue
-        _, _, strat, run = parsed
+        _, model_slug, strat, run = parsed
         for _, rec in _load_lines(f):
             rec_run = rec.get("run")
             if rec_run is not None and int(rec_run) != run:
                 print(f"  !! {f.name}: record {rec.get('sample_id')} has "
                       f"run={rec_run} but filename says run{run} — aborting")
                 sys.exit(1)
-            key = (str(rec.get("sample_id", "")), strat, run)
+            rec_model = str(rec.get("model_id", ""))
+            if rec_model and _slug(rec_model) != model_slug:
+                print(f"  !! {f.name}: record {rec.get('sample_id')} has "
+                      f"model_id={rec_model} but filename says {model_slug} "
+                      f"— aborting")
+                sys.exit(1)
+            key = (str(rec.get("sample_id", "")), model_slug, strat, run)
             if key in rerun_idx:
                 rerun_dupes.append(key)
             rerun_idx[key] = rec
@@ -153,7 +170,7 @@ def main() -> None:
         print(f"  ! {len(unexpected)} rerun record(s) NOT in the manifest — "
               f"IGNORED, not merged:")
         for k in unexpected[:10]:
-            print(f"      {k[0]}  {k[1]}  run{k[2]}")
+            print(f"      {k[0]}  {k[1]}  {k[2]}  run{k[3]}")
 
     if not args.dry_run:
         output.mkdir(parents=True, exist_ok=True)
@@ -167,7 +184,7 @@ def main() -> None:
         if not parsed:
             print(f"  ? skipping unrecognised filename: {src.name}")
             continue
-        dataset, _, strat, run = parsed
+        dataset, model_slug, strat, run = parsed
         lines = _load_lines(src)
 
         out_lines: List[str] = []
@@ -176,7 +193,7 @@ def main() -> None:
 
         for verbatim, rec in lines:
             sid = str(rec.get("sample_id", ""))
-            key = (sid, strat, run)
+            key = (sid, model_slug, strat, run)
             replacement = rerun_idx.get(key)
 
             if replacement is not None and key in allowed:
@@ -237,8 +254,8 @@ def main() -> None:
     if missing:
         print(f"\n{len(missing)} manifest record(s) had NO rerun result "
               f"(still unrecovered):")
-        for sid, st, rn in missing[:40]:
-            print(f"    {sid}  {st}  run{rn}  ({allowed[(sid, st, rn)]})")
+        for sid, mdl, st, rn in missing[:40]:
+            print(f"    {sid}  {mdl}  {st}  run{rn}  ({allowed[(sid, mdl, st, rn)]})")
 
     if args.dry_run:
         print("\nDRY RUN — nothing written.")
