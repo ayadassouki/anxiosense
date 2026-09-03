@@ -1,0 +1,35 @@
+# SMOKE TEST - 10 Dreaddit items, 1 model, 1 strategy, 1 run.
+# Requests qwen/qwen3.5-27b to match the MODEL_ID currently in .env, so the
+# model-identity guard passes without touching the server configuration.
+# Dispatch count is capped by --limit on the command line, not here.
+experiment_id: smoke_001
+output_root: evaluation/publication_experiments/runs
+models:
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/candidate_dreaddit_test.json
+runs: 1
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5

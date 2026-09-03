@@ -1,0 +1,62 @@
+# BENCHMARK bench_002 - infrastructure only, NOT a publication result.
+# Model under test: qwen/qwen3.5-27b
+# Requires MODEL_ID=qwen/qwen3.5-27b in BOTH .env and server/.env, and a restart of
+# Mastra + Express, before this config is run. The runner aborts if the
+# server serves a different model.
+# Coverage: 3 strategies x 2 datasets x 1 run x --limit 4 = 24 assessments.
+experiment_id: bench_002_qwen_qwen3.5-27b
+output_root: evaluation/publication_experiments/runs
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/candidate_dreaddit_test.json
+- name: goemotions
+  manifest: evaluation/publication_experiments/manifests/candidate_goemotions_test.json
+runs: 1
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5

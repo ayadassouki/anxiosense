@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-08-02T00:48:11Z",
+  "generated_by": "evaluation/datasets/scripts/preprocess_datasets.py",
+  "exclusion_policy": "Rows are excluded ONLY when the text field is malformed (NaN, empty, or an Excel formula error string such as #NAME?). Duplicate texts are flagged with boolean columns but NOT removed. Cross-split overlaps are reported in exclusion_log.json under 'cross_split_overlaps' but NOT removed from the processed dataset.",
+  "datasets": {
+    "dreaddit": {
+      "source_rows": 1531,
+      "excluded_rows": 1,
+      "processed_rows": 1530,
+      "split_counts": {
+        "train": 1206,
+        "test": 324
+      },
+      "label_distribution": {
+        "1": 1051,
+        "0": 479
+      },
+      "intra_split_duplicates": 3,
+      "cross_split_duplicates": 6,
+      "text_length": {
+        "min": 73,
+        "q25": 359,
+        "median": 442,
+        "mean": 475.5,
+        "max": 1606
+      }
+    },
+    "goemotions": {
+      "source_rows": 26269,
+      "excluded_rows": 1,
+      "processed_rows": 26268,
+      "split_counts": {
+        "train": 21062,
+        "test": 2627,
+        "validation": 2579
+      },
+      "emotion_distribution": {
+        "['neutral']": 17272,
+        "['annoyance']": 2395,
+        "['joy']": 1684,
+        "['anger']": 1472,
+        "['sadness']": 1290,
+        "['disappointment']": 1161,
+        "['fear']": 650,
+        "['relief']": 152,
+        "['nervousness']": 134,
+        "['grief']": 58
+      },
+      "intra_split_duplicates": 54,
+      "cross_split_duplicates": 46,
+      "text_length": {
+        "min": 2,
+        "q25": 37,
+        "median": 65,
+        "mean": 68.5,
+        "max": 542
+      }
+    }
+  }
+}

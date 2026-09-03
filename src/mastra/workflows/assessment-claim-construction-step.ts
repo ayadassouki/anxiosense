@@ -2,6 +2,7 @@ import { createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { ClaimSchema } from '../../kb/types';
 import { writeSession } from '../utils/anxiety-assessment-session-store';
+import { randomUUID } from 'node:crypto';
 
 const combinedAnalysisSchema = z.object({
   userText: z.string(),
@@ -145,7 +146,11 @@ export const assessmentClaimConstructionStep = createStep({
 
     console.log(`[buildClaimsStep] Built ${claims.length} claim(s):`, claims.map(c => c.claimId).join(', '));
 
-    const sessionId = `session-${Date.now()}`;
+    // Collision-safe session key. Date.now() has millisecond resolution, so two
+    // concurrent assessments reaching this step in the same millisecond would have
+    // shared one entry in the process-global session store. No behaviour change:
+    // the key is still an opaque string into the same Map.
+    const sessionId = `session-${randomUUID()}`;
 
     // Seed the quality flags in the session store so downstream steps can augment them.
     writeSession(sessionId, {

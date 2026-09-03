@@ -52,3 +52,9 @@ evaluation/data/
 # Environment
 .env
 *.env
+
+# Publication experiment raw outputs.
+# Preserved on disk and archived alongside the paper; too large and too numerous
+# for version control. The runner's provenance (experiment.json) is reproducible
+# from the committed config + manifests + code, so nothing is lost by ignoring these.
+evaluation/publication_experiments/runs/

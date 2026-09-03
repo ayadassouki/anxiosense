@@ -98,6 +98,23 @@ function extractReferralAgentRaw(obj: unknown): string | null {
   return null;
 }
 
+/**
+ * Raw Symptom / Context Agent outputs. Neither feeds a scored prediction, but the
+ * publication runner stores every agent's verbatim output so a completed
+ * assessment can be re-parsed offline without re-querying the model.
+ */
+function extractSymptomAgentRaw(obj: unknown): string | null {
+  const val = findByKey<string>(obj, ['symptomAnalysis', 'symptom_analysis'], 0);
+  if (typeof val === 'string' && val.length > 2) return val;
+  return null;
+}
+
+function extractContextAgentRaw(obj: unknown): string | null {
+  const val = findByKey<string>(obj, ['contextAnalysis', 'context_analysis'], 0);
+  if (typeof val === 'string' && val.length > 2) return val;
+  return null;
+}
+
 /** Extract token usage from the workflow result (Mastra v1.42 FullOutput path). */
 function extractTokenUsage(obj: unknown): { input_tokens: number; output_tokens: number } | null {
   const tu = findByKey<Record<string, unknown>>(obj, ['tokenUsage', 'token_usage'], 0);
@@ -140,7 +157,14 @@ async function mastraGet(path: string): Promise<unknown> {
 }
 
 // ── Poll run until complete ───────────────────────────────────────────────────
-async function pollRun(runId: string, intervalMs = 3000, maxMs = 150_000): Promise<unknown> {
+// Poll cadence is env-configurable so the publication benchmark can measure model
+// latency rather than poll quantisation. DEFAULTS ARE UNCHANGED (3000 / 150000),
+// so behaviour is identical unless MASTRA_POLL_INTERVAL_MS / MASTRA_POLL_MAX_MS are set.
+async function pollRun(
+  runId: string,
+  intervalMs = Number(process.env.MASTRA_POLL_INTERVAL_MS ?? 3000),
+  maxMs = Number(process.env.MASTRA_POLL_MAX_MS ?? 150_000),
+): Promise<unknown> {
   const deadline = Date.now() + maxMs;
   const path     = `workflows/${WF_ID}/runs/${runId}`;
 
@@ -622,6 +646,8 @@ router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
   const token_usage       = extractTokenUsage(workflowData);
   const emotion_agent_raw = extractEmotionAgentRaw(workflowData);
   const referral_agent_raw = extractReferralAgentRaw(workflowData);
+  const symptom_agent_raw  = extractSymptomAgentRaw(workflowData);
+  const context_agent_raw  = extractContextAgentRaw(workflowData);
 
   // Upstream provider(s) that actually served this assessment's agent calls.
   // Pinned in model-provider.ts; recorded here so every result row proves the pin held.
@@ -643,13 +669,42 @@ router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
     recommendation_rejected:     Boolean(rawQf?.recommendation_rejected     ?? false),
   };
 
+  // ── Evaluation-path honesty: never report a guessed referral tier ───────────
+  // This block is inside POST /evaluate ONLY. The product path (POST /run) is
+  // untouched and keeps its existing defensive default.
+  //
+  // When the Referral Agent's output cannot be parsed, the workflow substitutes
+  // riskLevel = 'moderate' (Map 2) and sets quality_flags.referral_risk_fallback_used.
+  // That default is appropriate for a screening product, but under evaluation it
+  // would be recorded as a model prediction — a label the model never produced.
+  // Dreaddit Mapping A scores 'moderate' as the positive class, so the substitution
+  // manufactures positives. Here the tier is withheld (null) and referral_agent_raw
+  // is returned instead, so the harness scores the model's genuine output or marks
+  // the assessment invalid.
+  //
+  // NOTE: on these rows `finalReport` was still generated under the substituted
+  // 'moderate' risk level. The report is therefore NOT a scoreable field for them.
+  const referral_unreadable =
+    quality_flags.referral_risk_fallback_used && !isUrgentReport;
+  const referral_level_reported: 'low' | 'moderate' | 'urgent' | null =
+    referral_unreadable ? null : referralLevel;
+  if (referral_unreadable) {
+    console.warn(
+      `[evaluate] referral output unparseable — referralLevel withheld (null). runId=${runId}`
+    );
+  }
+
   res.json({
     report: {
       finalReport,
       concernPattern,
-      referralLevel,
+      // null when the Referral Agent's output could not be parsed — see above.
+      referralLevel: referral_level_reported,
       summary: extractSummary(finalReport),
     },
+    // True when the tier above was withheld because the raw referral output was
+    // unparseable. The harness records such assessments as invalid, never as a class.
+    referral_unreadable,
     /**
      * emotion_agent_raw: the raw JSON string produced by the Emotion Analysis Agent.
      * Shape: {"emotions": [...], "emotional_intensity": "...", "evidence_from_text": [...]}
@@ -669,6 +724,11 @@ router.post('/evaluate', async (req: Request, res: Response): Promise<void> => {
      * Null on the crisis-override path (no LLM agents are called).
      */
     referral_agent_raw,
+    /** Raw Symptom / Context Agent output. Not scored; stored for offline re-parsing. */
+    symptom_agent_raw,
+    context_agent_raw,
+    /** Mastra workflow run id — joins this record to the workflow snapshot. */
+    mastra_run_id: runId,
     metadata: {
       model_requested: model,
       model_actual,

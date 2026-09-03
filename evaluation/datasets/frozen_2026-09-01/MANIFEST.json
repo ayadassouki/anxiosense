@@ -1,0 +1,67 @@
+{
+  "created_utc": "2026-09-02T23:12:32.078835+00:00",
+  "purpose": "Frozen snapshot of the RQ1-RQ3 evaluation test splits. Any later change to text, label or membership is detectable by re-running verify_frozen.py.",
+  "min_length_gate": 10,
+  "datasets": {
+    "dreaddit": {
+      "processed_file": "evaluation/datasets/processed/dreaddit_clean.csv",
+      "processed_sha256": "3d04aa60d96c49e4267ab89923a79fa3988a03baa6797ec027cfd1a10353d9f0",
+      "source_file": "evaluation/datasets/dreaddit/dreaddit_anxiety_subset.csv",
+      "source_sha256": "6fabd222eedfd9aacaaf3ffad429127ef517f4cf56079ae2e886d8caf0d8a1c3",
+      "rows_all_splits": 1530,
+      "split_counts": {
+        "train": 1206,
+        "test": 324
+      },
+      "test_rows": 324,
+      "test_ids_sha256": "12fcfaad15dff1b148cf0b68bc2f6a151320d2e22915f798f321f5e50627d55f",
+      "dispatchable_test_rows": 324,
+      "dispatchable_ids_sha256": "12fcfaad15dff1b148cf0b68bc2f6a151320d2e22915f798f321f5e50627d55f",
+      "ground_truth_distribution_test": {
+        "1": 223,
+        "0": 101
+      },
+      "majority_baseline_test": 0.688272,
+      "below_min_length_gate": 0,
+      "duplicate_sample_ids": 0,
+      "exact_duplicate_texts_in_test": 0,
+      "row_hash_index": "row_hashes_dreaddit_test.csv",
+      "row_hash_index_sha256": "65305d0f80bf7d89599eb39a627d1d5e1b0545471586363e00f86ca121dbf692"
+    },
+    "goemotions": {
+      "processed_file": "evaluation/datasets/processed/goemotions_clean.csv",
+      "processed_sha256": "359dcfff6c872d7d070c9ef8f555267e41ebae7b49fc2df162ea4c292af4bdd8",
+      "source_file": "evaluation/datasets/goemotions/goemotions_anxiosense_single.csv",
+      "source_sha256": "6b6a6b68d6bee00ec903f2c28da1a4f98fe677e8b44e695b9bc121c407d834fc",
+      "rows_all_splits": 26268,
+      "split_counts": {
+        "train": 21062,
+        "validation": 2579,
+        "test": 2627
+      },
+      "test_rows": 2627,
+      "test_ids_sha256": "571573347c79dc198dd52c86c35c4fe97b7de87fa49c859cde814798bd14eeaf",
+      "dispatchable_test_rows": 2598,
+      "dispatchable_ids_sha256": "8bd9c7ea4841f37b0651d6ed1f7c36283a93a88bbb0bac9014adf8f246fec235",
+      "ground_truth_distribution_test": {
+        "sadness": 235,
+        "non_distress": 1897,
+        "frustration": 410,
+        "fear": 69,
+        "anxiety": 16
+      },
+      "majority_baseline_test": 0.722116,
+      "below_min_length_gate": 29,
+      "duplicate_sample_ids": 0,
+      "exact_duplicate_texts_in_test": 1,
+      "row_hash_index": "row_hashes_goemotions_test.csv",
+      "row_hash_index_sha256": "693012bc454b72794d1f84dcbc55cab7d52c89560c5215b845f24b4070cb1e24"
+    }
+  },
+  "exclusion_list": {
+    "file": "exclusions.csv",
+    "rows": 37,
+    "sha256": "cd5f6600b060da3019aee33a983785105f4655ed7ae611e29954e217aa89c9c3",
+    "policy": "Nothing is deleted from any dataset file. Rows marked excluded_from_dispatch=yes are the only rows withheld from the run, because the server rejects them with HTTP 400 (<10 characters). All other listed rows are dispatched and scored; they are recorded here so the duplication is disclosed in the paper."
+  }
+}

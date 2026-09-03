@@ -1,0 +1,32 @@
+# Mock demonstration config. No real model is ever called.
+experiment_id: mock_demo
+output_root: evaluation/publication_experiments/runs
+models:
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/candidate_dreaddit_test.json
+runs: 1
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.0

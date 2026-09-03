@@ -1,0 +1,496 @@
+{
+  "generated_at": "2026-08-02T00:48:11Z",
+  "total_exclusions": 2,
+  "total_cross_split_overlaps": 52,
+  "policy_note": "Only rows in 'exclusions' are removed from the processed dataset. Rows in 'cross_split_overlaps' are KEPT in the processed dataset with is_cross_split_duplicate=True; they are listed here for transparency and must be described in the Methodology chapter.",
+  "exclusions": [
+    {
+      "dataset": "dreaddit",
+      "original_index": 941,
+      "sample_id": "dread_000941",
+      "id": 559,
+      "split": "train",
+      "reason": "excel_formula_error: '#NAME?'",
+      "text_snippet": "#NAME?"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 8813,
+      "sample_id": "ge_008813",
+      "id": "efh341y",
+      "split": "train",
+      "reason": "excel_formula_error: '#ERROR!'",
+      "text_snippet": "#ERROR!"
+    }
+  ],
+  "cross_split_overlaps": [
+    {
+      "dataset": "dreaddit",
+      "original_index": 252,
+      "sample_id": "dread_000252",
+      "split": "train",
+      "label": 1,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I assumed she would answer the question, or she would explore my feelings of inadequacy, or she would interpret the tran"
+    },
+    {
+      "dataset": "dreaddit",
+      "original_index": 501,
+      "sample_id": "dread_000501",
+      "split": "train",
+      "label": 0,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I'd like to note that I have had a couple close individuals look at my emails, evidence, etc since the last court date. "
+    },
+    {
+      "dataset": "dreaddit",
+      "original_index": 862,
+      "sample_id": "dread_000862",
+      "split": "train",
+      "label": 0,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Now he is enraged because I said months ago that maybe internet access was not a bad idea, that there was some stuff the"
+    },
+    {
+      "dataset": "dreaddit",
+      "original_index": 1284,
+      "sample_id": "dread_001284",
+      "split": "test",
+      "label": 0,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I assumed she would answer the question, or she would explore my feelings of inadequacy, or she would interpret the tran"
+    },
+    {
+      "dataset": "dreaddit",
+      "original_index": 1376,
+      "sample_id": "dread_001376",
+      "split": "test",
+      "label": 1,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Now he is enraged because I said months ago that maybe internet access was not a bad idea, that there was some stuff the"
+    },
+    {
+      "dataset": "dreaddit",
+      "original_index": 1494,
+      "sample_id": "dread_001494",
+      "split": "test",
+      "label": 1,
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I'd like to note that I have had a couple close individuals look at my emails, evidence, etc since the last court date. "
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 1105,
+      "sample_id": "ge_001105",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Weird flex but ok"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 1459,
+      "sample_id": "ge_001459",
+      "split": "train",
+      "emotion_names": "['anger']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME] damn it"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 1612,
+      "sample_id": "ge_001612",
+      "split": "train",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Happy cake day!"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 1737,
+      "sample_id": "ge_001737",
+      "split": "train",
+      "emotion_names": "['disappointment']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I miss [NAME]"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 2281,
+      "sample_id": "ge_002281",
+      "split": "train",
+      "emotion_names": "['sadness']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I miss [NAME]"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 2739,
+      "sample_id": "ge_002739",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Oh boy yeah"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 2795,
+      "sample_id": "ge_002795",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "What do you mean?"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 3211,
+      "sample_id": "ge_003211",
+      "split": "train",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Happy cake day!"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 4786,
+      "sample_id": "ge_004786",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Go on..."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 5157,
+      "sample_id": "ge_005157",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME]."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 5216,
+      "sample_id": "ge_005216",
+      "split": "train",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "You seem fun."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 5507,
+      "sample_id": "ge_005507",
+      "split": "train",
+      "emotion_names": "['fear']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME] is scary"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 5977,
+      "sample_id": "ge_005977",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME]."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 6224,
+      "sample_id": "ge_006224",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "What do you mean?"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 7889,
+      "sample_id": "ge_007889",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME]."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 8374,
+      "sample_id": "ge_008374",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Go on..."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 8795,
+      "sample_id": "ge_008795",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Weird flex but ok"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 8796,
+      "sample_id": "ge_008796",
+      "split": "train",
+      "emotion_names": "['anger']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME] damn it"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 10153,
+      "sample_id": "ge_010153",
+      "split": "train",
+      "emotion_names": "['annoyance']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Weird flex but ok"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 10567,
+      "sample_id": "ge_010567",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Wtf is that"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 11305,
+      "sample_id": "ge_011305",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "You must be new around here."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 13032,
+      "sample_id": "ge_013032",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "All the time"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 16029,
+      "sample_id": "ge_016029",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "And then everyone clapped"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 16254,
+      "sample_id": "ge_016254",
+      "split": "train",
+      "emotion_names": "['fear']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "This is terrifying"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 17695,
+      "sample_id": "ge_017695",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "What do you mean?"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 17866,
+      "sample_id": "ge_017866",
+      "split": "train",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "RemindMe! 1 day"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 18753,
+      "sample_id": "ge_018753",
+      "split": "train",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Happy birthday [NAME]!"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21098,
+      "sample_id": "ge_021098",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "You must be new around here."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21246,
+      "sample_id": "ge_021246",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Oh boy yeah"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21330,
+      "sample_id": "ge_021330",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Weird flex but ok"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21813,
+      "sample_id": "ge_021813",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "RemindMe! 1 day"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21817,
+      "sample_id": "ge_021817",
+      "split": "validation",
+      "emotion_names": "['anger']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME] damn it"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21857,
+      "sample_id": "ge_021857",
+      "split": "validation",
+      "emotion_names": "['anger']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Wtf is that"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 21912,
+      "sample_id": "ge_021912",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "What do you mean?"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 22315,
+      "sample_id": "ge_022315",
+      "split": "validation",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Happy birthday [NAME]!"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 22482,
+      "sample_id": "ge_022482",
+      "split": "validation",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "All the time"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 23394,
+      "sample_id": "ge_023394",
+      "split": "validation",
+      "emotion_names": "['fear']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME] is scary"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 23530,
+      "sample_id": "ge_023530",
+      "split": "validation",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "You seem fun."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 23826,
+      "sample_id": "ge_023826",
+      "split": "test",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME]."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 24183,
+      "sample_id": "ge_024183",
+      "split": "test",
+      "emotion_names": "['sadness']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "I miss [NAME]"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 24197,
+      "sample_id": "ge_024197",
+      "split": "test",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "[NAME]."
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 24297,
+      "sample_id": "ge_024297",
+      "split": "test",
+      "emotion_names": "['fear']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "This is terrifying"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 25129,
+      "sample_id": "ge_025129",
+      "split": "test",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Weird flex but ok"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 25392,
+      "sample_id": "ge_025392",
+      "split": "test",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "And then everyone clapped"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 25962,
+      "sample_id": "ge_025962",
+      "split": "test",
+      "emotion_names": "['joy']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Happy cake day!"
+    },
+    {
+      "dataset": "goemotions",
+      "original_index": 26034,
+      "sample_id": "ge_026034",
+      "split": "test",
+      "emotion_names": "['neutral']",
+      "note": "Text also appears in another split. Row KEPT in processed dataset.",
+      "text_snippet": "Go on..."
+    }
+  ]
+}
