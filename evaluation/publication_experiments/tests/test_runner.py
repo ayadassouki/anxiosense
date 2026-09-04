@@ -15,7 +15,8 @@ sys.path.insert(0, str(PKG_ROOT))
 from runner import RUNNER_VERSION                                  # noqa: E402
 from runner._reuse import REPO_ROOT, LabelMappingError             # noqa: E402
 from runner.client import TransportResult                          # noqa: E402
-from runner.config import load_config, ConfigError                 # noqa: E402
+from runner.config import (load_config, ConfigError,               # noqa: E402
+                           RUN_CLASSES, DEFAULT_RUN_CLASS, HASH_COMPAT_DEFAULTS)
 from runner.failures import Transport, classify_transport, is_retryable  # noqa: E402
 from runner.identity import (new_uuid, sha256_text, prompt_hashes,
                              prompt_inventory, PromptError, AGENTS,
@@ -26,7 +27,8 @@ from runner.mock import MockTransport, FIXTURES                    # noqa: E402
 from runner.parse import parse_dreaddit, parse_goemotions          # noqa: E402
 from runner.rescore import rescore                                 # noqa: E402
 from runner.retry import RetryPolicy, next_action                  # noqa: E402
-from runner.run import preflight, run_experiment, PreflightError   # noqa: E402
+from runner.run import (preflight, run_experiment, PreflightError,   # noqa: E402
+                        resolve_server_runtime)
 from runner.run import main as run_main                            # noqa: E402
 from runner.goemotions_mapping import (                            # noqa: E402
     LABEL_MAP, GOEMOTIONS_LABELS, EKMAN_GROUPING, SENTIMENT_GROUPING,
@@ -1049,6 +1051,344 @@ class T12_ResumeBookkeeping(unittest.TestCase):
             self.assertEqual(s["recomputed_from_raw"]["terminal_assessments"],
                              s["totals"]["dispatched"])
             self.assertEqual(s["schema"], "dispatch_stats/2")
+
+
+# ── polling provenance ───────────────────────────────────────────────────────
+
+def health(interval=3000, maxms=150_000, source="default", **extra):
+    """A stand-in for GET /api/health, shaped exactly like server/src/index.ts."""
+    body = {"status": "ok", "time": "2026-09-04T00:00:00.000Z",
+            "mastra_poll_interval_ms": interval, "mastra_poll_max_ms": maxms,
+            "mastra_poll_interval_source": source}
+    body.update(extra)
+    return lambda: body
+
+
+def boom(exc=ConnectionRefusedError("connection refused")):
+    def _p():
+        raise exc
+    return _p
+
+
+class T13_PollingProvenance(unittest.TestCase):
+    """The effective Mastra poll cadence must be read from the server, frozen
+    into the run record and stamped on every attempt - because it changes
+    measured latency, and latency is a reported result."""
+
+    def _cfg(self, td, declared=None, dataset="dreaddit"):
+        import yaml
+        tmp = Path(td)
+        csvp = tiny_dreaddit(tmp) if dataset == "dreaddit" else tiny_goemotions(tmp)
+        man = build_and_save(tmp, dataset, csvp)
+        server = {"base_url": "http://localhost:3001", "timeout_seconds": 180,
+                  "server_poll_budget_seconds": 150}
+        if declared is not None:
+            server["mastra_poll_interval_ms"] = declared
+        cfg = {"experiment_id": "poll", "output_root": str(tmp / "runs"),
+               "models": [{"id": "microsoft/phi-4", "name": "Phi-4",
+                           "provider": "openrouter", "enabled": True}],
+               "strategies": ["zero-shot"],
+               "datasets": [{"name": dataset, "manifest": str(man)}],
+               "runs": 1, "run_start": 1,
+               "retry": {"max_attempts": 3, "backoff_base_ms": 1, "backoff_factor": 2},
+               "server": server}
+        p = tmp / "cfg.yaml"
+        p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        return load_config(p)
+
+    # -- the default ---------------------------------------------------------
+
+    def test_default_3000_is_read_and_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=3000)
+            rt = resolve_server_runtime(cfg, health(3000, source="default"))
+            self.assertEqual(rt["effective_mastra_poll_interval_ms"], 3000)
+            self.assertEqual(rt["expected_mastra_poll_interval_ms"], 3000)
+            self.assertEqual(rt["source"], "default")
+            self.assertTrue(rt["verified"])
+            self.assertIsNone(rt["probe_error"])
+
+    # -- the explicit 250 ----------------------------------------------------
+
+    def test_explicit_250_is_read_and_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            rt = resolve_server_runtime(cfg, health(250, source="env"))
+            self.assertEqual(rt["effective_mastra_poll_interval_ms"], 250)
+            self.assertEqual(rt["source"], "env")
+            self.assertTrue(rt["verified"])
+
+    # -- mismatch ------------------------------------------------------------
+
+    def test_mismatch_aborts_preflight(self):
+        """Declared 250 but the server is still on the 3000 default."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            with self.assertRaises(PreflightError) as cm:
+                resolve_server_runtime(cfg, health(3000))
+            m = str(cm.exception)
+            self.assertIn("250", m)
+            self.assertIn("3000", m)
+            self.assertIn("mismatch", m.lower())
+
+    def test_mismatch_the_other_way_also_aborts(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=3000)
+            with self.assertRaises(PreflightError):
+                resolve_server_runtime(cfg, health(250))
+
+    def test_mismatch_aborts_the_whole_preflight(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            with self.assertRaises(PreflightError):
+                preflight(cfg, server_probe=health(3000))
+
+    # -- missing / invalid ---------------------------------------------------
+
+    def test_null_interval_aborts_when_declared(self):
+        """The server reports null when MASTRA_POLL_INTERVAL_MS is non-numeric."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            with self.assertRaises(PreflightError) as cm:
+                resolve_server_runtime(cfg, health(None))
+            self.assertIn("null", str(cm.exception))
+
+    def test_missing_field_aborts_when_declared(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            probe = lambda: {"status": "ok", "time": "t"}       # legacy server
+            with self.assertRaises(PreflightError):
+                resolve_server_runtime(cfg, probe)
+
+    def test_unreachable_server_aborts_when_declared(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=3000)
+            with self.assertRaises(PreflightError) as cm:
+                resolve_server_runtime(cfg, boom())
+            self.assertIn("could not be read", str(cm.exception))
+
+    def test_invalid_declared_value_is_a_config_error(self):
+        for bad in (0, -1):
+            with tempfile.TemporaryDirectory() as td:
+                with self.assertRaises(ConfigError):
+                    self._cfg(td, declared=bad)
+
+    # -- backward compatibility ---------------------------------------------
+
+    def test_undeclared_config_records_but_does_not_abort(self):
+        """Configs written before 2026-09-04 declare nothing. They keep their
+        config_sha256 and stay comparable with the runs already made."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=None)
+            self.assertIsNone(cfg.server.mastra_poll_interval_ms)
+            rt = resolve_server_runtime(cfg, health(3000))
+            self.assertEqual(rt["effective_mastra_poll_interval_ms"], 3000)
+            self.assertFalse(rt["verified"])
+
+    def test_undeclared_config_survives_an_unreachable_server(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=None)
+            rt = resolve_server_runtime(cfg, boom())
+            self.assertIsNone(rt["effective_mastra_poll_interval_ms"])
+            self.assertEqual(rt["source"], "unavailable")
+            self.assertFalse(rt["verified"])
+            self.assertIn("ConnectionRefusedError", rt["probe_error"])
+
+    # -- it reaches the run record ------------------------------------------
+
+    def test_frozen_block_carries_server_runtime(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            f = preflight(cfg, server_probe=health(250, source="env"))
+            self.assertEqual(f["server_runtime"]["effective_mastra_poll_interval_ms"], 250)
+            self.assertEqual(f["server"]["mastra_poll_interval_ms"], 250)
+            self.assertEqual(json.loads(json.dumps(f["server_runtime"])),
+                             f["server_runtime"])
+
+    def test_every_attempt_records_the_effective_interval(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=250)
+            out = run_experiment(cfg, transport=MockTransport({}),
+                                 sleep=lambda *_: None,
+                                 server_probe=health(250, source="env"))
+            rd = Path(out["run_dir"])
+            exp = json.loads((rd / "experiment.json").read_text())
+            self.assertEqual(exp["server_runtime"]["effective_mastra_poll_interval_ms"], 250)
+            att = [json.loads(l) for l in
+                   (rd / "raw" / "attempts.jsonl").read_text().splitlines() if l.strip()]
+            self.assertTrue(att)
+            self.assertEqual({a["mastra_poll_interval_ms"] for a in att}, {250})
+
+    def test_undeclared_run_records_null_rather_than_a_guess(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, declared=None)
+            out = run_experiment(cfg, transport=MockTransport({}),
+                                 sleep=lambda *_: None, server_probe=boom())
+            att = [json.loads(l) for l in
+                   (Path(out["run_dir"]) / "raw" / "attempts.jsonl").read_text().splitlines()
+                   if l.strip()]
+            self.assertEqual({a["mastra_poll_interval_ms"] for a in att}, {None})
+
+
+# ── run_class ────────────────────────────────────────────────────────────────
+
+class T14_RunClass(unittest.TestCase):
+    """Run class is DECLARED in the config. It is never inferred from the
+    experiment_id, the config path, or a CLI flag."""
+
+    def _write(self, td, *, run_class=None, poll=None, eid="rc"):
+        import yaml
+        tmp = Path(td)
+        man = build_and_save(tmp, "dreaddit", tiny_dreaddit(tmp))
+        server = {"base_url": "http://localhost:3001", "timeout_seconds": 180,
+                  "server_poll_budget_seconds": 150}
+        if poll is not None:
+            server["mastra_poll_interval_ms"] = poll
+        cfg = {"experiment_id": eid, "output_root": str(tmp / "runs"),
+               "models": [{"id": "microsoft/phi-4", "name": "Phi-4",
+                           "provider": "openrouter", "enabled": True}],
+               "strategies": ["zero-shot"],
+               "datasets": [{"name": "dreaddit", "manifest": str(man)}],
+               "runs": 1, "run_start": 1,
+               "retry": {"max_attempts": 3, "backoff_base_ms": 1, "backoff_factor": 2},
+               "server": server}
+        if run_class is not None:
+            cfg["run_class"] = run_class
+        p = tmp / f"{eid}.yaml"
+        p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        return p
+
+    def test_all_four_classes_load(self):
+        self.assertEqual(set(RUN_CLASSES), {"publication", "benchmark", "smoke", "mock"})
+        for rc in RUN_CLASSES:
+            with tempfile.TemporaryDirectory() as td, self.subTest(rc=rc):
+                poll = 3000 if rc == "publication" else None
+                self.assertEqual(load_config(self._write(td, run_class=rc, poll=poll)).run_class, rc)
+
+    def test_default_is_benchmark_when_omitted(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.assertEqual(load_config(self._write(td)).run_class, "benchmark")
+            self.assertEqual(DEFAULT_RUN_CLASS, "benchmark")
+
+    def test_unknown_class_is_a_config_error(self):
+        for bad in ("Publication", "prod", "", "production", "PUBLICATION"):
+            with tempfile.TemporaryDirectory() as td, self.subTest(bad=bad):
+                with self.assertRaises(ConfigError) as cm:
+                    load_config(self._write(td, run_class=bad, poll=3000))
+                self.assertIn("run_class", str(cm.exception))
+
+    def test_publication_without_poll_interval_is_rejected_at_load(self):
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(ConfigError) as cm:
+                load_config(self._write(td, run_class="publication", poll=None))
+            m = str(cm.exception)
+            self.assertIn("mastra_poll_interval_ms", m)
+            self.assertIn("publication", m)
+
+    def test_publication_with_poll_interval_loads(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=250))
+            self.assertEqual(cfg.run_class, "publication")
+            self.assertEqual(cfg.server.mastra_poll_interval_ms, 250)
+
+    def test_non_publication_classes_do_not_require_it(self):
+        for rc in ("benchmark", "smoke", "mock"):
+            with tempfile.TemporaryDirectory() as td, self.subTest(rc=rc):
+                cfg = load_config(self._write(td, run_class=rc, poll=None))
+                self.assertIsNone(cfg.server.mastra_poll_interval_ms)
+
+    def test_publication_preflight_aborts_on_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=250))
+            with self.assertRaises(PreflightError):
+                preflight(cfg, server_probe=health(3000))
+
+    def test_publication_preflight_aborts_when_unreachable(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=3000))
+            with self.assertRaises(PreflightError):
+                preflight(cfg, server_probe=boom())
+
+    def test_publication_preflight_aborts_on_null_or_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=3000))
+            with self.assertRaises(PreflightError):
+                preflight(cfg, server_probe=health(None))
+            with self.assertRaises(PreflightError):
+                preflight(cfg, server_probe=lambda: {"status": "ok"})
+
+    def test_publication_preflight_succeeds_when_matched(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=250))
+            f = preflight(cfg, server_probe=health(250, source="env"))
+            self.assertEqual(f["run_class"], "publication")
+            self.assertEqual(f["server_runtime"]["effective_mastra_poll_interval_ms"], 250)
+            self.assertTrue(f["server_runtime"]["verified"])
+
+    def test_run_class_is_frozen_into_the_run_record(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, run_class="publication", poll=250))
+            out = run_experiment(cfg, transport=MockTransport({}), sleep=lambda *_: None,
+                                 server_probe=health(250, source="env"))
+            exp = json.loads((Path(out["run_dir"]) / "experiment.json").read_text())
+            self.assertEqual(exp["run_class"], "publication")
+
+    def test_run_class_is_never_inferred_from_the_experiment_id(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td, eid="rq1_publication_full_dreaddit"))
+            self.assertEqual(cfg.run_class, "benchmark")
+            self.assertIsNone(cfg.server.mastra_poll_interval_ms)
+
+    def test_hash_compat_defaults_match_load_config(self):
+        """Every entry must state the value load_config produces when the key is
+        absent. If they drift, an old config silently changes hash."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = load_config(self._write(td))
+            for path, default in HASH_COMPAT_DEFAULTS.items():
+                node = cfg
+                for part in path:
+                    node = getattr(node, part)
+                with self.subTest(path=path):
+                    self.assertEqual(node, default)
+
+    def test_omitting_a_post_change_key_hashes_as_before(self):
+        with tempfile.TemporaryDirectory() as td:
+            bare = load_config(self._write(td, eid="a"))
+            explicit = load_config(self._write(td, eid="a", run_class="benchmark"))
+            self.assertEqual(bare.config_sha256(), explicit.config_sha256(),
+                             "declaring the default must hash like omitting it")
+
+    def test_non_default_values_do_change_the_hash(self):
+        with tempfile.TemporaryDirectory() as td:
+            bare = load_config(self._write(td, eid="b"))
+            pub = load_config(self._write(td, eid="b", run_class="publication", poll=3000))
+            smoke = load_config(self._write(td, eid="b", run_class="smoke"))
+            poll_only = load_config(self._write(td, eid="b", poll=3000))
+            h = bare.config_sha256()
+            self.assertNotEqual(h, pub.config_sha256())
+            self.assertNotEqual(h, smoke.config_sha256())
+            self.assertNotEqual(h, poll_only.config_sha256())
+            self.assertNotEqual(pub.config_sha256(), poll_only.config_sha256())
+
+    def test_completed_run_hashes_are_unchanged(self):
+        cfgs = REPO_ROOT / "evaluation/publication_experiments/configs"
+        runs = REPO_ROOT / "evaluation/publication_experiments/runs"
+        for name in ["smoke_001", "bench_002_qwen_qwen3.5-27b",
+                     "bench_003_official_dreaddit_qwen", "bench_004_official_dreaddit_qwen",
+                     "bench_005_poll250_dreaddit_qwen"]:
+            cfg_p, run_p = cfgs / f"{name}.yaml", runs / name / "experiment.json"
+            if not (cfg_p.exists() and run_p.exists()):
+                continue
+            with self.subTest(cfg=name):
+                recorded = json.loads(run_p.read_text())["config_sha256"]
+                self.assertEqual(load_config(cfg_p).config_sha256(), recorded)
+
+    def test_every_shipped_config_still_loads(self):
+        cfgs = sorted((REPO_ROOT / "evaluation/publication_experiments/configs").glob("*.yaml"))
+        self.assertGreaterEqual(len(cfgs), 10)
+        for p in cfgs:
+            with self.subTest(cfg=p.name):
+                load_config(p)
 
 
 if __name__ == "__main__":

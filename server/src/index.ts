@@ -65,7 +65,26 @@ app.use('/api/workflow', workflowRoutes);
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  // The EFFECTIVE Mastra poll cadence, resolved exactly as pollRun() resolves it
+  // (server/src/routes/workflow.ts). Publication-runner preflight reads this so
+  // the interval that produced a run's latency figures is recorded in that run's
+  // provenance instead of being an unrecorded property of the shell that started
+  // this process. Reported as null when the env var is set to something
+  // non-numeric, so preflight fails loudly rather than recording a wrong value.
+  const rawInterval = process.env.MASTRA_POLL_INTERVAL_MS;
+  const rawMax = process.env.MASTRA_POLL_MAX_MS;
+  const resolve = (raw: string | undefined, fallback: number): number | null => {
+    if (raw === undefined) return fallback;          // pollRun's ?? default
+    const v = Number(raw);
+    return Number.isFinite(v) && v > 0 ? v : null;   // invalid -> explicit null
+  };
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    mastra_poll_interval_ms: resolve(rawInterval, 3000),
+    mastra_poll_max_ms: resolve(rawMax, 150_000),
+    mastra_poll_interval_source: rawInterval === undefined ? 'default' : 'env',
+  });
 });
 
 // ── 404 ───────────────────────────────────────────────────────────────────────

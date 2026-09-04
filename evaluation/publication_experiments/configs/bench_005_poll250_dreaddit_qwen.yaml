@@ -1,0 +1,87 @@
+# BENCHMARK bench_005 - INFRASTRUCTURE TIMING VALIDATION ONLY. NOT publication data.
+#
+# Identical to bench_004 in every methodological respect. The ONLY intended
+# runtime difference is the Express server's Mastra poll cadence:
+#
+#     MASTRA_POLL_INTERVAL_MS=250        (default is 3000)
+#
+# That variable is read by the EXPRESS SERVER (server/src/routes/workflow.ts,
+# pollRun), not by this runner and not by this config. Set it in the environment
+# of the Express process:
+#
+#     cd server && MASTRA_POLL_INTERVAL_MS=250 npm run dev
+#
+# Motivation: across 58 real benchmark attempts, 57 landed within +-400 ms of a
+# 3,000 ms boundary and server_latency_ms clustered at 6,039-6,062 ms. Observed
+# latency is therefore dominated by poll quantisation rather than model time.
+# This run measures whether a 250 ms cadence removes that overhead without
+# introducing infrastructure failures, retries, provider/model drift, parsing
+# problems or bookkeeping problems.
+#
+# ACCEPTANCE: predictions and raw agent text are NOT required to match bench_004.
+# These are fresh, non-deterministic LLM calls. What must match is the
+# methodology and provenance: dataset ids, manifest, prompts, model/provider pin,
+# parsing and scoring logic, and retry policy.
+#
+# KNOWN OPEN GAP: the effective poll interval is not recorded in run provenance.
+# bench_004 and bench_005 are indistinguishable in their run records except by
+# timing. If 250 ms is adopted for the publication runs, the effective interval
+# MUST be captured in provenance first.
+#
+# bench_004 is preserved untouched; this writes to its own run directory.
+#
+# Coverage: 3 strategies x 1 dataset x 1 run x --limit 4 = 12 assessments.
+experiment_id: bench_005_poll250_dreaddit_qwen
+output_root: evaluation/publication_experiments/runs
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/official_dreaddit_test.json
+runs: 1
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5

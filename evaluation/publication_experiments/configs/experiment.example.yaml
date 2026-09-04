@@ -4,6 +4,16 @@
 # The dataset manifests referenced below are CANDIDATES generated from the data
 # currently on disk. The final scope is pending supervisor approval.
 
+# run_class is DECLARED, never inferred from the experiment_id, the config path,
+# or a CLI flag. One of: publication | benchmark | smoke | mock.
+# Omitting it means "benchmark", and a config that omits it hashes exactly as it
+# did before run_class existed.
+#
+#   publication -> server.mastra_poll_interval_ms MUST be declared, and preflight
+#                  verifies it against GET /api/health, aborting before dispatch
+#                  on a missing, invalid, unreachable or mismatched value.
+run_class: benchmark
+
 experiment_id: "example_mock_run"
 output_root: "evaluation/publication_experiments/runs"
 
@@ -70,4 +80,19 @@ server:
   # still executing and still being billed. Validated at config load.
   timeout_seconds: 180
   server_poll_budget_seconds: 150
+  # REQUIRED FOR PUBLICATION RUNS. The Mastra poll cadence this experiment
+  # expects the server to be running, in milliseconds. Preflight reads the
+  # EFFECTIVE value from GET /api/health and ABORTS if it cannot be obtained or
+  # does not match, so the cadence that produced this run's latency figures is
+  # recorded in the run record rather than being an unrecorded property of the
+  # shell that started the server.
+  #
+  # The server reads MASTRA_POLL_INTERVAL_MS (server/src/routes/workflow.ts,
+  # pollRun); its default is 3000. Start Express to match:
+  #     cd server && MASTRA_POLL_INTERVAL_MS=250 npm run dev
+  #
+  # Omit this key and the probe becomes best-effort: the value is recorded when
+  # available and null otherwise, and nothing aborts. Every config written
+  # before 2026-09-04 omits it, which is why their config_sha256 is unchanged.
+  mastra_poll_interval_ms: 3000   # REQUIRED when run_class is "publication"
   request_delay_seconds: 0.0

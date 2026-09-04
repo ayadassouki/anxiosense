@@ -1,5 +1,6 @@
 """Experiment configuration: typed, validated, hashed. Fails loudly."""
 from __future__ import annotations
+import json
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
@@ -31,12 +32,60 @@ class DatasetSpec:
     manifest: str                 # path to a frozen manifest JSON
 
 
+#: The declared purpose of a run. NEVER inferred from the experiment_id, the
+#: config path, or a CLI flag - a run's class is intent, and intent is declared
+#: in the artifact that carries provenance.
+RUN_CLASSES: tuple[str, ...] = ("publication", "benchmark", "smoke", "mock")
+DEFAULT_RUN_CLASS = "benchmark"
+
+#: HASH-COMPATIBILITY RULE (single, explicit, tested).
+#:
+#: Keys introduced after 2026-09-04 are included in config_sha256 ONLY when set
+#: to a non-default value. Every config written before that date therefore
+#: hashes exactly as it did then, and the config_sha256 recorded by smoke_001,
+#: bench_002, bench_003, bench_004 and bench_005 still reproduces from its own
+#: unmodified config file.
+#:
+#: Setting a key explicitly to its default hashes identically to omitting it -
+#: the hash tracks the experiment, not the YAML spelling.
+#:
+#: Add a new post-2026-09-04 key HERE rather than special-casing it in
+#: config_sha256(). test_hash_compat_defaults_match_load_config proves each
+#: entry's default is what load_config actually produces when the key is absent.
+HASH_COMPAT_DEFAULTS: dict[tuple[str, ...], Any] = {
+    ("run_class",): DEFAULT_RUN_CLASS,
+    ("server", "mastra_poll_interval_ms"): None,
+}
+
+
+def _strip_hash_compat(payload: dict[str, Any]) -> dict[str, Any]:
+    """Drop post-2026-09-04 keys that hold their default value."""
+    out = json.loads(json.dumps(payload, sort_keys=True, default=str))
+    for path, default in HASH_COMPAT_DEFAULTS.items():
+        node = out
+        for part in path[:-1]:
+            node = node.get(part) if isinstance(node, dict) else None
+            if node is None:
+                break
+        if isinstance(node, dict) and node.get(path[-1], default) == default:
+            node.pop(path[-1], None)
+    return out
+
+
 @dataclass(frozen=True)
 class ServerSpec:
     base_url: str
     evaluate_endpoint: str
     timeout_seconds: int
     request_delay_seconds: float
+    #: The Mastra poll cadence this experiment EXPECTS the server to be running.
+    #: Optional, and None in every config written before 2026-09-04 - those keep
+    #: their config_sha256 and stay comparable with the runs already made.
+    #: When declared, preflight probes /api/health and ABORTS if the effective
+    #: server value cannot be obtained or does not match. Publication configs
+    #: MUST declare it: poll cadence changes measured latency, and latency is a
+    #: reported result.
+    mastra_poll_interval_ms: int | None = None
 
 
 @dataclass(frozen=True)
@@ -50,6 +99,8 @@ class ExperimentConfig:
     retry: RetryPolicy
     server: ServerSpec
     output_root: str
+    #: Declared, never inferred. See RUN_CLASSES.
+    run_class: str = DEFAULT_RUN_CLASS
     prompts_dir: str | None = None
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
@@ -67,8 +118,9 @@ class ExperimentConfig:
             "runs": self.runs, "run_start": self.run_start,
             "retry": asdict(self.retry),
             "server": asdict(self.server),
+            "run_class": self.run_class,
         }
-        return sha256_obj(payload)
+        return sha256_obj(_strip_hash_compat(payload))
 
 
 def load_config(path: str | Path) -> ExperimentConfig:
@@ -131,7 +183,27 @@ def load_config(path: str | Path) -> ExperimentConfig:
         evaluate_endpoint=s.get("evaluate_endpoint", "/api/workflow/evaluate"),
         timeout_seconds=int(s.get("timeout_seconds", 180)),
         request_delay_seconds=float(s.get("request_delay_seconds", 0.0)),
+        mastra_poll_interval_ms=(
+            int(s["mastra_poll_interval_ms"])
+            if s.get("mastra_poll_interval_ms") is not None else None),
     )
+    if (server.mastra_poll_interval_ms is not None
+            and server.mastra_poll_interval_ms <= 0):
+        raise ConfigError(
+            f"server.mastra_poll_interval_ms must be a positive integer, got "
+            f"{server.mastra_poll_interval_ms!r}")
+
+    run_class = str(raw.get("run_class", DEFAULT_RUN_CLASS))
+    if run_class not in RUN_CLASSES:
+        raise ConfigError(
+            f"run_class must be one of {list(RUN_CLASSES)}, got {run_class!r}")
+    if run_class == "publication" and server.mastra_poll_interval_ms is None:
+        raise ConfigError(
+            "run_class: publication requires server.mastra_poll_interval_ms to be "
+            "declared explicitly. Poll cadence changes measured latency, and latency "
+            "is a reported result, so it must be frozen into the run record and "
+            "verified against the live server before dispatch."
+        )
     # The old harness abandoned runs the server was still executing and billing.
     poll_budget = int(s.get("server_poll_budget_seconds", 150))
     if server.timeout_seconds < poll_budget:
@@ -146,5 +218,5 @@ def load_config(path: str | Path) -> ExperimentConfig:
         models=models, strategies=strategies, datasets=datasets,
         runs=int(raw["runs"]), run_start=int(raw.get("run_start", 1)),
         retry=retry, server=server, output_root=str(raw["output_root"]),
-        prompts_dir=raw.get("prompts_dir"), raw=raw,
+        run_class=run_class, prompts_dir=raw.get("prompts_dir"), raw=raw,
     )

@@ -14,7 +14,7 @@ from typing import Any
 
 from . import RUNNER_VERSION, RECORD_SCHEMA_VERSION
 from ._reuse import REPO_ROOT
-from .client import HttpTransport, TransportResult
+from .client import HttpTransport, TransportResult, probe_server_runtime
 from .config import ExperimentConfig, load_config, ConfigError
 from .failures import Transport, classify_transport
 from .identity import (new_uuid, sha256_text, sha256_obj, git_commit, git_dirty,
@@ -47,7 +47,75 @@ class PreflightError(RuntimeError):
 
 # ── preflight ────────────────────────────────────────────────────────────────
 
-def preflight(cfg: ExperimentConfig, *, prompts_dir: Path | None = None) -> dict[str, Any]:
+def resolve_server_runtime(cfg: ExperimentConfig, probe=None) -> dict[str, Any]:
+    """Read the server's EFFECTIVE Mastra poll cadence and reconcile it with what
+    the config declares.
+
+    Poll cadence changes measured latency, and latency is a reported result, so
+    it must live in the run record rather than in the shell that started the
+    server. Precedence:
+
+      * config declares an expected value -> probe is MANDATORY. A probe failure,
+        a missing field, a non-numeric value, or a mismatch is fatal.
+      * config declares nothing (every config written before 2026-09-04) -> the
+        probe is best-effort: its value is recorded when available and reported
+        as unavailable otherwise. Those configs keep their config_sha256 and
+        remain comparable with the runs already made.
+    """
+    expected = cfg.server.mastra_poll_interval_ms
+    # run_class: publication makes the probe mandatory. load_config already
+    # refuses a publication config that declares no interval, so `expected` is
+    # never None here for a publication run - this is belt and braces.
+    strict = cfg.run_class == "publication" or expected is not None
+    probe = probe or (lambda: probe_server_runtime(cfg.server.base_url))
+
+    try:
+        health = probe()
+        error = None
+    except Exception as exc:                                  # noqa: BLE001
+        health, error = None, f"{type(exc).__name__}: {exc}"
+
+    if health is None:
+        if strict:
+            raise PreflightError(
+                f"server.mastra_poll_interval_ms is declared as {expected} but the "
+                f"effective value could not be read from {cfg.server.base_url}/api/health "
+                f"({error}). Refusing to run: the poll cadence that produces this run's "
+                f"latency figures would be unrecorded."
+            )
+        return {"effective_mastra_poll_interval_ms": None,
+                "effective_mastra_poll_max_ms": None,
+                "expected_mastra_poll_interval_ms": None,
+                "source": "unavailable", "probe_error": error, "verified": False}
+
+    effective = health.get("mastra_poll_interval_ms")
+    if strict:
+        if effective is None:
+            raise PreflightError(
+                f"server.mastra_poll_interval_ms is declared as {expected} but "
+                f"/api/health reported mastra_poll_interval_ms=null. The server has a "
+                f"missing or non-numeric MASTRA_POLL_INTERVAL_MS. Refusing to run."
+            )
+        if int(effective) != int(expected):
+            raise PreflightError(
+                f"poll cadence mismatch: config declares "
+                f"server.mastra_poll_interval_ms={expected} but the server is running "
+                f"{effective}. Restart the server with MASTRA_POLL_INTERVAL_MS={expected}, "
+                f"or correct the config. Refusing to run with unrecorded timing settings."
+            )
+
+    return {
+        "effective_mastra_poll_interval_ms": effective,
+        "effective_mastra_poll_max_ms": health.get("mastra_poll_max_ms"),
+        "expected_mastra_poll_interval_ms": expected,
+        "source": health.get("mastra_poll_interval_source"),
+        "probe_error": None,
+        "verified": strict,
+    }
+
+
+def preflight(cfg: ExperimentConfig, *, prompts_dir: Path | None = None,
+              server_probe=None) -> dict[str, Any]:
     problems: list[str] = []
     frozen: dict[str, Any] = {
         "experiment_id": cfg.experiment_id,
@@ -55,6 +123,7 @@ def preflight(cfg: ExperimentConfig, *, prompts_dir: Path | None = None) -> dict
         "runner_version": RUNNER_VERSION,
         "record_schema_version": RECORD_SCHEMA_VERSION,
         "config_sha256": cfg.config_sha256(),
+        "run_class": cfg.run_class,          # declared, never inferred
         "git_commit": git_commit(),
         "git_dirty": git_dirty(),                       # TRACKED files only
         "git_untracked_count": git_untracked_count(),   # context; never gates a run
@@ -107,6 +176,9 @@ def preflight(cfg: ExperimentConfig, *, prompts_dir: Path | None = None) -> dict
     }
     frozen["retry_policy"] = asdict(cfg.retry)
     frozen["server"] = asdict(cfg.server)
+    # Frozen BEFORE the problems check so a mismatch is reported alongside any
+    # other preflight failure rather than masking it.
+    frozen["server_runtime"] = resolve_server_runtime(cfg, server_probe)
 
     if problems:
         raise PreflightError("preflight failed:\n  - " + "\n  - ".join(problems))
@@ -209,14 +281,17 @@ def _attempt_record(*, cfg, frozen, dataset, manifest, sample_id, text, gt,
         "runner_version": RUNNER_VERSION,
         "git_commit": frozen["git_commit"],
         "config_sha256": frozen["config_sha256"],
+        # Timing provenance: the poll cadence in force when this latency was measured.
+        "mastra_poll_interval_ms": frozen["server_runtime"]["effective_mastra_poll_interval_ms"],
     }
 
 
 def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = False,
                    limit: int | None = None, retry_exhausted: bool = False,
-                   prompts_dir: Path | None = None, sleep=time.sleep) -> dict:
+                   prompts_dir: Path | None = None, sleep=time.sleep,
+                   server_probe=None) -> dict:
     invocation_started_utc = _dt.datetime.now(_dt.timezone.utc).isoformat()
-    frozen = preflight(cfg, prompts_dir=prompts_dir)
+    frozen = preflight(cfg, prompts_dir=prompts_dir, server_probe=server_probe)
 
     run_dir = (REPO_ROOT / cfg.output_root / cfg.experiment_id)
     if run_dir.exists() and not resume:

@@ -67,3 +67,21 @@ class HttpTransport:
         except Exception as exc:  # noqa: BLE001 - transport must never raise into the loop
             ms = (time.perf_counter() - t0) * 1000
             return TransportResult(None, None, None, "connection", repr(exc), ms)
+
+
+# ── Server runtime probe ─────────────────────────────────────────────────────
+
+def probe_server_runtime(base_url: str, timeout_seconds: float = 10.0) -> dict:
+    """Read the server's EFFECTIVE runtime settings from GET /api/health.
+
+    Returns the parsed body. Raises on any transport or decode failure so the
+    caller can abort rather than record an assumed value.
+    """
+    import json as _json
+    import urllib.request
+
+    url = base_url.rstrip("/") + "/api/health"
+    with urllib.request.urlopen(url, timeout=timeout_seconds) as resp:
+        if resp.status != 200:
+            raise RuntimeError(f"GET {url} -> HTTP {resp.status}")
+        return _json.loads(resp.read().decode("utf-8"))
