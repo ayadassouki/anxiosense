@@ -1,0 +1,87 @@
+# BENCHMARK bench_006 - INFRASTRUCTURE / SCALE PILOT ONLY. NOT publication data.
+#
+# First run of a FULL GoEmotions cell. Every GoEmotions figure quoted so far
+# comes from 12 attempts in bench_002 under the superseded 2,598-row candidate
+# scope; this measures the real thing at 4,652 assessments.
+#
+# What it is for:
+#   * retry and infrastructure failure rate at scale (58 prior attempts show 1
+#     transient and zero exhausted assessments - not enough to plan a grid on)
+#   * provider stability over ~10 hours on the Alibaba pin
+#   * the full five-class ground-truth distribution under the frozen v1.0.0
+#     mapping, including whether all 14 anxiety rows survive a real run
+#   * real throughput on the short-text dataset that is 87% of the full grid
+#   * resume correctness after a genuine interruption
+#
+# NOT publication data: one model, one strategy, one run. run_class is
+# benchmark, and no result from this run may appear in RQ1-RQ3.
+#
+# Poll cadence is DECLARED at the default 3000 ms. Declaring it makes the
+# /api/health probe MANDATORY even for a benchmark run, so preflight aborts
+# unless the server is verifiably running that cadence. Express must therefore
+# be up, and running the v1.0.3+ server code, before preflight.
+#
+# Circuit breaker at 20 consecutive infrastructure failures (v1.0.4). Recovery
+# after a halt is --resume --retry-exhausted, then a plain --resume that must
+# report dispatched 0.
+#
+# Requires MODEL_ID=qwen/qwen3.5-27b in BOTH .env and server/.env and a restart
+# of Mastra + Express. The runner aborts if the server serves a different model.
+#
+# Coverage: 1 model x 1 strategy x 1 dataset x 1 run x 4,652 ids = 4,652
+# assessments. Run with NO --limit.
+run_class: benchmark
+experiment_id: bench_006_goemotions_scale_qwen
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot-cot
+datasets:
+- name: goemotions
+  manifest: evaluation/publication_experiments/manifests/official_goemotions_test.json
+runs: 1
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000
