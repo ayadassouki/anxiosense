@@ -1,0 +1,100 @@
+{
+  "builder_version": "1.0.0",
+  "built_utc": "2026-09-04T03:42:46.037525+00:00",
+  "policy": {
+    "content_based_filtering": "NONE. No anxiety/LIWC filter, no quality filter, no removal of noisy, slang, or unusual text.",
+    "preprocessing": "deterministic and label-blind only: CRLF/CR -> LF, strip leading/trailing whitespace, then PII redaction (URL, EMAIL, PHONE, USER, SUBREDDIT).",
+    "text_preserved": "text_original is verbatim; text_processed is what would be sent.",
+    "row_removal": "none - non-dispatchable rows are retained with an exclusion_reason.",
+    "ground_truth": "never invented; unmapped and multi-mappable rows carry gt_status and no class.",
+    "sample_id_scheme": "ge_<official comment id> / dread_<official id>. Content-derived and stable, unlike the positional ge_000000 scheme, which does not survive a rebuild and cannot be joined across lineages."
+  },
+  "goemotions": {
+    "source_file": "evaluation/datasets/goemotions/test.csv",
+    "source_sha256": "56b5c407adaac0664af58e1a6d067bc726a4bf036e77b7679fca41750bc02ca4",
+    "source_revision": "google-research-datasets/go_emotions simplified, official test split",
+    "stats": {
+      "mapping_version": "1.0.0",
+      "source_rows": 5427,
+      "output_rows": 5427,
+      "gt_status": {
+        "mapped": 4695,
+        "conflicting_classes": 163,
+        "out_of_taxonomy": 569
+      },
+      "gt_status_dispatchable_only": {
+        "mapped": 4652,
+        "conflicting_classes": 163,
+        "out_of_taxonomy": 568
+      },
+      "multi_label_rule_dispatchable": {
+        "R1": 4432,
+        "R3": 220,
+        "R2": 163,
+        "R4": 568
+      },
+      "ground_truth_when_mapped": {
+        "sadness": 305,
+        "non_distress": 3687,
+        "frustration": 622,
+        "fear": 67,
+        "anxiety": 14
+      },
+      "dispatchable": {
+        "True": 5383,
+        "False": 44
+      },
+      "exclusion_reasons": {
+        "below_min_chars:10": 44
+      },
+      "text_modified_rows": 355,
+      "scorable_now": 4652
+    }
+  },
+  "dreaddit": {
+    "source_file": "evaluation/datasets/dreaddit_official/dreaddit_test.csv",
+    "source_sha256": "5c53c0bf4c9deaf0756b6ae70f2c7a99592070da959cd566fa771f997e22f9e8",
+    "source_revision": "andreagasparini/dreaddit (HuggingFace), official test split",
+    "filter_applied": "NONE - the anxiety keyword/LIWC filter is NOT applied",
+    "stats": {
+      "source_rows": 715,
+      "output_rows": 715,
+      "gt_status": {
+        "mapped": 715
+      },
+      "label_distribution": {
+        "0": 346,
+        "1": 369
+      },
+      "positive_rate": 0.516084,
+      "dispatchable": {
+        "True": 715,
+        "False": 0
+      },
+      "exclusion_reasons": {},
+      "text_modified_rows": 12,
+      "scorable_now": 715,
+      "scorable_majority_baseline": 0.516084,
+      "rows_in_superseded_324_subset": 324,
+      "rows_the_superseded_filter_removed": 391
+    }
+  },
+  "derived_outputs": {
+    "dreaddit_test_official.csv": {
+      "sha256": "066d757eda4d9f7f394d9e5373be9d2461e811edab91dd076a9bcbf32051494a",
+      "bytes": 708146
+    },
+    "goemotions_excluded_rows.csv": {
+      "sha256": "18ad993425c3ffc91f937709021e968119e1d7a39c49d92c31589ef3cff6d613",
+      "bytes": 3068
+    },
+    "goemotions_label_handling.csv": {
+      "sha256": "1c3cfcc9194ccb3315a9e7f4177dd9c835db0084d782a2700fd8e9a14ef7e965",
+      "bytes": 3326
+    },
+    "goemotions_test_official.csv": {
+      "sha256": "f1bdfe6d87fd1be3ae3eb4a488eb0eb96e02e0f25dc1f6b1aaeefdbb356c7da7",
+      "bytes": 1276801
+    }
+  }
+}

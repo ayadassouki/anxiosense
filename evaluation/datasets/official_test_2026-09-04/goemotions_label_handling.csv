@@ -1,0 +1,29 @@
+label_id,label,official_ekman_group,official_sentiment_group,anxiosense_class,evidence_strength,basis,rows_where_label_present,rows_where_it_is_the_only_label
+0,admiration,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,504,348
+1,amusement,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,264,186
+2,anger,anger,negative,frustration,operational,S2 Ekman anger group; destination name is AnxioSense vocabulary.,198,131
+3,annoyance,anger,negative,frustration,operational,S2 Ekman anger group; destination name is AnxioSense vocabulary.,320,194
+4,approval,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,351,236
+5,caring,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,135,86
+6,confusion,surprise,ambiguous,OUT_OF_TAXONOMY,direct,S3 ambiguous category; valence undetermined by the taxonomy.,153,97
+7,curiosity,surprise,ambiguous,OUT_OF_TAXONOMY,direct,S3 ambiguous category; valence undetermined by the taxonomy.,284,176
+8,desire,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,83,56
+9,disappointment,sadness,negative,sadness,direct,S2 Ekman sadness group.,151,88
+10,disapproval,anger,negative,frustration,operational,S2 Ekman anger group; destination name is AnxioSense vocabulary.,267,195
+11,disgust,disgust,negative,OUT_OF_TAXONOMY,direct,"S2 Ekman disgust is its own category, distinct from anger; no AnxioSense class.",123,76
+12,embarrassment,sadness,negative,sadness,direct,S2 Ekman sadness group.,37,23
+13,excitement,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,103,57
+14,fear,fear,negative,fear,direct,S2 Ekman fear group; direct name match.,78,65
+15,gratitude,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,352,260
+16,grief,sadness,negative,sadness,direct,S2 Ekman sadness group.,6,2
+17,joy,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,161,93
+18,love,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,238,160
+19,nervousness,fear,negative,anxiety,derived,S1 App.A definition names 'anxiety'; S4 construct distinction. DEPARTS from S2 Ekman fear group.,23,12
+20,optimism,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,186,107
+21,pride,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,16,7
+22,realization,surprise,ambiguous,OUT_OF_TAXONOMY,direct,S3 ambiguous category; valence undetermined by the taxonomy.,145,89
+23,relief,joy,positive,non_distress,operational,S3 positive group -> AnxioSense non_distress (operational).,11,7
+24,remorse,sadness,negative,sadness,direct,S2 Ekman sadness group.,56,44
+25,sadness,sadness,negative,sadness,direct,S2 Ekman sadness group.,156,102
+26,surprise,surprise,ambiguous,OUT_OF_TAXONOMY,direct,S3 ambiguous category; valence undetermined by the taxonomy.,141,87
+27,neutral,(none - neutral),neutral,non_distress,operational,S1 neutral sentiment category -> AnxioSense non_distress (operational).,1787,1606

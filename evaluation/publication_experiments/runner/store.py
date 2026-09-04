@@ -58,6 +58,10 @@ class RunStore:
             (self.run_dir / sub).mkdir(parents=True, exist_ok=True)
         self.attempts = AppendOnlyJSONL(self.run_dir / "raw" / "attempts.jsonl")
         self.index = AppendOnlyJSONL(self.run_dir / "raw" / "index.jsonl")
+        # One append-only record per run_experiment() call. This is the evidence;
+        # summaries/dispatch_stats.json is only a derived view of it. A resume can
+        # therefore never overwrite or misrepresent the original dispatch counts.
+        self.invocations = AppendOnlyJSONL(self.run_dir / "summaries" / "invocations.jsonl")
         self._terminal: dict[tuple[str, str], dict] = {}
         self._load_terminal()
 
@@ -100,6 +104,58 @@ class RunStore:
         self.index.append(index_record)
         self._terminal[key] = index_record
 
+    def read_invocations(self) -> list[dict]:
+        """Every invocation recorded so far, oldest first. Never mutated."""
+        p = self.run_dir / "summaries" / "invocations.jsonl"
+        if not p.exists():
+            return []
+        return [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+    def append_invocation(self, record: dict) -> None:
+        self.invocations.append(record)
+
+    def recount_from_raw(self) -> dict[str, Any]:
+        """Ground truth about what was actually dispatched, recomputed from the
+        append-only index. Independent of any summary file, so a corrupted or
+        legacy summary can always be checked against it."""
+        p = self.run_dir / "raw" / "index.jsonl"
+        if not p.exists():
+            return {"terminal_assessments": 0, "outcomes": {}}
+        recs = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+        outcomes: dict[str, int] = {}
+        for r in recs:
+            k = r.get("final_outcome_class")
+            outcomes[k] = outcomes.get(k, 0) + 1
+        return {"terminal_assessments": len(recs), "outcomes": outcomes}
+
+    def dispatch_summary(self) -> dict[str, Any]:
+        """Cumulative, non-destructive view over every invocation.
+
+        `first_invocation` is fixed once the first run completes; later resumes
+        add entries to `invocations` and update `totals`, and can never rewrite
+        what the first run reported.
+        """
+        inv = self.read_invocations()
+        totals = {"dispatched": 0, "attempts": 0, "skipped_resume": 0,
+                  "model_mismatch": 0, "outcomes": {}}
+        for i in inv:
+            st = i.get("stats", {})
+            for k in ("dispatched", "attempts", "skipped_resume", "model_mismatch"):
+                totals[k] += int(st.get(k, 0) or 0)
+            for k, v in (st.get("outcomes") or {}).items():
+                totals["outcomes"][k] = totals["outcomes"].get(k, 0) + int(v)
+        return {
+            "schema": "dispatch_stats/2",
+            "note": ("Derived from the append-only summaries/invocations.jsonl. "
+                     "first_invocation is immutable; resumes append, never overwrite."),
+            "invocation_count": len(inv),
+            "first_invocation": inv[0] if inv else None,
+            "latest_invocation": inv[-1] if inv else None,
+            "totals": totals,
+            "invocations": inv,
+            "recomputed_from_raw": self.recount_from_raw(),
+        }
+
     def write_json(self, relative: str, obj: Any) -> Path:
         p = self.run_dir / relative
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -109,3 +165,4 @@ class RunStore:
     def close(self) -> None:
         self.attempts.close()
         self.index.close()
+        self.invocations.close()

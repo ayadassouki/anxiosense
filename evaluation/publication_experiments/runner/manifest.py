@@ -13,12 +13,18 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from ._reuse import REPO_ROOT, GROUND_TRUTH_MAPPERS, LabelMappingError
+from ._reuse import (REPO_ROOT, GROUND_TRUTH_MAPPERS, LabelMappingError,
+                     UnscorableRow, mapping_provenance)
 from .identity import sha256_file, sha256_obj, sha256_text
 
 csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
 
-MANIFEST_SCHEMA_VERSION = "1.0.0"
+# 1.1.0 (2026-09-04): adds unscorable_samples / n_unscorable / n_scorable /
+# n_rows_in_scope / ground_truth_mapping, so a row can be dispatchable yet carry
+# no ground truth without being deleted or given an invented label. The added
+# keys participate in manifest_sha256, so manifests rebuilt under 1.1.0 have a
+# different self-hash than the same scope built under 1.0.0.
+MANIFEST_SCHEMA_VERSION = "1.1.0"
 
 
 class ManifestError(RuntimeError):
@@ -58,10 +64,20 @@ def build_manifest(
 
     # Ground truth for EVERY row, before anything else. One failure aborts.
     ground_truth: dict[str, Any] = {}
+    unscorable: list[dict[str, Any]] = []
     errors: list[str] = []
     for r in rows:
         try:
             ground_truth[r["sample_id"]] = mapper(r[label_col])
+        except UnscorableRow as exc:
+            # Valid data with no single class in the evaluation space. The row is
+            # KEPT and reported, never deleted and never given an invented label.
+            unscorable.append({
+                "sample_id": r["sample_id"],
+                "reason": exc.reason,
+                "detail": exc.detail,
+                "labels": r.get(label_col, ""),
+            })
         except LabelMappingError as exc:
             errors.append(f"{r['sample_id']}: {exc}")
     if errors:
@@ -70,18 +86,27 @@ def build_manifest(
             f"First 5: {errors[:5]}"
         )
 
+    # Technical dispatchability is decided FIRST and independently of ground
+    # truth, so the two axes never contaminate each other.
     included, excluded = [], []
+    unscorable_ids = {u["sample_id"] for u in unscorable}
     for r in rows:
+        sid = r["sample_id"]
         text = (r[text_column] or "").strip()
         if min_chars is not None and len(text) < min_chars:
             excluded.append({
-                "sample_id": r["sample_id"],
+                "sample_id": sid,
                 "reason": f"below_min_chars:{min_chars}",
                 "text_len": len(text),
-                "ground_truth": ground_truth[r["sample_id"]],
+                "ground_truth": ground_truth.get(sid),
             })
+        elif sid in unscorable_ids:
+            pass          # dispatchable but unscorable; already recorded above
         else:
-            included.append(r["sample_id"])
+            included.append(sid)
+    # Rows excluded on technical grounds are not double-counted as unscorable.
+    excluded_ids = {e["sample_id"] for e in excluded}
+    unscorable = [u for u in unscorable if u["sample_id"] not in excluded_ids]
 
     included.sort()
     dist = Counter(str(ground_truth[s]) for s in included)
@@ -102,6 +127,9 @@ def build_manifest(
             "text_column": text_column,
             "label_column": label_col,
         },
+        "ground_truth_mapping": (mapping_provenance()
+                                 if dataset == "goemotions" else
+                                 {"rule": "Dreaddit label 0/1 used verbatim"}),
         "official_split": split,
         "rows_in_split": len(rows),
         "exclusion_rules": [
@@ -111,8 +139,12 @@ def build_manifest(
         ] if min_chars is not None else [],
         "included_sample_ids": included,
         "excluded_samples": excluded,
-        "n_dispatchable": n,
+        "unscorable_samples": unscorable,
+        "n_rows_in_scope": len(rows),
+        "n_dispatchable": n + len(unscorable),
+        "n_scorable": n,
         "n_excluded": len(excluded),
+        "n_unscorable": len(unscorable),
         "ground_truth": {s: ground_truth[s] for s in included},
         "text_sha256": {},   # filled below
         "class_distribution": dict(dist),

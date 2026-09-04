@@ -54,6 +54,31 @@ python3 -m runner.run \
 
 ## 4. Produce the report
 
+> **Where `parsed/records.jsonl` comes from.** `runner/run.py` writes only
+> `experiment.json`, the append-only `raw/attempts.jsonl` and `raw/index.jsonl`,
+> and `summaries/`. It does **not** write `parsed/`. Predictions are re-derived
+> from the stored raw agent output by `runner/rescore.py`, which is invoked by
+> `smoke_report.py`. This is intentional: `parsed/` is a derived artefact that can
+> be regenerated at any time from the raw evidence without a model call, so a
+> parser fix never requires re-running an experiment. **A run directory has no
+> `parsed/records.jsonl` until `smoke_report.py` has been run against it** — that
+> is expected, not a failed run.
+>
+> **`summaries/dispatch_stats.json` (schema `dispatch_stats/2`).** The evidence is
+> the append-only `summaries/invocations.jsonl`, one record per runner invocation.
+> `dispatch_stats.json` is a derived view over it: `first_invocation` is fixed
+> once the first run completes, `invocations[]` lists every call with its mode
+> (`initial` / `resume` / `retry_exhausted`), and `totals` accumulates. A
+> `--resume` therefore appends and can never overwrite the original dispatch
+> counts. `recomputed_from_raw` re-derives the assessment count and outcomes
+> straight from `raw/index.jsonl`, so any summary can be audited independently.
+>
+> Runs made before 2026-09-04 (`smoke_001`, `bench_002`, `bench_003`) predate this
+> and have a single-object `dispatch_stats.json` that was overwritten by their
+> resume invocation, showing `dispatched: 0`. Their `raw/` files are intact and
+> the true counts are recoverable from `raw/index.jsonl`.
+
+
 ```bash
 python3 evaluation/publication_experiments/smoke_report.py \
   evaluation/publication_experiments/runs/smoke_001

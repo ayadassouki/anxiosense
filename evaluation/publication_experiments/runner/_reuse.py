@@ -27,9 +27,28 @@ from src.emotion_payload import (                             # noqa: E402
     extract_emotion_payload, primary_emotion, OK_STATUSES,
 )
 
+# The publication path uses the FROZEN v1.0.0 mapping, not the historical
+# map_goemotions_label. That one is retained as an import for the historical
+# analyses only: at official scope its empty-list branch returns "non_distress"
+# (fabricating ground truth for 2,670 of 5,427 rows) and its multi-label branch
+# takes the first label, a "lowest emotion id wins" storage artefact.
+# It must never be wired into GROUND_TRUTH_MAPPERS again.
+from .goemotions_mapping import (                                   # noqa: E402
+    map_goemotions_labels, MappingDataError, UnscorableRow,
+    MAPPING_VERSION as GOEMOTIONS_MAPPING_VERSION, mapping_provenance,
+)
+
+
+def _goemotions_ground_truth(raw: object) -> str:
+    """Adapter: manifest.py hands us the raw label_names cell."""
+    text = "" if raw is None else str(raw).strip()
+    names = [x for x in text.split("|") if x] if text else []
+    return map_goemotions_labels(names)
+
+
 GROUND_TRUTH_MAPPERS = {
-    "dreaddit":   ("label",         map_dreaddit_label),
-    "goemotions": ("emotion_names", map_goemotions_label),
+    "dreaddit":   ("label",       map_dreaddit_label),
+    "goemotions": ("label_names", _goemotions_ground_truth),
 }
 
 __all__ = [
@@ -37,4 +56,6 @@ __all__ = [
     "ANXIOSENSE_TO_EVAL_CLASS", "EVAL_CLASSES", "LabelMappingError",
     "extract_stress_label", "extract_emotion_payload", "primary_emotion",
     "OK_STATUSES", "GROUND_TRUTH_MAPPERS",
+    "map_goemotions_labels", "MappingDataError", "UnscorableRow",
+    "GOEMOTIONS_MAPPING_VERSION", "mapping_provenance",
 ]

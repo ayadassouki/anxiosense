@@ -58,3 +58,8 @@ evaluation/data/
 # for version control. The runner's provenance (experiment.json) is reproducible
 # from the committed config + manifests + code, so nothing is lost by ignoring these.
 evaluation/publication_experiments/runs/
+
+# Machine-local pre-run snapshot used by verify_bench_003.py check 10. Its
+# listing hashes incorporate file mtimes, so a committed copy would produce a
+# false failure on any other machine or fresh clone. Regenerate locally.
+evaluation/datasets/official_test_2026-09-04/_historical_baseline.json

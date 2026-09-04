@@ -1,0 +1,45 @@
+sample_id,id,exclusion_reason,gt_status,ground_truth,text_processed
+ge_ef8bvwo,ef8bvwo,below_min_chars:10,mapped,non_distress,Oh boy 🤣🤣
+ge_ef4byo4,ef4byo4,below_min_chars:10,mapped,frustration,Fuck you.
+ge_edxwxqq,edxwxqq,below_min_chars:10,mapped,non_distress,"Yes, oops"
+ge_edw4ttk,edw4ttk,below_min_chars:10,mapped,non_distress,[NAME].
+ge_efefxzk,efefxzk,below_min_chars:10,mapped,non_distress,SO MUCH.
+ge_efalldq,efalldq,below_min_chars:10,mapped,non_distress,Whammer!
+ge_efe1coq,efe1coq,below_min_chars:10,mapped,non_distress,RemindMe!
+ge_efe4nw7,efe4nw7,below_min_chars:10,mapped,non_distress,Loved it!
+ge_eedjls2,eedjls2,below_min_chars:10,mapped,non_distress,Good kid.
+ge_ee9baxg,ee9baxg,below_min_chars:10,mapped,frustration,oh pls no
+ge_edraswx,edraswx,below_min_chars:10,mapped,non_distress,[NAME].
+ge_ef8he5z,ef8he5z,below_min_chars:10,mapped,non_distress,Good Job
+ge_ee8k1r5,ee8k1r5,below_min_chars:10,mapped,non_distress,I'M HERE
+ge_ediwfql,ediwfql,below_min_chars:10,mapped,non_distress,WHAT!?
+ge_ef9itcb,ef9itcb,below_min_chars:10,mapped,non_distress,She is :(
+ge_ed9f92q,ed9f92q,below_min_chars:10,mapped,non_distress,F then.
+ge_eethju6,eethju6,below_min_chars:10,mapped,non_distress,GINO!!!
+ge_ed5q5vt,ed5q5vt,below_min_chars:10,mapped,non_distress,I love it
+ge_edbrb0h,edbrb0h,below_min_chars:10,out_of_taxonomy,,Has he?
+ge_edzncyf,edzncyf,below_min_chars:10,mapped,frustration,Oh. Damn.
+ge_edyq7iu,edyq7iu,below_min_chars:10,mapped,non_distress,Thanks
+ge_edj4jw9,edj4jw9,below_min_chars:10,mapped,non_distress,y i k e s
+ge_edrtx65,edrtx65,below_min_chars:10,mapped,non_distress,#YES.
+ge_ee3b844,ee3b844,below_min_chars:10,mapped,non_distress,I like it
+ge_eczvupb,eczvupb,below_min_chars:10,mapped,non_distress,Thanks!!
+ge_edur7a5,edur7a5,below_min_chars:10,mapped,non_distress,Lol ok 👌🏾
+ge_eds3peb,eds3peb,below_min_chars:10,mapped,non_distress,I came.
+ge_ef4dlbf,ef4dlbf,below_min_chars:10,mapped,non_distress,Intp:(
+ge_eeszbk9,eeszbk9,below_min_chars:10,mapped,non_distress,Mirror
+ge_eerr82c,eerr82c,below_min_chars:10,mapped,non_distress,THIS!!
+ge_eelbr0z,eelbr0z,below_min_chars:10,mapped,frustration,I'd smash
+ge_eedrvtr,eedrvtr,below_min_chars:10,mapped,non_distress,Bless u x
+ge_ee5emrk,ee5emrk,below_min_chars:10,mapped,non_distress,Thanks!!
+ge_ed47fl3,ed47fl3,below_min_chars:10,mapped,non_distress,I agree.
+ge_ed4vmnc,ed4vmnc,below_min_chars:10,mapped,non_distress,Oh oh oh
+ge_eeist6u,eeist6u,below_min_chars:10,mapped,non_distress,"""12 inch"""
+ge_efh6qsl,efh6qsl,below_min_chars:10,mapped,non_distress,we go!
+ge_edxepun,edxepun,below_min_chars:10,mapped,non_distress,Oof.. :(
+ge_eejyd2o,eejyd2o,below_min_chars:10,mapped,non_distress,Omg yes!
+ge_ef0vhlz,ef0vhlz,below_min_chars:10,mapped,non_distress,Oh yóu!
+ge_edzhcjf,edzhcjf,below_min_chars:10,mapped,non_distress,Go on...
+ge_edm6a7l,edm6a7l,below_min_chars:10,mapped,non_distress,BAT OLA?
+ge_ef8l099,ef8l099,below_min_chars:10,mapped,non_distress,I'm Tent
+ge_efaqexv,efaqexv,below_min_chars:10,mapped,non_distress,I like it

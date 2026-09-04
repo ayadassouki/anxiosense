@@ -215,6 +215,7 @@ def _attempt_record(*, cfg, frozen, dataset, manifest, sample_id, text, gt,
 def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = False,
                    limit: int | None = None, retry_exhausted: bool = False,
                    prompts_dir: Path | None = None, sleep=time.sleep) -> dict:
+    invocation_started_utc = _dt.datetime.now(_dt.timezone.utc).isoformat()
     frozen = preflight(cfg, prompts_dir=prompts_dir)
 
     run_dir = (REPO_ROOT / cfg.output_root / cfg.experiment_id)
@@ -361,9 +362,32 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
                         if cfg.server.request_delay_seconds:
                             sleep(cfg.server.request_delay_seconds)
 
-    store.write_json("summaries/dispatch_stats.json", stats)
+    # Record THIS invocation append-only, then rewrite dispatch_stats.json as a
+    # derived view over all invocations. A resume can no longer overwrite or
+    # misrepresent what the original dispatch reported.
+    prior = store.read_invocations()
+    store.append_invocation({
+        "record_type": "invocation",
+        "invocation_uuid": new_uuid(),
+        "invocation_number": len(prior) + 1,
+        "mode": ("retry_exhausted" if retry_exhausted
+                 else "resume" if resume else "initial"),
+        "resume": bool(resume),
+        "retry_exhausted": bool(retry_exhausted),
+        "limit": limit,
+        "started_utc": invocation_started_utc,
+        "finished_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "runner_version": RUNNER_VERSION,
+        "git_commit": frozen["git_commit"],
+        "git_dirty": frozen["git_dirty"],
+        "config_sha256": frozen["config_sha256"],
+        "stats": stats,
+    })
+    summary = store.dispatch_summary()
+    store.write_json("summaries/dispatch_stats.json", summary)
     store.close()
-    return {"run_dir": str(run_dir), "frozen": frozen, "stats": stats}
+    return {"run_dir": str(run_dir), "frozen": frozen, "stats": stats,
+            "dispatch_summary": summary}
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────

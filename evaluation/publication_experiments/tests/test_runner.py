@@ -4,7 +4,8 @@
 Run:  python3 evaluation/publication_experiments/tests/test_runner.py
 """
 from __future__ import annotations
-import contextlib, csv, inspect, io, json, os, subprocess, sys, tempfile, unittest
+import contextlib, csv, hashlib, inspect, io, json, os, subprocess, sys, tempfile, unittest
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -27,6 +28,11 @@ from runner.rescore import rescore                                 # noqa: E402
 from runner.retry import RetryPolicy, next_action                  # noqa: E402
 from runner.run import preflight, run_experiment, PreflightError   # noqa: E402
 from runner.run import main as run_main                            # noqa: E402
+from runner.goemotions_mapping import (                            # noqa: E402
+    LABEL_MAP, GOEMOTIONS_LABELS, EKMAN_GROUPING, SENTIMENT_GROUPING,
+    EVAL_CLASSES as GE_EVAL_CLASSES, OUT_OF_TAXONOMY, MAPPING_VERSION,
+    map_goemotions_labels, anxiosense_class, MappingDataError, UnscorableRow,
+    UNSCORABLE_CONFLICT, UNSCORABLE_OUT_OF_TAXONOMY, mapping_provenance)
 from runner.store import RunStore, DuplicateAssessment             # noqa: E402
 
 OK = Transport.OK
@@ -61,12 +67,15 @@ def tiny_dreaddit(tmp: Path, n: int = 3, bad_label: bool = False) -> Path:
 
 def tiny_goemotions(tmp: Path, n: int = 3) -> Path:
     p = tmp / "goemotions_clean.csv"
-    emo = ["['nervousness']", "['neutral']", "['sadness']"]
+    # label_names holds the RAW official GoEmotions labels, pipe-separated.
+    # The frozen v1.0.0 mapping consumes this, not the old filtered
+    # emotion_names column.
+    emo = ["nervousness", "neutral", "sadness"]
     rows = [{"sample_id": f"ge_{i:06d}", "split": "test",
              "text": f"a comment number {i} that is long enough",
              "text_redacted": f"a comment number {i} that is long enough",
-             "emotion_names": emo[i % 3]} for i in range(n)]
-    write_csv(p, rows, ["sample_id", "split", "text", "text_redacted", "emotion_names"])
+             "label_names": emo[i % 3]} for i in range(n)]
+    write_csv(p, rows, ["sample_id", "split", "text", "text_redacted", "label_names"])
     return p
 
 
@@ -717,6 +726,329 @@ class T10_ProvenanceReporting(unittest.TestCase):
         p = tmp / "big_config.yaml"
         p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
         return p
+
+
+# ── frozen GoEmotions mapping v1.0.0 ─────────────────────────────────────────
+
+#: The adopted mapping, written out label by label so a change to
+#: goemotions_mapping.py cannot pass silently. Sources are recorded in that
+#: module; this is the assertion of the frozen decision itself.
+EXPECTED_28 = {
+    # anxiety - DEPARTS from the official Ekman grouping (S2 puts nervousness
+    # under fear). Basis: S1 Appendix A definition + S4 construct distinction.
+    "nervousness": "anxiety",
+    # fear
+    "fear": "fear",
+    # official Ekman sadness group
+    "sadness": "sadness", "disappointment": "sadness", "grief": "sadness",
+    "embarrassment": "sadness", "remorse": "sadness",
+    # official Ekman anger group -> AnxioSense "frustration"
+    "anger": "frustration", "annoyance": "frustration", "disapproval": "frustration",
+    # official positive sentiment group + neutral -> AnxioSense "non_distress"
+    "admiration": "non_distress", "amusement": "non_distress", "approval": "non_distress",
+    "caring": "non_distress", "desire": "non_distress", "excitement": "non_distress",
+    "gratitude": "non_distress", "joy": "non_distress", "love": "non_distress",
+    "optimism": "non_distress", "pride": "non_distress", "relief": "non_distress",
+    "neutral": "non_distress",
+    # official ambiguous sentiment group
+    "realization": OUT_OF_TAXONOMY, "surprise": OUT_OF_TAXONOMY,
+    "curiosity": OUT_OF_TAXONOMY, "confusion": OUT_OF_TAXONOMY,
+    # own Ekman category, distinct from anger; no AnxioSense class
+    "disgust": OUT_OF_TAXONOMY,
+}
+
+
+class T11_GoEmotionsMappingV1(unittest.TestCase):
+    """Every one of the 28 labels, and all four multi-label rules."""
+
+    def test_mapping_version_is_frozen(self):
+        self.assertEqual(MAPPING_VERSION, "1.0.0")
+
+    def test_label_space_is_exactly_the_28_official_labels(self):
+        self.assertEqual(len(GOEMOTIONS_LABELS), 28)
+        self.assertEqual(set(LABEL_MAP), set(GOEMOTIONS_LABELS))
+        self.assertEqual(len(EXPECTED_28), 28)
+
+    def test_every_one_of_the_28_labels_maps_as_frozen(self):
+        for label in GOEMOTIONS_LABELS:
+            with self.subTest(label=label):
+                self.assertEqual(anxiosense_class(label), EXPECTED_28[label])
+                if EXPECTED_28[label] != OUT_OF_TAXONOMY:
+                    self.assertEqual(map_goemotions_labels([label]), EXPECTED_28[label])
+
+    def test_class_counts_match_the_adopted_mapping(self):
+        counts = Counter(EXPECTED_28.values())
+        self.assertEqual(counts["anxiety"], 1)
+        self.assertEqual(counts["fear"], 1)
+        self.assertEqual(counts["sadness"], 5)
+        self.assertEqual(counts["frustration"], 3)
+        self.assertEqual(counts["non_distress"], 13)
+        self.assertEqual(counts[OUT_OF_TAXONOMY], 5)
+
+    def test_destinations_are_only_eval_classes_or_out_of_taxonomy(self):
+        allowed = set(GE_EVAL_CLASSES) | {OUT_OF_TAXONOMY}
+        self.assertTrue(all(c in allowed for c, _, _ in LABEL_MAP.values()))
+
+    # -- the official groupings must not drift --------------------------------
+
+    def test_official_ekman_grouping_is_verbatim(self):
+        """google-research/goemotions/data/ekman_mapping.json, fetched 2026-09-04."""
+        self.assertEqual(
+            {k: sorted(v) for k, v in EKMAN_GROUPING.items()},
+            {"anger": ["anger", "annoyance", "disapproval"],
+             "disgust": ["disgust"],
+             "fear": ["fear", "nervousness"],
+             "joy": sorted(["joy", "amusement", "approval", "excitement", "gratitude",
+                            "love", "optimism", "relief", "pride", "admiration",
+                            "desire", "caring"]),
+             "sadness": sorted(["sadness", "disappointment", "embarrassment",
+                                "grief", "remorse"]),
+             "surprise": sorted(["surprise", "realization", "confusion", "curiosity"])})
+
+    def test_official_sentiment_grouping_is_verbatim(self):
+        """google-research/goemotions/data/sentiment_mapping.json, fetched 2026-09-04."""
+        self.assertEqual(sorted(SENTIMENT_GROUPING["ambiguous"]),
+                         ["confusion", "curiosity", "realization", "surprise"])
+        self.assertEqual(len(SENTIMENT_GROUPING["positive"]), 12)
+        self.assertEqual(len(SENTIMENT_GROUPING["negative"]), 11)
+        self.assertNotIn("neutral", SENTIMENT_GROUPING["positive"])
+
+    def test_ekman_sadness_and_anger_groups_are_honoured_exactly(self):
+        for l in EKMAN_GROUPING["sadness"]:
+            self.assertEqual(anxiosense_class(l), "sadness", l)
+        for l in EKMAN_GROUPING["anger"]:
+            self.assertEqual(anxiosense_class(l), "frustration", l)
+
+    def test_positive_sentiment_group_all_maps_to_non_distress(self):
+        for l in SENTIMENT_GROUPING["positive"]:
+            self.assertEqual(anxiosense_class(l), "non_distress", l)
+
+    def test_ambiguous_sentiment_group_is_out_of_taxonomy(self):
+        for l in SENTIMENT_GROUPING["ambiguous"]:
+            self.assertEqual(anxiosense_class(l), OUT_OF_TAXONOMY, l)
+
+    def test_nervousness_departs_from_ekman_deliberately(self):
+        """Documented departure: S2 groups nervousness with fear; we map it to
+        anxiety on S1's definition plus S4. If this ever silently becomes
+        'fear', the anxiety class vanishes from GoEmotions."""
+        self.assertIn("nervousness", EKMAN_GROUPING["fear"])
+        self.assertEqual(anxiosense_class("nervousness"), "anxiety")
+        self.assertEqual(LABEL_MAP["nervousness"][1], "derived")
+
+    def test_disgust_is_not_folded_into_frustration(self):
+        self.assertEqual(EKMAN_GROUPING["disgust"], ("disgust",))
+        self.assertEqual(anxiosense_class("disgust"), OUT_OF_TAXONOMY)
+
+    def test_positive_and_neutral_are_marked_operational_not_direct(self):
+        """The grouping is GoEmotions'; the non_distress destination is ours."""
+        for l in list(SENTIMENT_GROUPING["positive"]) + ["neutral"]:
+            self.assertEqual(LABEL_MAP[l][1], "operational", l)
+
+    # -- R1..R4 ---------------------------------------------------------------
+
+    def test_R1_single_label(self):
+        self.assertEqual(map_goemotions_labels(["sadness"]), "sadness")
+
+    def test_R1_multiple_labels_all_agreeing(self):
+        self.assertEqual(map_goemotions_labels(["anger", "annoyance", "disapproval"]),
+                         "frustration")
+        self.assertEqual(map_goemotions_labels(["grief", "sadness", "remorse"]), "sadness")
+        self.assertEqual(map_goemotions_labels(["joy", "neutral", "gratitude"]),
+                         "non_distress")
+
+    def test_R2_conflicting_classes_is_unscorable(self):
+        for labels in (["annoyance", "neutral"], ["fear", "joy"],
+                       ["nervousness", "sadness"], ["anger", "grief"]):
+            with self.subTest(labels=labels):
+                with self.assertRaises(UnscorableRow) as cm:
+                    map_goemotions_labels(labels)
+                self.assertEqual(cm.exception.reason, UNSCORABLE_CONFLICT)
+
+    def test_R3_mixed_mapped_and_out_of_taxonomy_resolves(self):
+        self.assertEqual(map_goemotions_labels(["nervousness", "curiosity"]), "anxiety")
+        self.assertEqual(map_goemotions_labels(["confusion", "sadness", "grief"]), "sadness")
+        self.assertEqual(map_goemotions_labels(["disgust", "anger"]), "frustration")
+
+    def test_R3_mixed_that_still_conflicts_is_unscorable(self):
+        with self.assertRaises(UnscorableRow) as cm:
+            map_goemotions_labels(["surprise", "anger", "joy"])
+        self.assertEqual(cm.exception.reason, UNSCORABLE_CONFLICT)
+
+    def test_R4_only_out_of_taxonomy_is_unscorable(self):
+        for labels in (["curiosity"], ["confusion", "surprise"], ["disgust"],
+                       ["realization", "curiosity", "disgust"]):
+            with self.subTest(labels=labels):
+                with self.assertRaises(UnscorableRow) as cm:
+                    map_goemotions_labels(labels)
+                self.assertEqual(cm.exception.reason, UNSCORABLE_OUT_OF_TAXONOMY)
+
+    # -- the two removed defects ---------------------------------------------
+
+    def test_empty_label_list_raises_and_is_never_non_distress(self):
+        """The historical mapper returned 'non_distress' here, which at official
+        scope would have fabricated ground truth for 2,670 of 5,427 rows."""
+        for empty in ([], [""], ["   "]):
+            with self.subTest(v=empty):
+                with self.assertRaises(MappingDataError):
+                    map_goemotions_labels(empty)
+
+    def test_no_first_label_tie_break(self):
+        """GoEmotions stores ids ascending, so 'take the first label' is a
+        lowest-id-wins storage artefact. annoyance(3)+neutral(27) must NOT
+        silently become frustration."""
+        with self.assertRaises(UnscorableRow):
+            map_goemotions_labels(["annoyance", "neutral"])
+        with self.assertRaises(UnscorableRow):
+            map_goemotions_labels(["neutral", "annoyance"])
+
+    def test_rule_is_order_independent(self):
+        for a, b in (("anger", "annoyance"), ("curiosity", "nervousness"),
+                     ("neutral", "joy")):
+            self.assertEqual(map_goemotions_labels([a, b]), map_goemotions_labels([b, a]))
+
+    def test_unknown_label_is_fatal_not_silently_dropped(self):
+        with self.assertRaises(MappingDataError):
+            map_goemotions_labels(["ennui"])
+        with self.assertRaises(MappingDataError):
+            map_goemotions_labels(["sadness", "ennui"])
+
+    def test_publication_path_does_not_use_the_historical_mapper(self):
+        from runner import _reuse
+        col, mapper = _reuse.GROUND_TRUTH_MAPPERS["goemotions"]
+        self.assertEqual(col, "label_names")
+        self.assertIsNot(mapper, _reuse.map_goemotions_label)
+        # and the historical mapper's defect is still there, unmodified
+        self.assertEqual(_reuse.map_goemotions_label("[]"), "non_distress")
+        # while the frozen path refuses
+        with self.assertRaises(MappingDataError):
+            mapper("")
+
+    def test_provenance_block_is_serialisable_and_honest(self):
+        prov = mapping_provenance()
+        self.assertEqual(prov["mapping_version"], "1.0.0")
+        self.assertEqual(json.loads(json.dumps(prov)), prov)
+        self.assertIn("the five AnxioSense destination class names",
+                      prov["not_published_by_goemotions"])
+        self.assertEqual(len(prov["evidence_tiers"]), 28)
+
+
+# ── resume bookkeeping ───────────────────────────────────────────────────────
+
+class T12_ResumeBookkeeping(unittest.TestCase):
+    """A --resume invocation must never overwrite or misrepresent the original
+    dispatch statistics, and must itself be separately auditable."""
+
+    def _setup(self, td, scripts, n=3):
+        tmp = Path(td)
+        csvp = tiny_dreaddit(tmp, n=n)
+        man = build_and_save(tmp, "dreaddit", csvp)
+        cfg = load_config(make_config(tmp, man, "dreaddit"))
+        return tmp, cfg, MockTransport(scripts)
+
+    def _run(self, cfg, transport, **kw):
+        return run_experiment(cfg, transport=transport, sleep=lambda *_: None, **kw)
+
+    def test_resume_preserves_the_original_dispatch_counts(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {})
+            first = self._run(cfg, t)
+            rd = Path(first["run_dir"])
+            stats_path = rd / "summaries" / "dispatch_stats.json"
+            after_first = json.loads(stats_path.read_text())
+
+            n_dispatched = after_first["first_invocation"]["stats"]["dispatched"]
+            self.assertGreater(n_dispatched, 0)
+            self.assertEqual(after_first["invocation_count"], 1)
+            self.assertEqual(after_first["totals"]["dispatched"], n_dispatched)
+
+            # a resume that dispatches nothing
+            second = self._run(cfg, MockTransport({}), resume=True)
+            after_resume = json.loads(stats_path.read_text())
+
+            # THE REGRESSION: the original counts survive
+            self.assertEqual(after_resume["first_invocation"]["stats"]["dispatched"],
+                             n_dispatched)
+            self.assertEqual(after_resume["first_invocation"],
+                             after_first["first_invocation"])
+            self.assertEqual(after_resume["totals"]["dispatched"], n_dispatched)
+            self.assertEqual(second["stats"]["dispatched"], 0)
+
+    def test_resume_is_separately_auditable(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {})
+            first = self._run(cfg, t)
+            rd = Path(first["run_dir"])
+            self._run(cfg, MockTransport({}), resume=True)
+            summary = json.loads((rd / "summaries" / "dispatch_stats.json").read_text())
+
+            self.assertEqual(summary["invocation_count"], 2)
+            modes = [i["mode"] for i in summary["invocations"]]
+            self.assertEqual(modes, ["initial", "resume"])
+            self.assertEqual(summary["invocations"][0]["invocation_number"], 1)
+            self.assertEqual(summary["invocations"][1]["invocation_number"], 2)
+            self.assertIs(summary["invocations"][0]["resume"], False)
+            self.assertIs(summary["invocations"][1]["resume"], True)
+            self.assertEqual(summary["invocations"][1]["stats"]["dispatched"], 0)
+            self.assertGreater(summary["invocations"][1]["stats"]["skipped_resume"], 0)
+            self.assertNotEqual(summary["invocations"][0]["invocation_uuid"],
+                                summary["invocations"][1]["invocation_uuid"])
+            for i in summary["invocations"]:
+                for k in ("started_utc", "finished_utc", "git_commit", "config_sha256",
+                          "runner_version"):
+                    self.assertIn(k, i)
+
+    def test_invocation_log_is_append_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {})
+            first = self._run(cfg, t)
+            log = Path(first["run_dir"]) / "summaries" / "invocations.jsonl"
+            line1 = log.read_text().splitlines()[0]
+            self._run(cfg, MockTransport({}), resume=True)
+            self._run(cfg, MockTransport({}), resume=True)
+            lines = log.read_text().splitlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[0], line1, "the first invocation record was rewritten")
+            self.assertEqual([json.loads(l)["invocation_number"] for l in lines], [1, 2, 3])
+
+    def test_resume_does_not_touch_raw_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {})
+            first = self._run(cfg, t)
+            rd = Path(first["run_dir"])
+            before = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                      for p in (rd / "raw").iterdir()}
+            self._run(cfg, MockTransport({}), resume=True)
+            after = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                     for p in (rd / "raw").iterdir()}
+            self.assertEqual(before, after, "a resume modified append-only raw evidence")
+
+    def test_totals_accumulate_across_invocations(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {}, n=3)
+            first = self._run(cfg, t, limit=1)
+            rd = Path(first["run_dir"])
+            d1 = json.loads((rd / "summaries" / "dispatch_stats.json").read_text())
+            n1 = d1["totals"]["dispatched"]
+            self._run(cfg, MockTransport({}), resume=True)     # dispatches the rest
+            d2 = json.loads((rd / "summaries" / "dispatch_stats.json").read_text())
+            self.assertEqual(d2["invocation_count"], 2)
+            self.assertEqual(d2["first_invocation"]["stats"]["dispatched"], n1)
+            self.assertEqual(
+                d2["totals"]["dispatched"],
+                sum(i["stats"]["dispatched"] for i in d2["invocations"]))
+
+    def test_summary_can_be_checked_against_raw(self):
+        """recomputed_from_raw is independent of every summary file, so a legacy
+        or corrupted summary can always be audited against the append-only index."""
+        with tempfile.TemporaryDirectory() as td:
+            tmp, cfg, t = self._setup(td, {})
+            first = self._run(cfg, t)
+            rd = Path(first["run_dir"])
+            self._run(cfg, MockTransport({}), resume=True)
+            s = json.loads((rd / "summaries" / "dispatch_stats.json").read_text())
+            self.assertEqual(s["recomputed_from_raw"]["terminal_assessments"],
+                             s["totals"]["dispatched"])
+            self.assertEqual(s["schema"], "dispatch_stats/2")
 
 
 if __name__ == "__main__":
