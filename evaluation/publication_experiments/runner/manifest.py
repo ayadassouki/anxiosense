@@ -179,11 +179,48 @@ def verify_manifest(manifest: dict) -> list[str]:
     ids = manifest["included_sample_ids"]
     if len(ids) != len(set(ids)):
         problems.append("duplicate sample_id in included_sample_ids")
-    if len(ids) != manifest["n_dispatchable"]:
-        problems.append("n_dispatchable does not match included_sample_ids")
+    # Schema 1.1.0 split scorable from dispatchable: a row can be technically
+    # dispatchable yet carry no ground truth, so included_sample_ids - what the
+    # dispatch loop actually iterates - equals n_scorable, not n_dispatchable.
+    # Schema 1.0.0 manifests have no n_scorable and the two counts were
+    # identical there, so they keep the original comparison unchanged.
+    count_key = "n_scorable" if "n_scorable" in manifest else "n_dispatchable"
+    if len(ids) != manifest[count_key]:
+        problems.append(f"{count_key} does not match included_sample_ids")
     missing_gt = [s for s in ids if s not in manifest["ground_truth"]]
     if missing_gt:
         problems.append(f"{len(missing_gt)} included id(s) have no ground truth")
+
+    # Schema 1.1.0 arithmetic. Checked ONLY when the 1.1.0 counters are present,
+    # so schema 1.0.0 manifests are unaffected and no field they lack is ever
+    # required of them. These are the invariants that would have caught the
+    # scorable/dispatchable confusion at the moment the schema changed.
+    if "n_scorable" in manifest:
+        required = ("n_scorable", "n_unscorable", "n_excluded",
+                    "n_rows_in_scope", "n_dispatchable")
+        absent = [k for k in required if k not in manifest]
+        if absent:
+            problems.append(
+                f"schema 1.1.0 manifest is missing counter(s): {', '.join(absent)}")
+        else:
+            scorable = manifest["n_scorable"]
+            unscorable = manifest["n_unscorable"]
+            excluded = manifest["n_excluded"]
+            in_scope = manifest["n_rows_in_scope"]
+            dispatchable = manifest["n_dispatchable"]
+            if scorable + unscorable + excluded != in_scope:
+                problems.append(
+                    f"row accounting does not close: n_scorable ({scorable}) + "
+                    f"n_unscorable ({unscorable}) + n_excluded ({excluded}) = "
+                    f"{scorable + unscorable + excluded}, but n_rows_in_scope is "
+                    f"{in_scope}")
+            if dispatchable != scorable + unscorable:
+                problems.append(
+                    f"n_dispatchable ({dispatchable}) != n_scorable ({scorable}) + "
+                    f"n_unscorable ({unscorable}) = {scorable + unscorable}")
+            if len(ids) != scorable:
+                problems.append(
+                    f"len(included_sample_ids) ({len(ids)}) != n_scorable ({scorable})")
     return problems
 
 

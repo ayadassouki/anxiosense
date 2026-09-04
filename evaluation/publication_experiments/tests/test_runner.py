@@ -21,7 +21,8 @@ from runner.failures import Transport, classify_transport, is_retryable  # noqa:
 from runner.identity import (new_uuid, sha256_text, prompt_hashes,
                              prompt_inventory, PromptError, AGENTS,
                              git_dirty, git_untracked_count)  # noqa: E402
-from runner.manifest import build_manifest, verify_manifest, ManifestError  # noqa: E402
+from runner.manifest import (build_manifest, verify_manifest,        # noqa: E402
+                             load_manifest, ManifestError)
 from runner.metrics import cell_metrics, MetricPolicy              # noqa: E402
 from runner.mock import MockTransport, FIXTURES                    # noqa: E402
 from runner.parse import parse_dreaddit, parse_goemotions          # noqa: E402
@@ -1624,6 +1625,195 @@ class T15_CircuitBreaker(unittest.TestCase):
             self.assertNotEqual(bare.config_sha256(), declared.config_sha256())
         self.assertIn(("halt_after_consecutive_infra_failures",), HASH_COMPAT_DEFAULTS)
         self.assertIsNone(HASH_COMPAT_DEFAULTS[("halt_after_consecutive_infra_failures",)])
+
+
+# ── manifest verification across schema versions ─────────────────────────────
+
+class T16_ManifestScorableVsDispatchable(unittest.TestCase):
+    """Schema 1.1.0 separates technically dispatchable rows from scorable ones.
+    verify_manifest must compare included_sample_ids against the right count for
+    the schema in front of it."""
+
+    def _goemotions_with_unscorable(self, tmp):
+        """A fixture whose rows exercise all four multi-label outcomes."""
+        p = tmp / "ge.csv"
+        rows = [
+            # scorable
+            {"sample_id": "ge_a", "split": "test", "label_names": "nervousness"},
+            {"sample_id": "ge_b", "split": "test", "label_names": "neutral"},
+            {"sample_id": "ge_c", "split": "test", "label_names": "sadness|grief"},
+            # unscorable: only out-of-taxonomy
+            {"sample_id": "ge_d", "split": "test", "label_names": "curiosity"},
+            {"sample_id": "ge_e", "split": "test", "label_names": "disgust|surprise"},
+            # unscorable: conflicting classes
+            {"sample_id": "ge_f", "split": "test", "label_names": "annoyance|neutral"},
+        ]
+        for r in rows:
+            r["text"] = f"a comment for {r['sample_id']} long enough to dispatch"
+            r["text_redacted"] = r["text"]
+        write_csv(p, rows, ["sample_id", "split", "text", "text_redacted", "label_names"])
+        return p
+
+    def test_schema_1_1_manifest_with_unscorable_rows_verifies(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            m = build_manifest(dataset="goemotions",
+                               processed_csv=self._goemotions_with_unscorable(tmp),
+                               split="test", text_column="text_redacted", min_chars=10)
+            self.assertEqual(m["manifest_schema_version"], "1.1.0")
+            self.assertEqual(m["n_scorable"], 3)
+            self.assertEqual(m["n_unscorable"], 3)
+            self.assertEqual(m["n_dispatchable"], 6)
+            self.assertEqual(len(m["included_sample_ids"]), 3)
+            self.assertNotEqual(m["n_dispatchable"], len(m["included_sample_ids"]),
+                                "fixture must actually exercise the distinction")
+            self.assertEqual(verify_manifest(m), [],
+                             "a 1.1.0 manifest with unscorable rows must verify clean")
+
+    def test_schema_1_1_still_catches_a_tampered_id_list(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            m = build_manifest(dataset="goemotions",
+                               processed_csv=self._goemotions_with_unscorable(tmp),
+                               split="test", text_column="text_redacted", min_chars=10)
+            m["included_sample_ids"] = m["included_sample_ids"][:-1]
+            problems = verify_manifest(m)
+            self.assertTrue(any("n_scorable does not match" in p for p in problems), problems)
+
+    def test_schema_1_0_manifest_keeps_the_dispatchable_comparison(self):
+        """A pre-1.1 manifest has no n_scorable; the original check must stand."""
+        # A minimal stand-in: verify_manifest also checks the processed file,
+        # which will be reported missing. These assertions target only the
+        # count comparison, so that extra problem is harmless.
+        legacy = {"manifest_schema_version": "1.0.0",
+                  "processed": {"file": "does/not/exist.csv", "sha256": "0" * 64},
+                  "included_sample_ids": ["a", "b", "c"], "n_dispatchable": 3,
+                  "ground_truth": {"a": 1, "b": 0, "c": 1},
+                  "text_sha256": {"a": "x", "b": "y", "c": "z"}}
+        self.assertNotIn("n_scorable", legacy)
+        problems = verify_manifest(legacy)
+        self.assertFalse(any("does not match included_sample_ids" in p for p in problems),
+                         problems)
+        legacy["n_dispatchable"] = 4
+        problems = verify_manifest(legacy)
+        self.assertTrue(any("n_dispatchable does not match" in p for p in problems), problems)
+
+    def test_duplicate_ids_are_still_caught_in_both_schemas(self):
+        for extra in ({"n_dispatchable": 3}, {"n_dispatchable": 3, "n_scorable": 3}):
+            with self.subTest(extra=extra):
+                man = {"processed": {"file": "does/not/exist.csv", "sha256": "0" * 64},
+                       "included_sample_ids": ["a", "b", "b"],
+                       "ground_truth": {"a": 1, "b": 0},
+                       "text_sha256": {"a": "x", "b": "y"}, **extra}
+                self.assertTrue(any("duplicate sample_id" in p for p in verify_manifest(man)))
+
+    # -- the real frozen manifests ------------------------------------------
+
+    def test_real_official_goemotions_manifest_verifies(self):
+        p = (REPO_ROOT / "evaluation/publication_experiments/manifests"
+             / "official_goemotions_test.json")
+        if not p.exists():
+            self.skipTest("official GoEmotions manifest not present")
+        m = load_manifest(p)
+        self.assertEqual(verify_manifest(m), [])
+        self.assertEqual(m["n_rows_in_scope"], 5427)
+        self.assertEqual(m["n_dispatchable"], 5383)
+        self.assertEqual(m["n_scorable"], 4652)
+        self.assertEqual(m["n_unscorable"], 731)
+        self.assertEqual(m["n_excluded"], 44)
+        self.assertEqual(len(m["included_sample_ids"]), 4652)
+        self.assertEqual(m["n_scorable"] + m["n_unscorable"] + m["n_excluded"], 5427)
+        self.assertEqual(m["majority_baseline"], 0.784179)
+        self.assertEqual(
+            m["manifest_sha256"],
+            "a1dd98743dd6e58d00fc2aa0f14cdb45df0efd5d419d350897862dec40792ccd")
+
+    def test_real_official_dreaddit_manifest_still_verifies(self):
+        p = (REPO_ROOT / "evaluation/publication_experiments/manifests"
+             / "official_dreaddit_test.json")
+        if not p.exists():
+            self.skipTest("official Dreaddit manifest not present")
+        m = load_manifest(p)
+        self.assertEqual(verify_manifest(m), [])
+        self.assertEqual(m["n_dispatchable"], 715)
+        self.assertEqual(m["n_scorable"], 715)
+        self.assertEqual(m["n_unscorable"], 0)
+        self.assertEqual(len(m["included_sample_ids"]), 715)
+        self.assertEqual(
+            m["manifest_sha256"],
+            "a9ea5d554ff1b14a8853ef26a2dfccf563e85a6f027d6ad68cb01a7f3ba8e56b")
+
+    # -- schema 1.1.0 arithmetic invariants ----------------------------------
+
+    def _real_ge(self):
+        p = (REPO_ROOT / "evaluation/publication_experiments/manifests"
+             / "official_goemotions_test.json")
+        if not p.exists():
+            self.skipTest("official GoEmotions manifest not present")
+        return load_manifest(p)
+
+    def test_valid_1_1_arithmetic_passes(self):
+        with tempfile.TemporaryDirectory() as td:
+            m = build_manifest(dataset="goemotions",
+                               processed_csv=self._goemotions_with_unscorable(Path(td)),
+                               split="test", text_column="text_redacted", min_chars=10)
+            self.assertEqual(m["n_scorable"] + m["n_unscorable"] + m["n_excluded"],
+                             m["n_rows_in_scope"])
+            self.assertEqual(m["n_dispatchable"], m["n_scorable"] + m["n_unscorable"])
+            self.assertEqual(verify_manifest(m), [])
+
+    def test_row_accounting_that_does_not_close_is_caught(self):
+        m = self._real_ge()
+        m["n_excluded"] = m["n_excluded"] + 1          # 4652 + 731 + 45 != 5427
+        problems = verify_manifest(m)
+        self.assertTrue(any("row accounting does not close" in p for p in problems),
+                        problems)
+
+    def test_dispatchable_that_is_not_scorable_plus_unscorable_is_caught(self):
+        m = self._real_ge()
+        m["n_dispatchable"] = m["n_dispatchable"] + 10
+        problems = verify_manifest(m)
+        self.assertTrue(any("n_dispatchable" in p and "n_unscorable" in p
+                            for p in problems), problems)
+
+    def test_included_ids_not_equal_to_n_scorable_is_caught(self):
+        m = self._real_ge()
+        m["n_scorable"] = m["n_scorable"] - 1
+        problems = verify_manifest(m)
+        self.assertTrue(any("len(included_sample_ids)" in p for p in problems), problems)
+
+    def test_a_1_1_manifest_missing_a_counter_is_reported_not_crashed(self):
+        m = self._real_ge()
+        del m["n_rows_in_scope"]
+        problems = verify_manifest(m)          # must not raise
+        self.assertTrue(any("missing counter" in p and "n_rows_in_scope" in p
+                            for p in problems), problems)
+
+    def test_schema_1_0_is_never_asked_for_1_1_counters(self):
+        """A 1.0.0 manifest lacks every 1.1.0 counter. It must verify without
+        any arithmetic complaint."""
+        legacy = {"manifest_schema_version": "1.0.0",
+                  "processed": {"file": "does/not/exist.csv", "sha256": "0" * 64},
+                  "included_sample_ids": ["a", "b", "c"], "n_dispatchable": 3,
+                  "ground_truth": {"a": 1, "b": 0, "c": 1},
+                  "text_sha256": {"a": "x", "b": "y", "c": "z"}}
+        problems = verify_manifest(legacy)
+        for term in ("row accounting", "n_scorable", "missing counter",
+                     "len(included_sample_ids)"):
+            self.assertFalse(any(term in p for p in problems),
+                             f"{term!r} raised against a 1.0.0 manifest: {problems}")
+
+    def test_real_candidate_manifests_still_verify(self):
+        """The superseded 1.0.0 candidate manifests must be unaffected."""
+        for name in ("candidate_dreaddit_test", "candidate_goemotions_test"):
+            p = (REPO_ROOT / "evaluation/publication_experiments/manifests"
+                 / f"{name}.json")
+            if not p.exists():
+                continue
+            with self.subTest(manifest=name):
+                m = load_manifest(p)
+                self.assertNotIn("n_scorable", m)
+                self.assertEqual(verify_manifest(m), [])
 
 
 if __name__ == "__main__":
