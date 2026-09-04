@@ -45,15 +45,47 @@ def git_commit() -> str:
         return "UNKNOWN"
 
 
-def git_dirty() -> bool:
+def git_dirty(repo: str | Path = REPO_ROOT) -> bool:
+    """True iff a TRACKED file differs from HEAD (staged or unstaged).
+
+    Untracked files are deliberately excluded: the repository intentionally
+    carries untracked artefacts (historical archives, quarantine folders, the
+    stale outputs tree) that say nothing about whether the committed code and
+    data used for a run match HEAD. Counting them made every run record
+    git_dirty=true and destroyed the signal. Use git_untracked_count() if the
+    presence of untracked files is itself of interest.
+
+    Fails closed: if git cannot answer, report dirty.
+    """
     try:
         out = subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "status", "--porcelain"],
+            ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
             capture_output=True, text=True, timeout=10,
         )
+        if out.returncode != 0:
+            return True
         return bool(out.stdout.strip())
     except Exception:
         return True
+
+
+def git_untracked_count(repo: str | Path = REPO_ROOT) -> int | None:
+    """Number of untracked paths git reports, or None if git cannot answer.
+
+    Recorded alongside git_dirty purely as provenance context. It never
+    influences git_dirty and never gates a run.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo), "status", "--porcelain",
+             "--untracked-files=normal"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if out.returncode != 0:
+            return None
+        return sum(1 for ln in out.stdout.splitlines() if ln.startswith("??"))
+    except Exception:
+        return None
 
 
 class PromptError(RuntimeError):

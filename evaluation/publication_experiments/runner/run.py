@@ -18,6 +18,7 @@ from .client import HttpTransport, TransportResult
 from .config import ExperimentConfig, load_config, ConfigError
 from .failures import Transport, classify_transport
 from .identity import (new_uuid, sha256_text, sha256_obj, git_commit, git_dirty,
+                       git_untracked_count,
                        prompt_inventory, prompt_hashes, PromptError)
 from .manifest import load_manifest, verify_manifest
 from .parse import parse
@@ -55,7 +56,8 @@ def preflight(cfg: ExperimentConfig, *, prompts_dir: Path | None = None) -> dict
         "record_schema_version": RECORD_SCHEMA_VERSION,
         "config_sha256": cfg.config_sha256(),
         "git_commit": git_commit(),
-        "git_dirty": git_dirty(),
+        "git_dirty": git_dirty(),                       # TRACKED files only
+        "git_untracked_count": git_untracked_count(),   # context; never gates a run
     }
 
     # models: only 'enabled' may run, and it must be explicit (enforced in config.py)
@@ -391,7 +393,7 @@ def main(argv: list[str] | None = None) -> int:
         except PreflightError as exc:
             print(f"PREFLIGHT FAILED:\n{exc}", file=sys.stderr)
             return 1
-        print(json.dumps(frozen, indent=2)[:4000])
+        print(json.dumps(frozen, indent=2))
         return 0
 
     try:

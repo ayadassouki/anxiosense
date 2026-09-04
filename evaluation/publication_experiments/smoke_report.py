@@ -50,7 +50,10 @@ def main(run_dir: str) -> int:
 
     print("\n-- PROVENANCE " + "-" * 63)
     print(f"   experiment_id   {exp['experiment_id']}")
-    print(f"   git_commit      {exp['git_commit'][:12]} {'(dirty tree)' if exp['git_dirty'] else '(clean)'}")
+    _unt = exp.get("git_untracked_count")
+    _unt_note = "" if _unt in (None, 0) else f", {_unt} untracked path(s) ignored"
+    print(f"   git_commit      {exp['git_commit'][:12]} "
+          f"{'(tracked files modified)' if exp['git_dirty'] else '(tracked files clean)'}{_unt_note}")
     print(f"   config_sha256   {exp['config_sha256'][:16]}")
     print(f"   prompt_set      {exp['prompt_inventory']['prompt_set_sha256'][:16]}")
     for n, ds in exp["datasets"].items():

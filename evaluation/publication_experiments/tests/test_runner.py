@@ -4,7 +4,7 @@
 Run:  python3 evaluation/publication_experiments/tests/test_runner.py
 """
 from __future__ import annotations
-import csv, inspect, json, os, sys, tempfile, unittest
+import contextlib, csv, inspect, io, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -17,7 +17,8 @@ from runner.client import TransportResult                          # noqa: E402
 from runner.config import load_config, ConfigError                 # noqa: E402
 from runner.failures import Transport, classify_transport, is_retryable  # noqa: E402
 from runner.identity import (new_uuid, sha256_text, prompt_hashes,
-                             prompt_inventory, PromptError, AGENTS)  # noqa: E402
+                             prompt_inventory, PromptError, AGENTS,
+                             git_dirty, git_untracked_count)  # noqa: E402
 from runner.manifest import build_manifest, verify_manifest, ManifestError  # noqa: E402
 from runner.metrics import cell_metrics, MetricPolicy              # noqa: E402
 from runner.mock import MockTransport, FIXTURES                    # noqa: E402
@@ -25,6 +26,7 @@ from runner.parse import parse_dreaddit, parse_goemotions          # noqa: E402
 from runner.rescore import rescore                                 # noqa: E402
 from runner.retry import RetryPolicy, next_action                  # noqa: E402
 from runner.run import preflight, run_experiment, PreflightError   # noqa: E402
+from runner.run import main as run_main                            # noqa: E402
 from runner.store import RunStore, DuplicateAssessment             # noqa: E402
 
 OK = Transport.OK
@@ -506,9 +508,13 @@ class T07_EndToEnd(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             tmp, cfg, t = self._setup(td, {})
             frozen = preflight(cfg)
-            for k in ("config_sha256", "git_commit", "prompt_inventory", "datasets",
+            for k in ("config_sha256", "git_commit", "git_dirty",
+                      "git_untracked_count", "prompt_inventory", "datasets",
                       "grid", "retry_policy", "runner_version"):
                 self.assertIn(k, frozen)
+            self.assertIsInstance(frozen["git_dirty"], bool)
+            self.assertTrue(frozen["git_untracked_count"] is None
+                            or isinstance(frozen["git_untracked_count"], int))
             self.assertEqual(frozen["runner_version"], RUNNER_VERSION)
             self.assertEqual(frozen["grid"]["cells"], 1)
 
@@ -571,6 +577,146 @@ class T09_HistoricalReadOnly(unittest.TestCase):
         b = (REPO_ROOT / "evaluation" / "llm-experiments" / "tests_preflight"
              / "referral_risk_parser_port.py").read_text(encoding="utf-8")
         self.assertEqual(a, b, "the two Python ports of the referral ladder have diverged")
+
+
+# ── provenance reporting (fixes A and B) ─────────────────────────────────────
+
+class T10_ProvenanceReporting(unittest.TestCase):
+    """git_dirty must track TRACKED modifications only, and --preflight-only
+    must emit complete, parseable JSON. Both are reporting-only guarantees:
+    neither gates a run or touches methodology."""
+
+    @staticmethod
+    def _git(cwd, *args):
+        return subprocess.run(["git", "-C", str(cwd), *args],
+                              capture_output=True, text=True, check=True)
+
+    def _repo(self, td):
+        r = Path(td) / "repo"; r.mkdir()
+        self._git(r, "init", "-q")
+        self._git(r, "config", "user.email", "t@example.com")
+        self._git(r, "config", "user.name", "t")
+        (r / "tracked.txt").write_text("v1\n", encoding="utf-8")
+        self._git(r, "add", "tracked.txt")
+        self._git(r, "commit", "-q", "-m", "init")
+        return r
+
+    def test_clean_repo_is_not_dirty(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            self.assertFalse(git_dirty(r))
+            self.assertEqual(git_untracked_count(r), 0)
+
+    def test_untracked_files_do_not_make_the_repo_dirty(self):
+        """The regression this fix exists for: the real repo deliberately keeps
+        untracked archives and quarantine folders, and they used to force
+        git_dirty=true on every single run record."""
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            (r / "archive.zip").write_bytes(b"x")
+            (r / "_to_delete").mkdir()
+            (r / "_to_delete" / "old.json").write_text("{}", encoding="utf-8")
+            (r / "stale_outputs").mkdir()
+            (r / "stale_outputs" / "a.jsonl").write_text("{}\n", encoding="utf-8")
+            self.assertFalse(git_dirty(r), "untracked files must not mark the tree dirty")
+            self.assertEqual(git_untracked_count(r), 3)
+
+    def test_modified_tracked_file_is_dirty(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            (r / "tracked.txt").write_text("v2\n", encoding="utf-8")
+            self.assertTrue(git_dirty(r))
+
+    def test_staged_tracked_change_is_dirty(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            (r / "tracked.txt").write_text("v2\n", encoding="utf-8")
+            self._git(r, "add", "tracked.txt")
+            self.assertTrue(git_dirty(r))
+
+    def test_deleted_tracked_file_is_dirty(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            (r / "tracked.txt").unlink()
+            self.assertTrue(git_dirty(r))
+
+    def test_untracked_alongside_a_tracked_change_still_reads_dirty(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = self._repo(td)
+            (r / "tracked.txt").write_text("v2\n", encoding="utf-8")
+            (r / "archive.zip").write_bytes(b"x")
+            self.assertTrue(git_dirty(r))
+            self.assertEqual(git_untracked_count(r), 1)
+
+    def test_non_repo_fails_closed(self):
+        """If git cannot answer, provenance must claim dirty, never clean."""
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td) / "not_a_repo"; d.mkdir()
+            self.assertTrue(git_dirty(d))
+            self.assertIsNone(git_untracked_count(d))
+
+    def test_preflight_only_prints_complete_valid_json(self):
+        """Regression: the CLI used to slice the payload at 4000 chars, so
+        redirecting --preflight-only produced truncated, unparseable JSON
+        while still exiting 0."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._big_config(td)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = run_main(["--config", str(cfg), "--preflight-only"])
+            self.assertEqual(rc, 0)
+            out = buf.getvalue()
+            self.assertGreater(
+                len(out), self.OLD_CAP + 1,
+                "fixture is smaller than the old cap, so it cannot detect a regression")
+            parsed = json.loads(out)                      # must not raise
+            for k in ("experiment_id", "config_sha256", "git_commit", "git_dirty",
+                      "git_untracked_count", "models_enabled", "models_disabled",
+                      "prompt_inventory", "datasets", "grid", "retry_policy", "server"):
+                self.assertIn(k, parsed)
+            self.assertIn("prompt_set_sha256", parsed["prompt_inventory"])
+            self.assertTrue(parsed["datasets"], "datasets block must be present and complete")
+
+    #: the character cap this test exists to prove is gone (was run.py's
+    #: `print(json.dumps(frozen, indent=2)[:4000])`).
+    OLD_CAP = 4000
+
+    @staticmethod
+    def _big_config(td):
+        """A config whose frozen block is comfortably larger than OLD_CAP, so
+        that a reinstated slice would truncate it and json.loads would fail.
+        Built locally rather than via make_config so no other test's fixture
+        changes."""
+        import yaml
+        tmp = Path(td)
+        d_man = build_and_save(tmp, "dreaddit", tiny_dreaddit(tmp))
+        g_man = build_and_save(tmp, "goemotions", tiny_goemotions(tmp))
+        cfg = {
+            "experiment_id": "preflight_json_probe",
+            "output_root": str(tmp / "runs"),
+            "models": [
+                {"id": "microsoft/phi-4", "name": "Phi-4",
+                 "provider": "openrouter", "enabled": True},
+                {"id": "qwen/qwen3.5-27b", "name": "Qwen 3.5 27B",
+                 "provider": "openrouter", "enabled": False},
+                {"id": "meta-llama/llama-4-scout", "name": "Llama 4 Scout",
+                 "provider": "openrouter", "enabled": False},
+                {"id": "mistralai/mistral-small-2603", "name": "Mistral Small 4",
+                 "provider": "openrouter", "enabled": False},
+                {"id": "google/gemma-4-31b-it", "name": "Gemma 4 31B IT",
+                 "provider": "openrouter", "enabled": False},
+            ],
+            "strategies": ["zero-shot", "zero-shot-cot", "one-shot-cot"],
+            "datasets": [{"name": "dreaddit", "manifest": str(d_man)},
+                         {"name": "goemotions", "manifest": str(g_man)}],
+            "runs": 1, "run_start": 1,
+            "retry": {"max_attempts": 3, "backoff_base_ms": 1, "backoff_factor": 2},
+            "server": {"base_url": "http://localhost:3001", "timeout_seconds": 180,
+                       "server_poll_budget_seconds": 150},
+        }
+        p = tmp / "big_config.yaml"
+        p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        return p
 
 
 if __name__ == "__main__":
