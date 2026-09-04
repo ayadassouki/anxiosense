@@ -55,6 +55,7 @@ DEFAULT_RUN_CLASS = "benchmark"
 HASH_COMPAT_DEFAULTS: dict[tuple[str, ...], Any] = {
     ("run_class",): DEFAULT_RUN_CLASS,
     ("server", "mastra_poll_interval_ms"): None,
+    ("halt_after_consecutive_infra_failures",): None,
 }
 
 
@@ -101,6 +102,18 @@ class ExperimentConfig:
     output_root: str
     #: Declared, never inferred. See RUN_CLASSES.
     run_class: str = DEFAULT_RUN_CLASS
+    #: FAILURE-STORM CIRCUIT BREAKER. Stop dispatching after this many
+    #: CONSECUTIVE assessment-level terminal INFRASTRUCTURE outcomes
+    #: (INFRA_TERMINAL or RETRIES_EXHAUSTED). None disables it, which is the
+    #: default and the behaviour of every config written before 2026-09-04.
+    #:
+    #: It can only ever STOP dispatch. It never changes which items are
+    #: dispatched, never alters a record already written, and never reacts to
+    #: model behaviour: MODEL_BEHAVIOUR, malformed responses and
+    #: SAFETY_INTERCEPT do not count, and any non-infrastructure terminal
+    #: outcome resets the counter to zero. Reacting to model output would make
+    #: the breaker a scientific confound.
+    halt_after_consecutive_infra_failures: int | None = None
     prompts_dir: str | None = None
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
@@ -119,6 +132,8 @@ class ExperimentConfig:
             "retry": asdict(self.retry),
             "server": asdict(self.server),
             "run_class": self.run_class,
+            "halt_after_consecutive_infra_failures":
+                self.halt_after_consecutive_infra_failures,
         }
         return sha256_obj(_strip_hash_compat(payload))
 
@@ -193,6 +208,14 @@ def load_config(path: str | Path) -> ExperimentConfig:
             f"server.mastra_poll_interval_ms must be a positive integer, got "
             f"{server.mastra_poll_interval_ms!r}")
 
+    halt_after = raw.get("halt_after_consecutive_infra_failures")
+    if halt_after is not None:
+        halt_after = int(halt_after)
+        if halt_after < 1:
+            raise ConfigError(
+                f"halt_after_consecutive_infra_failures must be >= 1 or null, "
+                f"got {halt_after!r}")
+
     run_class = str(raw.get("run_class", DEFAULT_RUN_CLASS))
     if run_class not in RUN_CLASSES:
         raise ConfigError(
@@ -218,5 +241,7 @@ def load_config(path: str | Path) -> ExperimentConfig:
         models=models, strategies=strategies, datasets=datasets,
         runs=int(raw["runs"]), run_start=int(raw.get("run_start", 1)),
         retry=retry, server=server, output_root=str(raw["output_root"]),
-        run_class=run_class, prompts_dir=raw.get("prompts_dir"), raw=raw,
+        run_class=run_class,
+        halt_after_consecutive_infra_failures=halt_after,
+        prompts_dir=raw.get("prompts_dir"), raw=raw,
     )

@@ -152,6 +152,11 @@ class RunStore:
             "first_invocation": inv[0] if inv else None,
             "latest_invocation": inv[-1] if inv else None,
             "totals": totals,
+            # Surfaced at the top level so a halted run is obvious without
+            # reading every invocation record.
+            "halted_invocations": [
+                {"invocation_number": i.get("invocation_number"), **i["halted"]}
+                for i in inv if i.get("halted")],
             "invocations": inv,
             "recomputed_from_raw": self.recount_from_raw(),
         }

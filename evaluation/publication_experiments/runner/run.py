@@ -310,6 +310,13 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
     transport = transport or HttpTransport(
         cfg.server.base_url, cfg.server.evaluate_endpoint, cfg.server.timeout_seconds)
 
+    # Circuit breaker. Counts CONSECUTIVE assessment-level terminal
+    # INFRASTRUCTURE outcomes only. Never reacts to model behaviour.
+    HALT_OUTCOMES = ("INFRA_TERMINAL", "RETRIES_EXHAUSTED")
+    halt_threshold = cfg.halt_after_consecutive_infra_failures
+    consecutive_infra = 0
+    halted: dict | None = None
+
     stats = {"dispatched": 0, "skipped_resume": 0, "attempts": 0,
              "outcomes": {}, "model_mismatch": 0}
 
@@ -434,8 +441,40 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
                         stats["dispatched"] += 1
                         stats["outcomes"][final_outcome] = \
                             stats["outcomes"].get(final_outcome, 0) + 1
+
+                        # ── circuit breaker ──────────────────────────────────
+                        # Evaluated ONLY after the terminal record is safely
+                        # written, so a halt never loses or alters data. Model
+                        # behaviour resets it just like a success does.
+                        if final_outcome in HALT_OUTCOMES:
+                            consecutive_infra += 1
+                        else:
+                            consecutive_infra = 0
+                        if (halt_threshold is not None
+                                and consecutive_infra >= halt_threshold):
+                            halted = {
+                                "reason": "consecutive_infrastructure_failures",
+                                "threshold": halt_threshold,
+                                "consecutive_count": consecutive_infra,
+                                "last_sample_id": sample_id,
+                                "last_cell_id": cell_id,
+                                "last_outcome_class": final_outcome,
+                                "note": ("dispatch stopped between assessments; every "
+                                         "record already written is intact. Recover with "
+                                         "--resume --retry-exhausted."),
+                            }
+                            break
+
                         if cfg.server.request_delay_seconds:
                             sleep(cfg.server.request_delay_seconds)
+                    if halted:
+                        break
+                if halted:
+                    break
+            if halted:
+                break
+        if halted:
+            break
 
     # Record THIS invocation append-only, then rewrite dispatch_stats.json as a
     # derived view over all invocations. A resume can no longer overwrite or
@@ -456,13 +495,14 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
         "git_commit": frozen["git_commit"],
         "git_dirty": frozen["git_dirty"],
         "config_sha256": frozen["config_sha256"],
+        "halted": halted,
         "stats": stats,
     })
     summary = store.dispatch_summary()
     store.write_json("summaries/dispatch_stats.json", summary)
     store.close()
     return {"run_dir": str(run_dir), "frozen": frozen, "stats": stats,
-            "dispatch_summary": summary}
+            "halted": halted, "dispatch_summary": summary}
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -502,6 +542,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ABORTED:\n{exc}", file=sys.stderr)
         return 1
     print(json.dumps(out["stats"], indent=2))
+    if out.get("halted"):
+        # Non-zero exit so an unattended wrapper notices. Every record already
+        # written is intact; recover with --resume --retry-exhausted.
+        print("\nCIRCUIT BREAKER TRIPPED:\n" + json.dumps(out["halted"], indent=2),
+              file=sys.stderr)
+        return 3
     return 0
 
 

@@ -1391,5 +1391,240 @@ class T14_RunClass(unittest.TestCase):
                 load_config(p)
 
 
+# ── failure-storm circuit breaker ────────────────────────────────────────────
+
+class AlwaysFailTransport:
+    """Every call is HTTP 503 -> INFRA_TRANSIENT -> RETRIES_EXHAUSTED."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def post_evaluate(self, *, text, model, strategy):
+        self.calls += 1
+        return TransportResult(503, None, None, None, "HTTP 503", 5.0)
+
+
+class ScriptedTransport:
+    """Returns 503 or a valid body per assessment, by call order.
+
+    `pattern` is a list of "fail"/"ok"; a "fail" entry answers every attempt of
+    that assessment so it exhausts, an "ok" entry answers once.
+    """
+
+    def __init__(self, pattern, fixture="valid_prediction"):
+        self.pattern = list(pattern)
+        self.fixture = fixture
+        self.i = 0
+        self.attempts_left = 0
+        self.calls = 0
+
+    def post_evaluate(self, *, text, model, strategy):
+        self.calls += 1
+        if self.attempts_left == 0:
+            self.kind = self.pattern[self.i] if self.i < len(self.pattern) else "ok"
+            self.i += 1
+            self.attempts_left = 3 if self.kind == "fail" else 1
+        self.attempts_left -= 1
+        if self.kind == "fail":
+            return TransportResult(503, None, None, None, "HTTP 503", 5.0)
+        return FIXTURES[self.fixture]()
+
+
+class T15_CircuitBreaker(unittest.TestCase):
+    """The breaker may only ever STOP dispatch. It never changes what is
+    dispatched, never alters a written record, and never reacts to model
+    behaviour."""
+
+    def _cfg(self, td, *, halt=None, n=12, eid="cb"):
+        import yaml
+        tmp = Path(td)
+        man = build_and_save(tmp, "dreaddit", tiny_dreaddit(tmp, n=n))
+        cfg = {"experiment_id": eid, "output_root": str(tmp / "runs"),
+               "models": [{"id": "microsoft/phi-4", "name": "Phi-4",
+                           "provider": "openrouter", "enabled": True}],
+               "strategies": ["zero-shot"],
+               "datasets": [{"name": "dreaddit", "manifest": str(man)}],
+               "runs": 1, "run_start": 1,
+               "retry": {"max_attempts": 3, "backoff_base_ms": 1, "backoff_factor": 2},
+               "server": {"base_url": "http://localhost:3001", "timeout_seconds": 180,
+                          "server_poll_budget_seconds": 150}}
+        if halt is not None:
+            cfg["halt_after_consecutive_infra_failures"] = halt
+        p = tmp / f"{eid}.yaml"
+        p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        return load_config(p)
+
+    def _run(self, cfg, transport, **kw):
+        return run_experiment(cfg, transport=transport, sleep=lambda *_: None, **kw)
+
+    def _idx(self, run_dir):
+        return [json.loads(l) for l in
+                (Path(run_dir) / "raw" / "index.jsonl").read_text().splitlines() if l.strip()]
+
+    # -- it halts ------------------------------------------------------------
+
+    def test_halts_at_exactly_the_threshold(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=3, n=12)
+            out = self._run(cfg, AlwaysFailTransport())
+            self.assertIsNotNone(out["halted"])
+            self.assertEqual(out["halted"]["threshold"], 3)
+            self.assertEqual(out["halted"]["consecutive_count"], 3)
+            self.assertEqual(out["stats"]["dispatched"], 3,
+                             "dispatch continued past the threshold")
+            self.assertEqual(len(self._idx(out["run_dir"])), 3)
+
+    def test_halt_reason_and_last_sample_are_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=2, n=12)
+            out = self._run(cfg, AlwaysFailTransport())
+            h = out["halted"]
+            self.assertEqual(h["reason"], "consecutive_infrastructure_failures")
+            self.assertEqual(h["last_outcome_class"], "RETRIES_EXHAUSTED")
+            self.assertTrue(h["last_sample_id"].startswith("dread_"))
+            self.assertIn("dreaddit|", h["last_cell_id"])
+            last = self._idx(out["run_dir"])[-1]
+            self.assertEqual(h["last_sample_id"], last["sample_id"])
+
+    def test_halt_is_in_invocation_and_dispatch_provenance(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=2, n=12)
+            out = self._run(cfg, AlwaysFailTransport())
+            rd = Path(out["run_dir"])
+            inv = [json.loads(l) for l in
+                   (rd / "summaries" / "invocations.jsonl").read_text().splitlines() if l.strip()]
+            self.assertEqual(inv[0]["halted"]["threshold"], 2)
+            d = json.loads((rd / "summaries" / "dispatch_stats.json").read_text())
+            self.assertEqual(len(d["halted_invocations"]), 1)
+            self.assertEqual(d["halted_invocations"][0]["invocation_number"], 1)
+            self.assertEqual(json.loads(json.dumps(d)), d)
+
+    # -- it does not halt ----------------------------------------------------
+
+    def test_interleaved_successes_never_halt(self):
+        """Many failures, never consecutive -> no halt."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=3, n=12)
+            out = self._run(cfg, ScriptedTransport(
+                ["fail", "ok", "fail", "ok", "fail", "ok",
+                 "fail", "ok", "fail", "ok", "fail", "ok"]))
+            self.assertIsNone(out["halted"])
+            self.assertEqual(out["stats"]["dispatched"], 12)
+
+    def test_a_success_resets_the_counter(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=3, n=12)
+            out = self._run(cfg, ScriptedTransport(
+                ["fail", "fail", "ok", "fail", "fail", "ok", "fail", "fail",
+                 "ok", "ok", "ok", "ok"]))
+            self.assertIsNone(out["halted"], "two-in-a-row must never trip a threshold of 3")
+            self.assertEqual(out["stats"]["dispatched"], 12)
+
+    # -- METHODOLOGY GUARD ---------------------------------------------------
+
+    def test_model_behaviour_never_contributes(self):
+        """A malformed/unusable model response is DATA, not infrastructure. If
+        the breaker reacted to it, the breaker would become a scientific
+        confound."""
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=2, n=12)
+            out = self._run(cfg, ScriptedTransport(["ok"] * 12,
+                                                   fixture="malformed_complete"))
+            self.assertIsNone(out["halted"])
+            self.assertEqual(out["stats"]["dispatched"], 12)
+            outcomes = {r["final_outcome_class"] for r in self._idx(out["run_dir"])}
+            self.assertNotIn("RETRIES_EXHAUSTED", outcomes)
+            self.assertNotIn("INFRA_TERMINAL", outcomes)
+
+    def test_oov_and_truncated_responses_never_contribute(self):
+        for fixture in ("oov_emotion", "truncated_emotion"):
+            with tempfile.TemporaryDirectory() as td, self.subTest(fixture=fixture):
+                cfg = self._cfg(td, halt=2, n=8)
+                out = self._run(cfg, ScriptedTransport(["ok"] * 8, fixture=fixture))
+                self.assertIsNone(out["halted"])
+                self.assertEqual(out["stats"]["dispatched"], 8)
+
+    # -- nothing already written is harmed -----------------------------------
+
+    def test_records_written_before_the_halt_are_intact(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=3, n=12)
+            out = self._run(cfg, ScriptedTransport(
+                ["ok", "ok", "fail", "fail", "fail", "ok", "ok"]))
+            idx = self._idx(out["run_dir"])
+            self.assertIsNotNone(out["halted"])
+            self.assertEqual([r["final_outcome_class"] for r in idx],
+                             ["OK", "OK", "RETRIES_EXHAUSTED", "RETRIES_EXHAUSTED",
+                              "RETRIES_EXHAUSTED"])
+            self.assertEqual(len({r["sample_id"] for r in idx}), 5)
+            att = [json.loads(l) for l in
+                   (Path(out["run_dir"]) / "raw" / "attempts.jsonl").read_text().splitlines()
+                   if l.strip()]
+            self.assertEqual(len(att), 2 + 3 * 3)
+
+    # -- the full recovery sequence ------------------------------------------
+
+    def test_halt_then_resume_retry_exhausted_then_zero_dispatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=3, n=12)
+            first = self._run(cfg, AlwaysFailTransport())
+            self.assertIsNotNone(first["halted"])
+            self.assertEqual(first["stats"]["dispatched"], 3)
+
+            # plain --resume does NOT retry exhausted assessments, and the
+            # remaining 9 are dispatched fresh
+            second = self._run(cfg, MockTransport({}), resume=True)
+            self.assertIsNone(second["halted"])
+            self.assertEqual(second["stats"]["skipped_resume"], 3)
+            self.assertEqual(second["stats"]["dispatched"], 9)
+
+            # --retry-exhausted supersedes the 3 exhausted records
+            third = self._run(cfg, MockTransport({}), resume=True, retry_exhausted=True)
+            self.assertEqual(third["stats"]["dispatched"], 3)
+            idx = self._idx(first["run_dir"])
+            superseded = [r for r in idx if r.get("supersedes")]
+            self.assertEqual(len(superseded), 3)
+            self.assertTrue(all(r["supersedes_outcome"] == "RETRIES_EXHAUSTED"
+                                for r in superseded))
+            self.assertEqual(len(idx), 15, "append-only: superseded lines are retained")
+
+            # and a final plain resume dispatches nothing
+            fourth = self._run(cfg, MockTransport({}), resume=True)
+            self.assertEqual(fourth["stats"]["dispatched"], 0)
+            self.assertEqual(fourth["stats"]["skipped_resume"], 12)
+            d = json.loads((Path(first["run_dir"]) / "summaries"
+                            / "dispatch_stats.json").read_text())
+            self.assertEqual(d["invocation_count"], 4)
+            self.assertEqual(len(d["halted_invocations"]), 1)
+            self.assertEqual(d["recomputed_from_raw"]["terminal_assessments"], 15)
+
+    # -- disabled by default -------------------------------------------------
+
+    def test_disabled_by_default_never_halts(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._cfg(td, halt=None, n=12)
+            self.assertIsNone(cfg.halt_after_consecutive_infra_failures)
+            out = self._run(cfg, AlwaysFailTransport())
+            self.assertIsNone(out["halted"])
+            self.assertEqual(out["stats"]["dispatched"], 12,
+                             "an undeclared config must behave exactly as before")
+
+    def test_invalid_threshold_is_a_config_error(self):
+        for bad in (0, -1):
+            with tempfile.TemporaryDirectory() as td, self.subTest(bad=bad):
+                with self.assertRaises(ConfigError):
+                    self._cfg(td, halt=bad)
+
+    # -- hash compatibility --------------------------------------------------
+
+    def test_omitting_the_key_hashes_as_before(self):
+        with tempfile.TemporaryDirectory() as td:
+            bare = self._cfg(td, halt=None, eid="h")
+            declared = self._cfg(td, halt=20, eid="h")
+            self.assertNotEqual(bare.config_sha256(), declared.config_sha256())
+        self.assertIn(("halt_after_consecutive_infra_failures",), HASH_COMPAT_DEFAULTS)
+        self.assertIsNone(HASH_COMPAT_DEFAULTS[("halt_after_consecutive_infra_failures",)])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
