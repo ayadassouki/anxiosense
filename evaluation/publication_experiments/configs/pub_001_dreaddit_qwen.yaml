@@ -1,0 +1,90 @@
+# PUBLICATION RUN pub_001 - RQ1-RQ3 DATA. Dreaddit, Qwen 3.5 27B.
+#
+# FIRST config with run_class: publication. Every record produced by this run is
+# eligible to appear in the paper. Nothing here may be edited after the run
+# starts; a change to any field changes config_sha256 and makes the run
+# non-reproducible against its own artefact.
+#
+# Scope
+#   dataset     official Dreaddit test split, 715 rows, all dispatchable
+#               (evaluation/datasets/official_test_2026-09-04, no anxiety/LIWC
+#               filter, no content-based exclusion)
+#   model       qwen/qwen3.5-27b, pinned to the Alibaba upstream, fp8
+#   strategies  all three frozen prompt sets: zero-shot, zero-shot-cot, one-shot-cot
+#   runs        5 (run_start 1 -> runs 1..5), for the RQ1 variance estimate
+#   coverage    715 x 3 x 5 x 1 model = 10,725 assessments, 15 cells
+#
+# Poll cadence is DECLARED at 3000 ms. run_class: publication makes the
+# /api/health probe MANDATORY: preflight aborts unless the server is verifiably
+# running that cadence, so the cadence that produced this run's latency figures
+# is recorded in the run's own provenance rather than in the shell that started
+# the server. Express must be up on v1.0.3+ server code before preflight.
+#
+# Circuit breaker at 20 consecutive INFRASTRUCTURE failures (v1.0.4). It can
+# only stop dispatch; it never reacts to model behaviour. Recovery after a halt
+# is --resume --retry-exhausted, then a plain --resume that must report
+# dispatched 0.
+#
+# Requires MODEL_ID=qwen/qwen3.5-27b in BOTH .env and server/.env and a restart
+# of Mastra + Express. The runner aborts on the first attempt if the server
+# serves a different model.
+#
+# Methodology, dataset membership, mappings, prompts, retry policy and the
+# runner are UNCHANGED from publication-runner-v1.0.5.
+run_class: publication
+experiment_id: pub_001_dreaddit_qwen
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/official_dreaddit_test.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000
