@@ -1,0 +1,133 @@
+{
+  "builder_version": "1.0.0",
+  "built_utc": "2026-09-09T17:21:28.215007+00:00",
+  "subset_tag": "goemotions_715_v1",
+  "selection_protocol": "forced_include + hash_ordered_random",
+  "seed": "anxiosense-goemotions-715-v1",
+  "key_function": "sha256(f'{seed}:{goemotions_id}')",
+  "prng_used": false,
+  "n_total": 715,
+  "n_forced": 25,
+  "n_random": 690,
+  "random_pool": {
+    "definition": "official test split, len(text_processed) >= 10, minus forced ids",
+    "size": 5381,
+    "sha256_of_sorted_ids": "b74e637d7d11dfe038bee8aed476173d726dd8b40fd7de2c567a0e06e9422a68",
+    "label_blind": true,
+    "content_based_filtering": "NONE"
+  },
+  "sources": {
+    "train": {
+      "file": "evaluation/datasets/goemotions/train.csv",
+      "sha256": "66684cb3834d92086e8f240abd9dffddf3d5d3d617f2cd72060b8b8de2337084",
+      "pinned_ok": true
+    },
+    "validation": {
+      "file": "evaluation/datasets/goemotions/validation.csv",
+      "sha256": "dcb425fd4349320e9991b92df4390c51faa529112db3f194a88a71571829f62c",
+      "pinned_ok": true
+    },
+    "test": {
+      "file": "evaluation/datasets/goemotions/test.csv",
+      "sha256": "56b5c407adaac0664af58e1a6d067bc726a4bf036e77b7679fca41750bc02ca4",
+      "pinned_ok": true
+    }
+  },
+  "forced_include": {
+    "file": "evaluation/datasets/goemotions_subset_715_2026-09-09/abel_rq4_rq5_ids.csv",
+    "sha256": "d3787574f1bb6bc2c93aaefe9367562248c43b750a4836097f279ea5704cbd38",
+    "usage": "ID LIST ONLY - text, labels, mapping and ground truth re-derived from the official source CSVs by joining on id",
+    "ids": [
+      "eemebgf",
+      "edzg5j5",
+      "edkpcyt",
+      "edqpdqx",
+      "eeynj5w",
+      "ed39nre",
+      "ee9lw51",
+      "eet17aq",
+      "ee9tqp8",
+      "edr5kc0",
+      "eelf9bs",
+      "eegt37p",
+      "edv4hdw",
+      "ed1zmlt",
+      "eevdcm2",
+      "eetas5k",
+      "edbvk03",
+      "eeo1pse",
+      "ed973wd",
+      "ee3qtcw",
+      "eevpwe1",
+      "eenv6nx",
+      "ee0fz73",
+      "efajv2o",
+      "eef78gb"
+    ]
+  },
+  "mapping_version": "1.0.0",
+  "preprocessing": "clean_text then redact_text, imported from evaluation/datasets/scripts/preprocess_datasets.py",
+  "row_removal": "none within the subset - unscorable rows are retained with gt_status",
+  "not_modified": [
+    "evaluation/publication_experiments/manifests/official_goemotions_test.json",
+    "evaluation/publication_experiments/manifests/official_dreaddit_test.json",
+    "evaluation/publication_experiments/manifests/candidate_goemotions_test.json",
+    "evaluation/publication_experiments/manifests/candidate_dreaddit_test.json",
+    "evaluation/datasets/goemotions/{train,validation,test}.csv",
+    "evaluation/publication_experiments/runner/**",
+    "prompts/**"
+  ],
+  "stats": {
+    "rows": 715,
+    "by_selection_source": {
+      "random_seeded": 690,
+      "abel_rq4_rq5": 25
+    },
+    "by_original_split": {
+      "test": 692,
+      "validation": 2,
+      "train": 21
+    },
+    "dispatchable": {
+      "True": 715
+    },
+    "gt_status": {
+      "mapped": 623,
+      "out_of_taxonomy": 67,
+      "conflicting_classes": 25
+    },
+    "gt_status_dispatchable_only": {
+      "mapped": 623,
+      "out_of_taxonomy": 67,
+      "conflicting_classes": 25
+    },
+    "multi_label_rule_dispatchable": {
+      "R1": 592,
+      "R4": 67,
+      "R3": 31,
+      "R2": 25
+    },
+    "ground_truth_when_mapped": {
+      "non_distress": 487,
+      "frustration": 81,
+      "fear": 15,
+      "sadness": 34,
+      "anxiety": 6
+    },
+    "anxiety_by_selection_source": {
+      "random_seeded": 2,
+      "abel_rq4_rq5": 4
+    },
+    "text_modified_rows": 50,
+    "scorable_now": 623
+  },
+  "derived_csv": {
+    "file": "evaluation/datasets/goemotions_subset_715_2026-09-09/goemotions_715_subset.csv",
+    "sha256": "ead551c4ab4822052b9093a7c33e678403e659759113563009784f43e2cc9b81"
+  },
+  "manifest": {
+    "file": "evaluation/publication_experiments/manifests/goemotions_715_subset_2026-09-09.json",
+    "manifest_sha256": "05d08ff5b4e18b7ac8e8a4148da41943251b25108751fcf0406d52594067267f",
+    "file_sha256": "dacab2c4db7fbbfccc26c7f969aca078c997a487fc6e679e9cc262a0ce21ed56"
+  }
+}

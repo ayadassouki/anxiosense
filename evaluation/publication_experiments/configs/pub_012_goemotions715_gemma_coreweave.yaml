@@ -1,0 +1,91 @@
+# PUBLICATION RUN pub_006 - RQ1-RQ3 DATA. GoEmotions 715-subset, Mistral Small 4.
+#
+# First GoEmotions publication config. Cloned from pub_002_dreaddit_mistral
+# (config_sha256 575aa091...) with exactly two changes: experiment_id and the
+# dataset block. Model, provider pin, strategies, runs, retry policy, timeouts,
+# poll cadence, circuit breaker, provenance requirements and output_root are all
+# inherited byte-identically, so Mistral's Dreaddit and GoEmotions results are
+# collected under the same conditions.
+#
+# DATASET - goemotions_715_subset_2026-09-09 (manifest_sha256 05d08ff5...):
+#   715 rows total = 25 forced RQ4/RQ5 examples + 690 label-blind random draws.
+#   623 scoreable, 92 unscorable (67 out_of_taxonomy, 25 conflicting_classes),
+#   0 excluded. Class distribution non_distress 487 / frustration 81 / sadness 34
+#   / fear 15 / anxiety 6. Majority baseline 0.781701.
+#
+#   MIXED SPLIT. official_split is the subset tag "goemotions_715_v1", NOT a
+#   GoEmotions split, because 23 of the 25 RQ4/RQ5 examples come from train or
+#   validation. Every attempt record will carry that value. original_split is
+#   preserved per row in the derived CSV (692 test / 21 train / 2 validation).
+#
+#   ANXIETY IS n=6, AND 4 OF THE 6 ARE PURPOSIVELY SELECTED (RQ4/RQ5). The
+#   anxiety class in this subset is therefore majority non-random and must be
+#   reported descriptively, not as a per-class metric. Disclose in the write-up.
+#
+# Coverage: 715 x 3 strategies x 5 runs x 1 model = 10,725 assessments, 15 cells
+# - identical to the per-model Dreaddit workload.
+#
+# BEFORE PREFLIGHT: set MODEL_ID=mistralai/mistral-small-2603 in BOTH .env and
+# server/.env (they currently read microsoft/phi-4 from pub_005) and restart
+# Mastra + Express. The runner aborts on the first attempt otherwise.
+#
+# Methodology, mappings, prompts, retry policy and the runner are UNCHANGED from
+# publication-runner-v1.0.5. The official 5,427-row GoEmotions manifest is NOT
+# superseded; it remains on disk and is still the manifest bench_006 used.
+run_class: publication
+experiment_id: pub_012_goemotions715_gemma_coreweave
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: CoreWeave
+  pin_quantization: fp4
+  enabled: true
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: false
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: goemotions
+  manifest: evaluation/publication_experiments/manifests/goemotions_715_subset_2026-09-09.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000

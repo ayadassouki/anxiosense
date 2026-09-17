@@ -1,0 +1,110 @@
+# PUBLICATION RUN pub_007 - RQ1-RQ3 DATA. GoEmotions 715-subset, Qwen 3.5 27B.
+#
+# Cloned from pub_006_goemotions715_mistral (config_sha256 162ea87e...) with
+# exactly two changes: experiment_id and which model is enabled. Dataset,
+# manifest, strategies, runs, retry policy, timeouts, poll cadence, circuit
+# breaker, provenance requirements and output_root are inherited byte-identically
+# from the GoEmotions publication template, so Mistral's and Qwen's GoEmotions
+# results are collected under the same conditions.
+#
+# DATASET - goemotions_715_subset_2026-09-09 (manifest_sha256 05d08ff5...):
+#   715 rows = 25 forced RQ4/RQ5 + 690 label-blind random draws. 623 scoreable,
+#   92 unscorable (67 out_of_taxonomy, 25 conflicting_classes), 0 excluded.
+#   non_distress 487 / frustration 81 / sadness 34 / fear 15 / anxiety 6.
+#   Majority baseline 0.781701.
+#
+#   MIXED SPLIT. official_split is the subset tag "goemotions_715_v1", NOT a
+#   GoEmotions split; original_split is preserved per row in the derived CSV
+#   (692 test / 21 train / 2 validation).
+#
+#   ANXIETY IS n=6 AND 4 OF THE 6 ARE PURPOSIVELY SELECTED. Report anxiety
+#   descriptively, never as a per-class metric. Disclose in the write-up.
+#
+# PROVIDER PIN: MODEL_ROUTE['qwen/qwen3.5-27b'] = { provider: 'Alibaba' } ->
+# {order:['Alibaba'], allow_fallbacks:false}. Alibaba is Qwen's sole endpoint,
+# so no `quantizations` directive is sent and pin_quantization stays unset -
+# the same convention used for Llama 4 Scout and Phi-4. Gemma is the only model
+# whose fp4 filter is genuinely transmitted.
+#
+# DOCUMENTED PER-MODEL DEVIATION: MODEL_REQUEST_OVERRIDES sends
+# reasoning:{enabled:false} for this model only, restoring its catalogue-
+# documented default after the 2026-08-09 smoke showed ~30k output tokens and
+# 126 s latency with reasoning on. It is a reasoning toggle, NOT a sampling
+# parameter - temperature/max_tokens/seed remain omitted. Disclose alongside
+# the decoding table.
+#
+# Coverage: 623 scoreable x 3 strategies x 5 runs = 9,345 assessments, 15 cells.
+# The runner iterates included_sample_ids (n_scorable); the 92 unscorable rows
+# are retained in the manifest for audit and are never dispatched.
+#
+# Cross-check available: bench_006 holds Qwen predictions for all 4,652 scoreable
+# rows of the full GoEmotions test split under the same 3000 ms cadence, so most
+# of the 690 random test rows here have an existing comparison point.
+#
+# BEFORE PREFLIGHT: set MODEL_ID=qwen/qwen3.5-27b in BOTH .env and server/.env
+# (MODEL_PROVIDER stays openrouter) and restart Mastra + Express. The runner
+# aborts on the first attempt if the server serves a different model.
+#
+# Runs on a machine SEPARATE from Aya's concurrent pub_006 Mistral run. The two
+# use different upstream providers (Alibaba vs Mistral), so there is no shared-
+# upstream contention; the OpenRouter credit balance is the only shared resource.
+#
+# Methodology, mappings, prompts, retry policy and the runner are UNCHANGED from
+# publication-runner-v1.0.5.
+run_class: publication
+experiment_id: pub_007_goemotions715_qwen
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: true
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: goemotions
+  manifest: evaluation/publication_experiments/manifests/goemotions_715_subset_2026-09-09.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000

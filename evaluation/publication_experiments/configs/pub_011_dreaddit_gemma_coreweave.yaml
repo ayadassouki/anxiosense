@@ -1,0 +1,157 @@
+# PUBLICATION RUN pub_004 - RQ1-RQ3 DATA. Dreaddit, Gemma 4 31B IT.
+#
+# Fourth publication config. Identical in every respect to pub_001, pub_002 and
+# pub_003 except the enabled model. Every record produced by this run is
+# eligible to appear in the paper. Nothing here may be edited after the run
+# starts; a change to any field changes config_sha256 and makes the run
+# non-reproducible against its own artefact.
+#
+# Scope
+#   dataset     official Dreaddit test split, 715 rows, all dispatchable
+#               (evaluation/datasets/official_test_2026-09-04, no anxiety/LIWC
+#               filter, no content-based exclusion) - the SAME manifest and the
+#               SAME manifest_sha256 as pub_001/002/003, so all four runs are
+#               directly comparable for RQ1.
+#   model       google/gemma-4-31b-it, pinned to the DeepInfra upstream at fp4
+#   strategies  all three frozen prompt sets: zero-shot, zero-shot-cot, one-shot-cot
+#   runs        5 (run_start 1 -> runs 1..5), for the RQ1 variance estimate
+#   coverage    715 x 3 x 5 x 1 model = 10,725 assessments, 15 cells
+#
+# Provider pin: MODEL_ROUTE['google/gemma-4-31b-it'] =
+# { provider: 'DeepInfra', quantizations: ['fp4'] } -> sent as
+# {order:['DeepInfra'], allow_fallbacks:false, quantizations:['fp4']}.
+#
+# PRECISION (fp4) - THE ONE MODEL WHERE THE FILTER IS REAL AND NECESSARY.
+# DeepInfra serves this model from TWO endpoints, fp4 ($0.09/$0.34) and fp8
+# ($0.13/$0.38). order:['DeepInfra'] alone does NOT choose between them, and the
+# response's `provider` field reads "DeepInfra" either way, so a switch
+# mid-run would be INVISIBLE in the collected data. quantizations:['fp4'] is
+# therefore genuinely transmitted for this model, and pin_quantization: fp4
+# below mirrors a directive the runner really sends - unlike Llama 4 Scout and
+# Phi-4, whose sole-endpoint precision is left undeclared on purpose. Combined
+# with allow_fallbacks:false, an unavailable fp4 endpoint now ERRORS instead of
+# silently falling through to fp8; the harness records that as a provider error.
+# NOTE FOR THE WRITE-UP: `quantizations` is a REQUEST DIRECTIVE, not an observed
+# value - OpenRouter's chat response carries `provider` but not `quantization`.
+# Enforcement is by hard failure, not by measurement.
+#
+# DECODING - Gemma is the ONLY model of the five with published numeric
+# defaults. The catalogue snapshot (sha256 8950a228..., retrieved 2026-08-04)
+# records default_parameters {temperature: 1, top_p: 0.95, top_k: 64} for
+# google/gemma-4-31b-it; the other four publish nothing and must be recorded as
+# "unknown / provider default applied". Decoding parameters are stripped on the
+# wire exactly as for every other model (temperature / max_tokens /
+# max_completion_tokens / seed omitted), so this run still applies the
+# provider's own defaults - the difference is only that for Gemma those
+# defaults are CITABLE, to the catalogue snapshot sha rather than to a web page.
+#
+# This model has NO entry in MODEL_REQUEST_OVERRIDES - no reasoning toggle is
+# sent. The catalogue records reasoning {mandatory: false, default_enabled:
+# false} for Gemma 4, i.e. reasoning is explicitly off by default, so there is
+# nothing to suppress and the zero-shot / CoT contrast measures what the design
+# says it measures.
+#
+# Poll cadence is DECLARED at 3000 ms. run_class: publication makes the
+# /api/health probe MANDATORY: preflight aborts unless the server is verifiably
+# running that cadence, so the cadence that produced this run's latency figures
+# is recorded in the run's own provenance rather than in the shell that started
+# the server. Express must be up on v1.0.3+ server code before preflight.
+#
+# Circuit breaker at 20 consecutive INFRASTRUCTURE failures (v1.0.4). It can
+# only stop dispatch; it never reacts to model behaviour. Recovery after a halt
+# is --resume --retry-exhausted, then a plain --resume that must report
+# dispatched 0.
+#
+# BEFORE PREFLIGHT: MODEL_ID=google/gemma-4-31b-it in BOTH .env and server/.env
+# (MODEL_PROVIDER stays openrouter) with Mastra + Express restarted - already
+# confirmed on this VM. The runner aborts on the first attempt if the server
+# serves a different model.
+#
+# Methodology, dataset membership, mappings, prompts, retry policy and the
+# runner are UNCHANGED from publication-runner-v1.0.5 and from pub_001-003.
+#
+# PROVIDER CHANGE, RECORDED HERE FOR PROVENANCE.
+# This run is pub_004_dreaddit_gemma re-run from scratch with the upstream
+# provider changed from DeepInfra to CoreWeave. Nothing else differs: same
+# model google/gemma-4-31b-it, same fp4 filter, same Dreaddit manifest, same
+# three prompt strategies, same runs=5, same retry policy, same timeouts, same
+# breaker at 20.
+#
+# WHY. pub_004 on DeepInfra fp4 was abandoned incomplete at 4294 index lines
+# after 1238 of 3785 attempts returned HTTP 504 (32.7%). Failures arrived as
+# 150 s workflow timeouts producing no model output; successful-call latency
+# was unaffected, identifying endpoint availability rather than generation
+# time as the cause. pub_004 is PRESERVED UNCHANGED and is never resumed,
+# modified, deleted or combined with this run. No DeepInfra and CoreWeave
+# outputs are mixed within any experimental cell.
+#
+# COREWEAVE EVIDENCE. Identifier verified by direct OpenRouter probe on
+# 2026-09-15: order ["CoreWeave"] and ["coreweave"] both route to CoreWeave,
+# a nonexistent provider name returns HTTP 404, so allow_fallbacks:false is
+# binding and order entries are not silently dropped. End-to-end route
+# confirmed through Express: upstream_provider CoreWeave, single upstream,
+# model_actual openrouter/google/gemma-4-31b-it. Reliability: bench_016
+# 60/60 OK and bench_017 120/120 OK - 180 assessments, zero HTTP 504, zero
+# retries, zero model mismatches, OK latency median 6049 ms.
+#
+# QUANTIZATION IS REQUESTED, NOT OBSERVED. attempts.jsonl has no served-
+# quantization field, and fp4 is a label rather than a standard: OpenRouter
+# distinguishes fp4, mxfp4 and nvfp4, so CoreWeave fp4 is not guaranteed
+# numerically identical to DeepInfra's. Disclose with the provider change.
+run_class: publication
+experiment_id: pub_011_dreaddit_gemma_coreweave
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: CoreWeave
+  pin_quantization: fp4
+  enabled: true
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: false
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/official_dreaddit_test.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000

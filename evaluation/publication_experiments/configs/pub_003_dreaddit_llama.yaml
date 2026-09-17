@@ -1,0 +1,116 @@
+# PUBLICATION RUN pub_003 - RQ1-RQ3 DATA. Dreaddit, Llama 4 Scout.
+#
+# Third publication config. Identical in every respect to pub_001 and pub_002
+# except the enabled model. Every record produced by this run is eligible to
+# appear in the paper. Nothing here may be edited after the run starts; a change
+# to any field changes config_sha256 and makes the run non-reproducible against
+# its own artefact.
+#
+# Scope
+#   dataset     official Dreaddit test split, 715 rows, all dispatchable
+#               (evaluation/datasets/official_test_2026-09-04, no anxiety/LIWC
+#               filter, no content-based exclusion) - the SAME manifest and the
+#               SAME manifest_sha256 as pub_001 and pub_002, so all three runs
+#               are directly comparable for RQ1.
+#   model       meta-llama/llama-4-scout, pinned to the DeepInfra upstream
+#   strategies  all three frozen prompt sets: zero-shot, zero-shot-cot, one-shot-cot
+#   runs        5 (run_start 1 -> runs 1..5), for the RQ1 variance estimate
+#   coverage    715 x 3 x 5 x 1 model = 10,725 assessments, 15 cells
+#
+# Provider pin: MODEL_ROUTE['meta-llama/llama-4-scout'] = { provider:
+# 'DeepInfra' } -> {order:['DeepInfra'], allow_fallbacks:false}.
+#
+# PRECISION (fp8). DeepInfra is Llama 4 Scout's SOLE endpoint and serves it at
+# fp8 (verified against GET /api/v1/models/{id}/endpoints on 2026-08-04: fp8,
+# ctx 327680, uptime 99.8%). fp8 is therefore guaranteed by there being no other
+# endpoint to fall through to, combined with allow_fallbacks:false - NOT by a
+# `quantizations` request directive. No such directive is sent for this model,
+# and `pin_quantization` is deliberately left unset here so the frozen
+# provenance does not claim a filter that the runner never transmits. Contrast
+# google/gemma-4-31b-it, which has TWO DeepInfra endpoints (fp4/fp8) and
+# therefore does carry quantizations:['fp4'] in MODEL_ROUTE and
+# pin_quantization: fp4 here. Record fp8 in the write-up as an OBSERVED,
+# endpoint-verified property, enforced by hard failure rather than measurement.
+#
+# This model has NO entry in MODEL_REQUEST_OVERRIDES - no reasoning toggle is
+# sent (the catalogue records reasoning: None for Llama 4 Scout, i.e. no
+# reasoning mode exists). Decoding parameters (temperature / max_tokens /
+# max_completion_tokens / seed) are stripped as for every other model, so
+# DeepInfra's own server-side defaults apply; the catalogue publishes an empty
+# default_parameters for this model, so it must be recorded as
+# "unknown / provider default applied".
+#
+# Poll cadence is DECLARED at 3000 ms. run_class: publication makes the
+# /api/health probe MANDATORY: preflight aborts unless the server is verifiably
+# running that cadence, so the cadence that produced this run's latency figures
+# is recorded in the run's own provenance rather than in the shell that started
+# the server. Express must be up on v1.0.3+ server code before preflight.
+#
+# Circuit breaker at 20 consecutive INFRASTRUCTURE failures (v1.0.4). It can
+# only stop dispatch; it never reacts to model behaviour. Recovery after a halt
+# is --resume --retry-exhausted, then a plain --resume that must report
+# dispatched 0.
+#
+# BEFORE PREFLIGHT: set MODEL_ID=meta-llama/llama-4-scout in BOTH .env and
+# server/.env (MODEL_PROVIDER stays openrouter) and restart Mastra + Express.
+# The runner aborts on the first attempt if the server still serves another model.
+#
+# Methodology, dataset membership, mappings, prompts, retry policy and the
+# runner are UNCHANGED from publication-runner-v1.0.5 and from pub_001/pub_002.
+run_class: publication
+experiment_id: pub_003_dreaddit_llama
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: true
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: false
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/official_dreaddit_test.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000
