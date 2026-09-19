@@ -1,0 +1,89 @@
+# REPLACEMENT CELL RUN - Dreaddit x Gemma x one-shot-cot x run5, CoreWeave-pure.
+#
+# WHY THIS EXISTS
+#   pub_011_dreaddit_gemma_coreweave is complete (10,725/10,725 distinct
+#   assessments) and remains the untouched audit trail. Within it, the single
+#   cell  dreaddit|google/gemma-4-31b-it|one-shot-cot|run5  contains 181 final
+#   assessments that were served by DeepInfra between 2026-09-17T02:43:05Z and
+#   03:14:28Z while the run was pinned to CoreWeave. Cause: pin_provider is
+#   provenance-only in the request path; the upstream route is chosen
+#   server-side by MODEL_ROUTE, and the two had no cross-check. This config
+#   re-collects that ENTIRE cell - all 715 samples, not only the 181 - so the
+#   replacement cell is internally homogeneous.
+#
+# WHAT IS DELIBERATELY IDENTICAL TO pub_011
+#   dataset manifest (official_dreaddit_test.json, manifest_sha256 a9ea5d55...),
+#   model id, pin_provider, pin_quantization, retry policy, circuit breaker,
+#   server block, poll cadence, request delay, and the one-shot-cot prompt
+#   bodies (verified byte-identical per agent against pub_011).
+#
+# THE ONLY INTENDED DIFFERENCES
+#   experiment_id; strategies restricted to one-shot-cot; runs: 1 with
+#   run_start: 5, so the dispatched cell_id is exactly
+#   dreaddit|google/gemma-4-31b-it|one-shot-cot|run5.
+#
+# NOTE ON prompt_set_sha256
+#   prompt_set_sha256 hashes the STRATEGIES DICT, so a one-strategy config
+#   necessarily yields a different aggregate value than a three-strategy config
+#   even when the prompt files are byte-identical. The PER-AGENT one-shot-cot
+#   hashes recorded on every attempt record are identical to pub_011's.
+#   Disclose this; do not change prompts to force the aggregate to match.
+#
+# PROVIDER VERIFICATION
+#   Collected with runner 1.1.0, whose fail-closed provider guard aborts the run
+#   if any completed upstream response reports a provider other than the pin.
+run_class: publication
+experiment_id: pub_013_dreaddit_gemma_coreweave_osc_run5
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: CoreWeave
+  pin_quantization: fp4
+  enabled: true
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: false
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- one-shot-cot
+datasets:
+- name: dreaddit
+  manifest: evaluation/publication_experiments/manifests/official_dreaddit_test.json
+runs: 1
+run_start: 5
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000
