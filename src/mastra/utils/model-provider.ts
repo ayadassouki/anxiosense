@@ -163,7 +163,7 @@ export interface UpstreamRoute {
 export const MODEL_ROUTE: Readonly<Record<string, UpstreamRoute>> = Object.freeze({
     'meta-llama/llama-4-scout':     { provider: 'DeepInfra' },                          // sole endpoint, fp8
     'mistralai/mistral-small-2603': { provider: 'Mistral'   },                          // no published quantisation
-    'google/gemma-4-31b-it':        { provider: 'DeepInfra', quantizations: ['fp4'] },  // TWO endpoints — filtered
+    'google/gemma-4-31b-it':        { provider: 'CoreWeave', quantizations: ['fp4'] },  // TWO endpoints — filtered
     'deepseek/deepseek-v4-flash':   { provider: 'DeepInfra' },                          // sole endpoint, fp4
     'microsoft/phi-4':              { provider: 'DeepInfra' },                          // sole endpoint, bf16
     'qwen/qwen3.5-27b':             { provider: 'Alibaba'   },                          // sole endpoint, fp8 (verified 2026-08-09)
