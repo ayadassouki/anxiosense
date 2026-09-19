@@ -6,5 +6,5 @@ Design contract (see claude/publication-runner-stage1-design-2026-09-03.md):
   * only infrastructure failures are retried; model behaviour is preserved as-is
   * dataset membership and ground truth are frozen before any dispatch
 """
-RUNNER_VERSION = "1.0.0"
-RECORD_SCHEMA_VERSION = "1.0.0"
+RUNNER_VERSION = "1.1.0"
+RECORD_SCHEMA_VERSION = "1.1.0"

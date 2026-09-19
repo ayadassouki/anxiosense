@@ -208,6 +208,29 @@ def load_texts(manifest: dict) -> dict[str, str]:
 
 # ── dispatch ─────────────────────────────────────────────────────────────────
 
+def provider_pin_violated(pin_provider, upstream_provider, upstream_providers_all) -> bool:
+    """True when a COMPLETED upstream response was served by a provider other than the pin.
+
+    pin_provider is PROVENANCE ONLY on the request path: client.py never transmits
+    it, and the upstream route is chosen server-side by MODEL_ROUTE in
+    src/mastra/utils/model-provider.ts. Those are two independent sources of truth
+    with no cross-check between them, which is how pub_011 accepted 181 DeepInfra
+    responses while pinned to CoreWeave. This closes the gap after the fact: the
+    response states who actually served it, and a run must not continue if that is
+    not who the config pinned.
+
+    Returns False when NO upstream call completed. SAFETY_INTERCEPT records carry
+    upstream_provider=None and upstream_providers=[], and so do transport failures;
+    both keep their existing retry and terminal behaviour untouched.
+    """
+    if not pin_provider:
+        return False
+    seen = [p for p in [upstream_provider, *(upstream_providers_all or [])] if p]
+    if not seen:
+        return False
+    return any(p != pin_provider for p in seen)
+
+
 def _attempt_record(*, cfg, frozen, dataset, manifest, sample_id, text, gt,
                     model, strategy, run, assessment_uuid, attempt_number,
                     result: TransportResult, outcome: Transport, detail) -> dict:
@@ -244,6 +267,9 @@ def _attempt_record(*, cfg, frozen, dataset, manifest, sample_id, text, gt,
         "upstream_providers_all": meta.get("upstream_providers"),
         "pin_provider": model.pin_provider,
         "model_mismatch": bool(model_actual) and normalised_actual != model.id,
+        "provider_mismatch": provider_pin_violated(
+            model.pin_provider, meta.get("upstream_provider"),
+            meta.get("upstream_providers")),
 
         "strategy": strategy,
         "strategy_actual": meta.get("strategy_used"),
@@ -318,7 +344,7 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
     halted: dict | None = None
 
     stats = {"dispatched": 0, "skipped_resume": 0, "attempts": 0,
-             "outcomes": {}, "model_mismatch": 0}
+             "outcomes": {}, "model_mismatch": 0, "provider_mismatch": 0}
 
     for d in cfg.datasets:
         manifest = manifests[d.name]
@@ -378,6 +404,15 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
                                     f"actual={rec['model_actual']}")
                                 rec["retryable"] = False
                                 outcome = Transport.INFRA_TERMINAL
+                            elif rec["provider_mismatch"]:
+                                stats["provider_mismatch"] += 1
+                                rec["outcome_class"] = Transport.INFRA_TERMINAL.value
+                                rec["outcome_detail"] = (
+                                    f"provider_mismatch pinned={model.pin_provider} "
+                                    f"actual={rec['upstream_provider']} "
+                                    f"all={rec['upstream_providers_all']}")
+                                rec["retryable"] = False
+                                outcome = Transport.INFRA_TERMINAL
 
                             # STORE THE RAW ATTEMPT BEFORE ANY PARSING OR SCORING
                             store.append_attempt(rec)
@@ -403,7 +438,7 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
                                 break
                             sleep(decision.wait_ms / 1000.0)
 
-                        if rec["model_mismatch"]:
+                        if rec["model_mismatch"] or rec["provider_mismatch"]:
                             store.close_assessment({
                                 "record_type": "assessment", "assessment_uuid": assessment_uuid,
                                 "experiment_id": cfg.experiment_id, "cell_id": cell_id,
@@ -412,12 +447,21 @@ def run_experiment(cfg: ExperimentConfig, *, transport=None, resume: bool = Fals
                                 "terminal_attempt_uuid": terminal_uuid,
                                 "final_outcome_class": final_outcome,
                                 "retry_history": history,
-                            })
+                            }, allow_supersede=superseding)
                             store.close()
+                            if rec["model_mismatch"]:
+                                raise PreflightError(
+                                    f"ABORTED: the server served {rec['model_actual']!r} when "
+                                    f"{model.id!r} was requested. Every subsequent record would be "
+                                    f"mislabelled. Fix MODEL_PROVIDER/MODEL_ID and restart Mastra."
+                                )
                             raise PreflightError(
-                                f"ABORTED: the server served {rec['model_actual']!r} when "
-                                f"{model.id!r} was requested. Every subsequent record would be "
-                                f"mislabelled. Fix MODEL_PROVIDER/MODEL_ID and restart Mastra."
+                                f"ABORTED: {model.id!r} is pinned to provider "
+                                f"{model.pin_provider!r} but this response was served by "
+                                f"{rec['upstream_provider']!r} (all: {rec['upstream_providers_all']!r}). "
+                                f"Every subsequent record would carry an unverified provider. "
+                                f"Fix MODEL_ROUTE in src/mastra/utils/model-provider.ts, restart "
+                                f"Mastra AND Express, then resume."
                             )
 
                         index_record = {
