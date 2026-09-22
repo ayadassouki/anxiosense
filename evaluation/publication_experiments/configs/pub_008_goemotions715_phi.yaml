@@ -1,0 +1,82 @@
+# BENCHMARK bench_011 - PARITY SMOKE for the GoEmotions 715-subset on Qwen.
+# NOT publication data. run_class is benchmark; no record may enter RQ1-RQ3.
+#
+# First live dispatch of the 715-subset on this machine and this model. Verifies
+# what preflight cannot reach:
+#   1. that the Mastra process loads all three prompt files at generate() time
+#      (resolvePromptsDir walks from Mastra's own cwd; a read failure falls back
+#      SILENTLY to hardcoded agent instructions);
+#   2. that the Alibaba pin holds on live traffic from this machine;
+#   3. that the served model really is Qwen 3.5 27B (model_mismatch);
+#   4. that the transferred subset CSV and manifest are byte-identical to Aya's
+#      (the frozen text_sha256 / ground_truth values are checked per record);
+#   5. that GoEmotions texts dispatch cleanly under the same 3000 ms cadence.
+#
+# Coverage: 1 dataset x 1 model x 3 strategies x 1 run. Invoke with --limit 4 =
+# 12 assessments, a few minutes, well under $0.01.
+#
+# LATENCY ACCEPTANCE - corrected criterion (see
+# claude/bench-007-latency-criterion-correction-2026-09-06.md): EVERY individual
+# attempt's latency_ms within 0.5 s of a 3000 ms multiple, AND server_runtime
+# reporting 3000 with verified true. Do NOT test the median against a 3 s
+# multiple; that form is invalid for an even-sized sample.
+#
+# Identical to pub_007_goemotions715_qwen except experiment_id, run_class and
+# runs, so it cannot touch pub_007's output directory.
+run_class: publication
+experiment_id: pub_008_goemotions715_phi
+output_root: evaluation/publication_experiments/runs
+halt_after_consecutive_infra_failures: 20
+models:
+- id: meta-llama/llama-4-scout
+  name: Llama 4 Scout
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+- id: mistralai/mistral-small-2603
+  name: Mistral Small 4
+  provider: openrouter
+  pin_provider: Mistral
+  enabled: false
+- id: google/gemma-4-31b-it
+  name: Gemma 4 31B IT
+  provider: openrouter
+  pin_provider: DeepInfra
+  pin_quantization: fp4
+  enabled: false
+- id: microsoft/phi-4
+  name: Phi-4
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: true
+- id: qwen/qwen3.5-27b
+  name: Qwen 3.5 27B
+  provider: openrouter
+  pin_provider: Alibaba
+  enabled: false
+- id: deepseek/deepseek-v4-flash
+  name: DeepSeek V4 Flash
+  provider: openrouter
+  pin_provider: DeepInfra
+  enabled: false
+strategies:
+- zero-shot
+- zero-shot-cot
+- one-shot-cot
+datasets:
+- name: goemotions
+  manifest: evaluation/publication_experiments/manifests/goemotions_715_subset_2026-09-09.json
+runs: 5
+run_start: 1
+retry:
+  max_attempts: 3
+  backoff_base_ms: 2000
+  backoff_factor: 2
+  backoff_cap_ms: 30000
+server:
+  base_url: http://localhost:3001
+  evaluate_endpoint: /api/workflow/evaluate
+  timeout_seconds: 180
+  server_poll_budget_seconds: 150
+  request_delay_seconds: 0.5
+  mastra_poll_interval_ms: 3000

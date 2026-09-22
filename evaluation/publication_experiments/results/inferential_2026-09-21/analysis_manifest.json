@@ -1,0 +1,95 @@
+{
+ "created_utc": "2026-09-21T20:17:02Z",
+ "python": "3.10.12",
+ "numpy": "2.2.6",
+ "B": 4000,
+ "P": 10000,
+ "alpha": 0.05,
+ "bootstrap_seed_strings": {
+  "dreaddit": "20260921|dreaddit|bootstrap",
+  "goemotions": "20260921|goemotions|bootstrap"
+ },
+ "permutation_seed_strings": {
+  "dreaddit": "20260922|dreaddit|permutation",
+  "goemotions": "20260922|goemotions|permutation"
+ },
+ "draw_sha256": {
+  "dreaddit": {
+   "bootstrap_indices_u16le": "5aad14ca8cbb2ccc8c358623ac81504778c3994187db6750346c7fc326edae9d",
+   "permutation_bits_le": "92a9304c0f72f5e114418e5146b6bccb9562afa4685405f04e065499660ddba4"
+  },
+  "goemotions": {
+   "bootstrap_indices_u16le": "14bbb591b3f0635b5994a5dd62d53e09a40e15d5e97a1836c5092048db3420c2",
+   "permutation_bits_le": "aaf61859c93f1f566c950a1053c7898414ede99f0c9cc93d653dc4fac77e1af7"
+  }
+ },
+ "input_sha256": {
+  "descriptive_2026-09-21/authoritative_records.jsonl": "97c8ca960e0f349dda121515fb45855e9c8787cc8a5cc35a0ce292c1d214a18a",
+  "descriptive_2026-09-21/frozen_grid_manifest.json": "fba6a4617558b64bec61cee18e2a0b63e9457a03c6a3d94cd8e1a1916527dfa8",
+  "descriptive_2026-09-21/per_run_results.csv": "6b3f374a0e76d2c8068c06cc077a2affadd1cd15ac91aab027efeb591efe86ec",
+  "descriptive_2026-09-21/aggregate_results.csv": "4242c3634c8939714eb0b7ff25b446783f1747add91c36040a95bf02f1646768"
+ },
+ "max_abs_diff_observed_vs_frozen": 2.220446049250313e-16,
+ "families": {
+  "RQ1-primary-dreaddit": 60,
+  "RQ1-mcnemar-dreaddit": 30,
+  "RQ2-primary-dreaddit": 15,
+  "RQ2-mcnemar-dreaddit": 15,
+  "RQ1-primary-goemotions": 60,
+  "RQ1-mcnemar-goemotions": 30,
+  "RQ2-primary-goemotions": 15,
+  "RQ2-mcnemar-goemotions": 15
+ },
+ "items": {
+  "dreaddit": {
+   "n_attributable": 699,
+   "items_sha256": "50042e17fdb030a1444a7ae47c0259909a0191a15c6979fed50576a8a2a4f636",
+   "safety_excluded": [
+    "dread_1166",
+    "dread_1264",
+    "dread_13106",
+    "dread_1344",
+    "dread_1375",
+    "dread_15960",
+    "dread_16792",
+    "dread_1796",
+    "dread_1976",
+    "dread_29555",
+    "dread_3879",
+    "dread_43574",
+    "dread_48013",
+    "dread_54649",
+    "dread_657",
+    "dread_888"
+   ],
+   "majority_class": 1
+  },
+  "goemotions": {
+   "n_attributable": 622,
+   "items_sha256": "0fe806ef9e4bbfebf0d6cdac5cc42b026d89aa7f493af0119f6ce6a5ae734c57",
+   "safety_excluded": [
+    "ge_eelf9bs"
+   ],
+   "majority_class": "non_distress"
+  }
+ },
+ "notes": [
+  "goemotions: 14 of 4000 bootstrap replicates contain no 'anxiety' item; per MetricPolicy 1.0.0 its recall/F1 = 0 in those replicates (applied verbatim)."
+ ],
+ "code_sha256": {
+  "build_report.py": "8904c5aceb08b59e1aeb3ff2db34269702d02092d3e782fb71afe1f55eff24b7",
+  "make_tables_md.py": "4a25a5424d28a6241fb127bae4c841956e520e687e7c4aadc156f3880cfe453d",
+  "run_inferential.py": "2a21ae7c30b91a620e8353b7735f0f4f5ea1946ab0dad69ce34521ee75f94ee0"
+ },
+ "output_sha256": {
+  "configuration_level_ci.csv": "6db90bc76ae23008e0d9a64888b6470dcdf105f562d340c46c82e37bd809b9ac",
+  "rq1_model_pairs_conditional_accuracy_ci.csv": "a10aeb208781b759b8f20ae0cc69db4e6446c7aa734dd5030c65f0e8cbd896b0",
+  "rq1_model_pairs_mcnemar.csv": "849f219b0e3e3afe0ec6faa429f017b84b0d76b7d3977d5f85f4055fb2ce379a",
+  "rq1_model_pairs_primary.csv": "9c32afaf2626f77430d3ce8dae006571fcab89b34dddb1d76de8ae49deb8c1a5",
+  "rq2_configuration_vs_baseline.csv": "2f2b96aeebc52ff80eb12bbb1e7821b9d3841b8c74526a68d35a909672ce2206",
+  "bootstrap_dreaddit.csv.gz": "6ae887056f1bd9e593cbb783a23565d9dcb0d1ba88b9429605f5f5c73ce79550",
+  "bootstrap_goemotions.csv.gz": "e8e585dcf3af648f95170b84a03924fd1dff0c81ddc616e1bb86d3aabc30cc1c",
+  "permutation_dreaddit.csv.gz": "9902a275e00e162f93b21d517c3587fe479a25ea67f35476a7f3463becf71e5d",
+  "permutation_goemotions.csv.gz": "62947e3e01cd92b18583f86eea861b92788dc4d9aa1758f13d9a576026945b27"
+ }
+}

@@ -1,0 +1,4684 @@
+{
+  "cells": {
+    "dreaddit|google/gemma-4-31b-it|one-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "e040a36a3463b59f556e7bba994b0b3ba9372b4acd7cfb4e8f81db708db1acdb",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|one-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "497d32546b09c7b72ae17cd4db01676e945fed94dff56a47ff2d41d4224a637f",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|one-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "f91b1d2646f5e596389943bb81374211d4ab68798b0af46e911621fd55694b07",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|one-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "f59d543f9d1d7405f5432e020a760135d6904de2374bf6df485250269cba4e71",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|one-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "ac7a59afe81cb2115dd1491b642811242600a6cda868dcb5080e1e1e70d6ffb7",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_013_dreaddit_gemma_coreweave_osc_run5"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "f573e4c417d9a4a4b435c5e3c3e4591ae656ccede63878e0ccf8b0f32da7543c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "a162fee78e0e810427968f7ce547a89b8cb726cbc4a685888e49682392be96ad",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "98ac7aef7c473a223c82ceb0e7dbfab3b6c26fcff2e03d4bbdc300bdc34ce254",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "48cfdaae3c0e34907181b43431a4189d98f13b79d4aa7342b49752e59e986348",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "0de215cea8766844dc7e361f85a055b8f27d9b972d2cc97a39578504dcbc48b4",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "279ee90d69f8bb358fc664e64f3f373283b6ad63f8b7a24f467ca43aefb86613",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "68246d0d0369cb47cc027aa1fac6eed4cee6470a6a703d3910604cf6703765e2",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "bda89fa162a48ec1cad78e5d7c99686a34d2ae2fc7caefe9a2d26a8a5edf175a",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "205ba7b09e7af1b7944288be7b7aa48f0719c56f6a642c22531841f31916953d",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|google/gemma-4-31b-it|zero-shot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "CoreWeave": 699
+      },
+      "records_sha256": "dd5606de2f3d91cd6aebfbfdcc68d4cb4be8a6314a2a5ceb645b276aadbdfc15",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_011_dreaddit_gemma_coreweave"
+    },
+    "dreaddit|meta-llama/llama-4-scout|one-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "43d98c18bcbd180bdd3b8a87c8eff7c17109fa947866ff2a4ac94df87f102304",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|one-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "a89b1a2fb5cb7682e5633b9167da42e432535345964cc5625211ea3056c7e812",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|one-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "333d3401cb1a7e5e857a151d2128f767aa4248eb09179d4429c5e8dddd48ba4c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|one-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "72602767c218b26d0d6ebfac777eefda7eeb1f1e8528c0f7a4b38f133b6346df",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|one-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "732836094807a3f603f597d9d9754892f18e98fd941b11df0f523d6558942c6c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 686,
+        "safety_intercept": 16,
+        "unparseable": 13
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "ff7b1e4297a35e83cf128d09e4b10f1e00486c3116d43cb5811c405570b1f2be",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 690,
+        "safety_intercept": 16,
+        "unparseable": 9
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "fdf2b016c9b761fa05e9daffaaef18e43b9ca0e80180b4e9f8daad2ea319135c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 689,
+        "safety_intercept": 16,
+        "unparseable": 10
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "36a4d24b9da90863e9c7234b27da1f70d82a3e76ad18e66ffe93103522aa4e7b",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 689,
+        "safety_intercept": 16,
+        "unparseable": 10
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "85a12bb9c3daf58ab3aea978c06fe2fda9a23fefd369d50947591aa6e25d4485",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 689,
+        "safety_intercept": 16,
+        "unparseable": 10
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "fa802c85012eb62dc64e8aec3479c9177ad7c2d28b35c331fbcd3621ed04c0f0",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 680,
+        "safety_intercept": 16,
+        "unparseable": 19
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "837cdc3eaddd35bd127282d281b7f01fb8c6ba9985204e065b5b6dbad0b29e02",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 677,
+        "safety_intercept": 16,
+        "unparseable": 22
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "ad18a8c6df2967f1e3d7ce22b58b3f807396fe4e5ca702039a35cab6646d4058",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 672,
+        "safety_intercept": 16,
+        "unparseable": 27
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "3c05e21e049341cf4e0f29405852e0e72a7e458a806be4e0737092e662095b24",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 680,
+        "safety_intercept": 16,
+        "unparseable": 19
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "a2d729699fb406e0dc5d98a39130a50a403d5eff7863dab43ba0858cafd852b8",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|meta-llama/llama-4-scout|zero-shot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 680,
+        "safety_intercept": 16,
+        "unparseable": 19
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "c36f8dd7346a4472d620b4dc366cc6acc82bbce9c5e64e4cf2955999780e1889",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_003_dreaddit_llama"
+    },
+    "dreaddit|microsoft/phi-4|one-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 695,
+        "safety_intercept": 16,
+        "unparseable": 4
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "e17534520d8df9462de611907ca48a93ec5944ef70d413e044b01dc5210a80d8",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|one-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 695,
+        "safety_intercept": 16,
+        "unparseable": 4
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "40ab75331ae38738d9f4cc07bae81cad7a4e52d6b26ff3b790599767a2544e15",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|one-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "b64b8bed7b691f84a84e8b6794a9ee56c4802452bc59e7dde5add68773468f65",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|one-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 696,
+        "safety_intercept": 16,
+        "unparseable": 3
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "068aabaa8129be4e1c6d44d2906f7071e87d8198e703ece88ee13773fe589cf9",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|one-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 696,
+        "safety_intercept": 16,
+        "unparseable": 3
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "7029ccb9307d61a4ded08583bb180927bd51b814f66f8a657a2b707a5bd3917c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 691,
+        "safety_intercept": 16,
+        "unparseable": 8
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "95c6fb18f5450dce230bae24f2026fab6940ac0dca37a5e055e8420a6f4dabb4",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 695,
+        "safety_intercept": 16,
+        "unparseable": 4
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "0dce8cd6d0a983e4398f61a563763934fe0df4c8bfb12144203d9e6dc3854da0",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 695,
+        "safety_intercept": 16,
+        "unparseable": 4
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "4381aad83e6334512f20985fd6348c1047d0c9cf06970c1b07bd6d9bda273031",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 693,
+        "safety_intercept": 16,
+        "unparseable": 6
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "610d28d201cda642cee07762d727aa2635040a8e29743e089aaef1db77caf820",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 692,
+        "safety_intercept": 16,
+        "unparseable": 7
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "adb67ce4a4d35826cc92ba00c49148f88df84aef6b0d85c7e0d097d126003673",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 679,
+        "safety_intercept": 16,
+        "unparseable": 20
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "5f6c984edf57d481c1ca8654fc2abef210e00e68b7553862ad93e1e23f9eb20f",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 665,
+        "safety_intercept": 16,
+        "unparseable": 34
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "86ce1ee3c1c02a6e74e3e205c39c92b8195bc3b7f53012079b80dc8d5fa3842c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 682,
+        "safety_intercept": 16,
+        "unparseable": 17
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "66d490dd7d42c21c2d5877e2c1efc1ce1eae06f9014f372f17db5b7f8e094bf6",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 682,
+        "safety_intercept": 16,
+        "unparseable": 17
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "21e393d66540f7775fc42343a2b91c42b6053d4699f03289c2f467a884b1266e",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|microsoft/phi-4|zero-shot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 681,
+        "safety_intercept": 16,
+        "unparseable": 18
+      },
+      "providers_ok": {
+        "DeepInfra": 699
+      },
+      "records_sha256": "da7f8387356e6a109d400ab02602fbc3c582a7736c00403a30c490b7d98065b2",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_005_dreaddit_phi"
+    },
+    "dreaddit|mistralai/mistral-small-2603|one-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "5c365bc41c767f5e2a476df7162039af677af1879098d33c9b275faf4fa32eea",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|one-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "7057645fe38dd22a3f29feea9e25bb5c49eb516e6532c083b06f17c3508f1a49",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|one-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "ee700ee2b4bf8aa449d9d8c0825dfdd5f79321045f7ecb3e3eff543e7ac87b95",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|one-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "7c2ba2a2c0880461ca7f7aafa99e75dc3899effbd2ef52e690493288e24c98f3",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|one-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "787cec7e7e2d5d03f4cd912a794fd4bc91e47d401a0e92d5045a902436ea24ce",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "271f18c5c339762773b51bd773e879660cd3dfeedbe335776edac91ee00386dc",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "c11678a08b066633538212e12a5b8862f96745b027829089c38dec0caccd237e",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "3eea1f7d5c7e5940971cb9ea519c837fd01692cfa03947be429ea2af0cd13fe7",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "ff944dc69aa5cfef1d48173b6d0ba76e90cbc4addc9e30d2917de690dc8d8c7c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "7f25a4b4e4601d8f50b83332f805cfdf5fd56db7475a6b69c36c19a6aebb45de",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "28bfef98ad4bbcb930ffc6e115097d3ab6a5fe7d4cba40b308353bdb241d4878",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "39bb31b9671d3cc1142519784a4512e4db90b7a1bb934c26e2646bbec81f349c",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "46c7c70f478c4fbd9b576a096c683d7a751a5b785f34f1a901e600ce7392eda6",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "aa2d38530c75f6e095b2a71b4a4d27533a7beac9b996b2f1327cab8d0a03b21e",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|mistralai/mistral-small-2603|zero-shot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Mistral": 699
+      },
+      "records_sha256": "ca8f41e71388379bec1e2d465f7dcf7f0a80f6483e5d5ce56298b920f7956602",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_002_dreaddit_mistral"
+    },
+    "dreaddit|qwen/qwen3.5-27b|one-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "57c3c67729ff237bcb8b16ade91e995bd067d20fb2dbf8f3a7f41496cac73fb1",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|one-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "16ea10bffc9bc0bcd05baa59ef4e00d4822f2de4d7b2d138fcd7e8f939b4c581",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|one-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "63a2301bc856f403efcc1f78b75af6b162aa2516cc43e5de170e88404702042d",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|one-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "2366dc7a0122ee3e2a3aea0b30f017856b52d1e8f8aa7d75bcc30851cadca6ee",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|one-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "43e772946f66bf3c3673dbafb905bcd4b71e99d44a71ba983c051392bb98dcd4",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot-cot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 645,
+        "safety_intercept": 16,
+        "unparseable": 54
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "884ce2c12b2884e1be6617159a903568caef040c953b94b2a5b3a4b2b12ee3bd",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot-cot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 644,
+        "safety_intercept": 16,
+        "unparseable": 55
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "d8195ab22bdb19a288c11f5708543d09a33e0af909907eb3090dbd939efe61cd",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot-cot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 649,
+        "safety_intercept": 16,
+        "unparseable": 50
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "34a05ee700258f34ff41e1186047d14ca60a0aadd5e1647f1af90cf6d6a5e999",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot-cot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 646,
+        "safety_intercept": 16,
+        "unparseable": 53
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "655feb4e4abd1bf436d66ce76c9a7d7c4a018737ac3dd6275663c1f661c27dab",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot-cot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 642,
+        "safety_intercept": 16,
+        "unparseable": 57
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "3fb8e22b97be4daf09a830c81a3c98c503565f3a8bea240e5682bc7e891e2e9b",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot|run1": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "2b449a6cc6c85f5547807cbfd6036214a7a182f6b6c3babb3a5373a639a5db72",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot|run2": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "d2c673aea375417145887e6072105166d1d959cae9d9d66aa69c475b84b211d4",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot|run3": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "92a3ff44a88b1c0ce6a5e24678e2ea5da63f25dd43f57c44ff8aa8b73bdaf588",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot|run4": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 698,
+        "safety_intercept": 16,
+        "unparseable": 1
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "d49f92d1d2dea766cf2466074f363716ff0f2d4b796eeb0377ef739fd09923ff",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "dreaddit|qwen/qwen3.5-27b|zero-shot|run5": {
+      "expected_n": 715,
+      "final_outcomes": {
+        "OK": 699,
+        "SAFETY_INTERCEPT": 16
+      },
+      "n": 715,
+      "parse_status": {
+        "ok": 697,
+        "safety_intercept": 16,
+        "unparseable": 2
+      },
+      "providers_ok": {
+        "Alibaba": 699
+      },
+      "records_sha256": "d0cf227f9612444282faf40d6aa176f3fe895b75100de816be7d7ae137f132be",
+      "safety_ids": [
+        "dread_1166",
+        "dread_1264",
+        "dread_13106",
+        "dread_1344",
+        "dread_1375",
+        "dread_15960",
+        "dread_16792",
+        "dread_1796",
+        "dread_1976",
+        "dread_29555",
+        "dread_3879",
+        "dread_43574",
+        "dread_48013",
+        "dread_54649",
+        "dread_657",
+        "dread_888"
+      ],
+      "source_run": "pub_001_dreaddit_qwen"
+    },
+    "goemotions|google/gemma-4-31b-it|one-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 70,
+        "ok_empty_list": 552,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "c708a61d66da06a34b0816742547d20985bfd3214adb18bc0a83ff9cada5a698",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|one-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 71,
+        "ok_empty_list": 551,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "9fea6b73caf618a730000e8f0e8c274051e5799fb62f924843694be52bed3127",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|one-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 72,
+        "ok_empty_list": 549,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "9ab885237bfd6e72dd109735091666cdff94571870655eed8867ef8978946245",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|one-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 71,
+        "ok_empty_list": 549,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "443a69a346827016df7237a33ef3ac3bdefc0aa7ad4acdd4e6cfbe4a15c9ffe5",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|one-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 4,
+        "ok": 70,
+        "ok_empty_list": 548,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "f91b16cde2788cdce47696ecf00e334f4fce82106ca16e2ecb433ec4910ad90c",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 62,
+        "ok_empty_list": 560,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "78ad7e5d080eab53dfb663721426ad5915f539b439833bd4ded3073928dcfaba",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 61,
+        "ok_empty_list": 561,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "bf091fa9cc3718576e9a467719e488786e1a67e058ed62de3f9dd1a2f75d945c",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 63,
+        "ok_empty_list": 559,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "50ce5c2903e1128ed634c9de90d51a898cdc7988ff12ff6f8a11c67079dfce2d",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 63,
+        "ok_empty_list": 559,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "9bbce0e76be65d339e90bb9a3e2969821a6bc354c8f67ae33707ecdf58949169",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 60,
+        "ok_empty_list": 562,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "6e58073d4861e6fe81b9a63a3d16ec44a91570ed2e73f4180bb8036fe2306a40",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 68,
+        "ok_empty_list": 554,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "505a1e7522ba7bb50234ba5153781435949e458cfdc6f7349607c53a7cf5cde2",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 70,
+        "ok_empty_list": 552,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "5f4d9589b2bbbd8386782bbb259bba3776545a6fda559c878336b08c29640db8",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 69,
+        "ok_empty_list": 553,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "8faeb787f22013f8b795960145795fabf5e7878c03ad3d14f1b81f8a7638adb8",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 68,
+        "ok_empty_list": 554,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "77a12033e511b64517e048c2bbb146c3ec6ad92c4e409c34253a1dba9248f282",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|google/gemma-4-31b-it|zero-shot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 68,
+        "ok_empty_list": 554,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "CoreWeave": 622
+      },
+      "records_sha256": "90e4689cdcd80f0fe54725f44477b3607456b9ba61357dde02183e94172e1a0f",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_012_goemotions715_gemma_coreweave"
+    },
+    "goemotions|meta-llama/llama-4-scout|one-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 120,
+        "ok_empty_list": 475,
+        "out_of_vocabulary": 27,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "759add24942a66b1ab58e38b90c8a450a9a2f203df9a9110fcd5334ea2019314",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|one-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 112,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 27,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "e283aab39fd987a156a68a011c3d84bfddc89c0cfcad65b1d2303f57d4a85545",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|one-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 116,
+        "ok_empty_list": 476,
+        "out_of_vocabulary": 30,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "8efef4640979a326eae03e8f1865daa11901186b562f8c0bec6a089df51f8679",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|one-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 121,
+        "ok_empty_list": 472,
+        "out_of_vocabulary": 29,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "1d64b8b1dba5f6f122c45affd92f93e427dca1d94b93b5c1f20e643d9a620fec",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|one-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 120,
+        "ok_empty_list": 472,
+        "out_of_vocabulary": 30,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "ca951b07e28760d998e6bafe9cb490f4b3afcf38cbbfdada9174e8799b36b050",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 160,
+        "ok_empty_list": 423,
+        "out_of_vocabulary": 38,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "3a643f415df2acdbc0539b83db6c9ffe3223c5d51360de384eb51e3c4eb2ee8e",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 4,
+        "ok": 160,
+        "ok_empty_list": 424,
+        "out_of_vocabulary": 34,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "987b586025fd5b82bd262e618ad972aea9bacaba8d61944563aac554b3442ad3",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 1,
+        "fail_unparseable": 5,
+        "ok": 159,
+        "ok_empty_list": 423,
+        "out_of_vocabulary": 34,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "304a7f9d38ea23b5fc6a53b0c8c909ddb134e06e7791bb5e6036866290448c54",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 1,
+        "fail_unparseable": 3,
+        "ok": 169,
+        "ok_empty_list": 414,
+        "out_of_vocabulary": 35,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "1a0976145443a586a3a1a0f1680a6b76b2803d374e14806927290d6eecb77dcd",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 3,
+        "ok": 171,
+        "ok_empty_list": 414,
+        "out_of_vocabulary": 34,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "a39a5a03694ded12f8ff3a7f9b29f9eb93dff515880abd1ab4821caaa5f6513d",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 173,
+        "ok_empty_list": 429,
+        "out_of_vocabulary": 20,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "715609b1e75a880e70e27ad7f2fd029cfbbb60c52e21b0fef377ffcc1b2a0743",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 4,
+        "ok": 170,
+        "ok_empty_list": 430,
+        "out_of_vocabulary": 18,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "3e14ce6aeef173faa2c627f7b8be9ed427b6dc197283502902b26d5e585aa369",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 3,
+        "ok": 167,
+        "ok_empty_list": 432,
+        "out_of_vocabulary": 20,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "35853cc7fba5d85932c188d7ca887e62f16e3a9ec4e1c78406b1d56316fb66bc",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 171,
+        "ok_empty_list": 429,
+        "out_of_vocabulary": 20,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "4222d95f7a7bbbe8510399bdcfd96d4418aa096cfeb3047d337def161ab9c862",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|meta-llama/llama-4-scout|zero-shot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 4,
+        "ok": 171,
+        "ok_empty_list": 425,
+        "out_of_vocabulary": 22,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "82fa16d579999371b90f3e59302f1c5706c4b945c90282cd1ae69d7cf060fade",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_009_goemotions715_llama"
+    },
+    "goemotions|microsoft/phi-4|one-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 20,
+        "fail_unparseable": 20,
+        "ok": 46,
+        "ok_empty_list": 525,
+        "out_of_vocabulary": 11,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "32457bc5c3f1398447921ee771952e4b7af59abc182659b6cfa9ca124df2634e",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|one-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 19,
+        "fail_unparseable": 33,
+        "ok": 50,
+        "ok_empty_list": 510,
+        "out_of_vocabulary": 10,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "0ed3385982e174fa033d5aa4ac3aee50af5494fe236a48bf95cea752f454dc75",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|one-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 15,
+        "fail_unparseable": 27,
+        "ok": 42,
+        "ok_empty_list": 531,
+        "out_of_vocabulary": 7,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "e0aed26f0a26e797126d73451ca73546dbea71e137e202b9f9724dc1f6387067",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|one-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 21,
+        "fail_unparseable": 32,
+        "ok": 43,
+        "ok_empty_list": 513,
+        "out_of_vocabulary": 13,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "f6b93cb75d47a8c06d725839423e490e30b7f0ec7b9457bdcceda5d6ebe2fe09",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|one-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 32,
+        "fail_unparseable": 229,
+        "ok": 60,
+        "ok_empty_list": 291,
+        "out_of_vocabulary": 10,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "514fd7bec8bf2040f3aed79a8cb87597417d9cff93123effd98a4c0b5a210ce0",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 3,
+        "fail_unparseable": 1,
+        "ok": 69,
+        "ok_empty_list": 524,
+        "out_of_vocabulary": 25,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "b43f37b74897851ac96ff63d091de2fed1d3375a2657aaf7b6c934cab4799f22",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 3,
+        "fail_unparseable": 3,
+        "ok": 57,
+        "ok_empty_list": 517,
+        "out_of_vocabulary": 42,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "1cb24c434c8ff3f2504eeea50027f5c97efd50f6ca80894d591fc411a8487dfe",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 1,
+        "fail_unparseable": 4,
+        "ok": 64,
+        "ok_empty_list": 515,
+        "out_of_vocabulary": 38,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "7cc0b57d1b8c9dd42902ed3ca53b8ac5e34a6f7eb98f1c54944cdca78d934538",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 4,
+        "fail_unparseable": 4,
+        "ok": 58,
+        "ok_empty_list": 529,
+        "out_of_vocabulary": 27,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "d68947e0a29e4a39cad111c4a2e3edc0d94a4882fafa1e575e254980014c7514",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 1,
+        "ok": 60,
+        "ok_empty_list": 534,
+        "out_of_vocabulary": 27,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "bc65ab737545b5e29b180f13ad3a26e060a4f8067b6b14739d34026b37a13ad9",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 11,
+        "fail_unparseable": 12,
+        "ok": 75,
+        "ok_empty_list": 496,
+        "out_of_vocabulary": 28,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "a8b3775d8824000ef9bf8624617f88187545251ff20e056855a062c15d88036d",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 15,
+        "fail_unparseable": 4,
+        "ok": 76,
+        "ok_empty_list": 509,
+        "out_of_vocabulary": 18,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "a0ef646daf9d55f7d67a35afc3e99c06b86cb9cbd9213863011763141a73746c",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 12,
+        "fail_unparseable": 7,
+        "ok": 63,
+        "ok_empty_list": 516,
+        "out_of_vocabulary": 24,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "2e66201814bf6b21f32f1e45a8366fdc860f50375fe001e141718b3f15a40d18",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 2,
+        "fail_unparseable": 11,
+        "ok": 75,
+        "ok_empty_list": 520,
+        "out_of_vocabulary": 14,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "c7f4c9d1e14e334e8db12ceddafaa7f2afac7c3ba6e230bed4ac9d9cb5720261",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|microsoft/phi-4|zero-shot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_truncated": 8,
+        "fail_unparseable": 5,
+        "ok": 68,
+        "ok_empty_list": 521,
+        "out_of_vocabulary": 20,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "DeepInfra": 622
+      },
+      "records_sha256": "0d33b353b85c777d2c7b6c2bc21f32856350627b171154bbe7aa1ab72cc1d9bf",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_008_goemotions715_phi"
+    },
+    "goemotions|mistralai/mistral-small-2603|one-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 123,
+        "ok_empty_list": 496,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "2e449e3e5ab838fa8bcad5c6fe718ed08d533b88d77e0dfef51d5653214b0eec",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|one-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 126,
+        "ok_empty_list": 492,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "c54c58367e15ed2e6b145bf33c6e5ffad708103a20a6b25c5c4267ce577730cf",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|one-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 123,
+        "ok_empty_list": 497,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "20689041e8f990fcec8f88a7741e1baf35d9f4bde5bddec2b1c811246f887d6c",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|one-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 123,
+        "ok_empty_list": 498,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "33b63ffc75a30831540082579b4b1a91d7596674aacf49afba9c1daa12e5bdd3",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|one-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 125,
+        "ok_empty_list": 495,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "a9e990eb2910fc9d06c10db38cc910fd15a154b790cff7d5ecaa9db300ad0709",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 169,
+        "ok_empty_list": 449,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "3c01d9e4d3003decba8f4f0f50d1d780832f564568d9b1a2944271e36b3ab5b8",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 3,
+        "ok": 170,
+        "ok_empty_list": 447,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "0de757ec40fe7f7076f693027d59cff4119fade1fb0ae31cdc0e272698829d80",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 170,
+        "ok_empty_list": 449,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "ac0f7619c7acd063266b12dfcaf992f89a0e524dbe123786bc0d99485d5bbad7",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 166,
+        "ok_empty_list": 452,
+        "out_of_vocabulary": 3,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "d3370d85ed871f48d9811fbfe9e19e3c6002b1584e3f8986957cdfeab175199a",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 164,
+        "ok_empty_list": 455,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "0d02afca5ded490de5ebde102f2f172790cc23b6b9f15f95d45ae3aed4c4795c",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 151,
+        "ok_empty_list": 470,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "561966111e7cce0ecd31da4871fa1ede19de77ca4d1b9b78d56c66705d07a8e7",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 1,
+        "ok": 149,
+        "ok_empty_list": 471,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "34dee22b8ed64ed514a7e9c454add2d9f414da70e533da2cb13c32154adf8aec",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 4,
+        "ok": 144,
+        "ok_empty_list": 472,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "143f19c9850f807456ff2acaef141a30321caf2a3da2452301fdc29a7cb0894b",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 2,
+        "ok": 139,
+        "ok_empty_list": 480,
+        "out_of_vocabulary": 1,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "2aee6c769b4bbc675205f79989cf31eefaeb5e8d1f7f7f5289ed9b0dd5b2bba1",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|mistralai/mistral-small-2603|zero-shot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "fail_unparseable": 3,
+        "ok": 142,
+        "ok_empty_list": 475,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Mistral": 622
+      },
+      "records_sha256": "ed4b9a947c565e7a775b9642e8cc07527e765870849bbc3f002cd3099e8c621f",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_006_goemotions715_mistral"
+    },
+    "goemotions|qwen/qwen3.5-27b|one-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 137,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "ca717edbee9025b181fc1e13a149e183f1da14b1ce6becede1d2a3a15f91a37a",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|one-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 137,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "5caf32b3d2890cc3c7c2641a0c5bfeb7b9c521c0d0a35c5631d53a9dbf6c1104",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|one-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 137,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "c2a3b5d2558e1739d354ea5e2c3a99c3369d61a29674438363f02f9b50bdbe20",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|one-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 137,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "969a2a49e69b850cf1e85b178b21ee16ff48f1471dfa4eec94c22a308bff12a3",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|one-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 137,
+        "ok_empty_list": 483,
+        "out_of_vocabulary": 2,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "fce5528165b4ee590c4ca13c9286db4115988151c4f6729d2fdff087dfab457b",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot-cot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 109,
+        "ok_empty_list": 513,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "12965262f7e30d65d57eb1424c74e37168467546896d36e9a8079a96c9830d67",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot-cot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 109,
+        "ok_empty_list": 513,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "1be315667f99a60111e45ab39ac94685da9dc0e884fe5ad2807bba16eb7b1209",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot-cot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 109,
+        "ok_empty_list": 513,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "df64db3f6e10bae13ef69dfcbcff33e8ff4f7b6d04d35fbd5be190a47bf8fcea",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot-cot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 108,
+        "ok_empty_list": 514,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "ac8130b0504d1e936bf4970ab9dba05baa948707217768293bc0a267e1ba5512",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot-cot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 112,
+        "ok_empty_list": 510,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "ddcec32fab7b2430cd9c90b396b4d1ff22c1032462c4fa87599806504197a6fe",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot|run1": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 108,
+        "ok_empty_list": 514,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "679736cd3647d71ad3e44bbea82e6a2463aedef79fae336968d65650ce968e58",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot|run2": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 109,
+        "ok_empty_list": 513,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "3e9a9179eadd0bb0cbcf2811e993635743c866019a29f02c9c72762d1c4fc713",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot|run3": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 108,
+        "ok_empty_list": 514,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "678c80c7106ee65f1d70f2900edd51d4a198b32c1e5920dab7a65f445340f9e3",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot|run4": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 108,
+        "ok_empty_list": 514,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "1b8e160067a9b5d9e2b56acebb7891de8dfc39f6f921149e11a0b2aad946ac60",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    },
+    "goemotions|qwen/qwen3.5-27b|zero-shot|run5": {
+      "expected_n": 623,
+      "final_outcomes": {
+        "OK": 622,
+        "SAFETY_INTERCEPT": 1
+      },
+      "n": 623,
+      "parse_status": {
+        "ok": 107,
+        "ok_empty_list": 515,
+        "safety_intercept": 1
+      },
+      "providers_ok": {
+        "Alibaba": 622
+      },
+      "records_sha256": "5fd1ddb3c839e0edd8a8ce8f4c3afc62e92299cd3a2b8218ee871194dca55978",
+      "safety_ids": [
+        "ge_eelf9bs"
+      ],
+      "source_run": "pub_007_goemotions715_qwen"
+    }
+  },
+  "composition_rule": {
+    "dreaddit|google/gemma-4-31b-it": [
+      {
+        "rule": {
+          "exclude_cells": [
+            "dreaddit|google/gemma-4-31b-it|one-shot-cot|run5"
+          ]
+        },
+        "source_run": "pub_011_dreaddit_gemma_coreweave"
+      },
+      {
+        "rule": {
+          "include_cells": [
+            "dreaddit|google/gemma-4-31b-it|one-shot-cot|run5"
+          ]
+        },
+        "source_run": "pub_013_dreaddit_gemma_coreweave_osc_run5"
+      }
+    ],
+    "dreaddit|meta-llama/llama-4-scout": [
+      {
+        "rule": null,
+        "source_run": "pub_003_dreaddit_llama"
+      }
+    ],
+    "dreaddit|microsoft/phi-4": [
+      {
+        "rule": null,
+        "source_run": "pub_005_dreaddit_phi"
+      }
+    ],
+    "dreaddit|mistralai/mistral-small-2603": [
+      {
+        "rule": null,
+        "source_run": "pub_002_dreaddit_mistral"
+      }
+    ],
+    "dreaddit|qwen/qwen3.5-27b": [
+      {
+        "rule": null,
+        "source_run": "pub_001_dreaddit_qwen"
+      }
+    ],
+    "goemotions|google/gemma-4-31b-it": [
+      {
+        "rule": null,
+        "source_run": "pub_012_goemotions715_gemma_coreweave"
+      }
+    ],
+    "goemotions|meta-llama/llama-4-scout": [
+      {
+        "rule": null,
+        "source_run": "pub_009_goemotions715_llama"
+      }
+    ],
+    "goemotions|microsoft/phi-4": [
+      {
+        "rule": null,
+        "source_run": "pub_008_goemotions715_phi"
+      }
+    ],
+    "goemotions|mistralai/mistral-small-2603": [
+      {
+        "rule": null,
+        "source_run": "pub_006_goemotions715_mistral"
+      }
+    ],
+    "goemotions|qwen/qwen3.5-27b": [
+      {
+        "rule": null,
+        "source_run": "pub_007_goemotions715_qwen"
+      }
+    ]
+  },
+  "frozen_utc": "2026-09-21T14:51:04.780606+00:00",
+  "gemma_dreaddit_note": "pub_011 supplies 14 cells; its cell dreaddit|google/gemma-4-31b-it|one-shot-cot|run5 is EXCLUDED and replaced by all 715 records of pub_013. pub_011 raw data untouched.",
+  "manifests": {
+    "dreaddit": {
+      "file": "official_dreaddit_test.json",
+      "file_sha256": "71731b47547efbfdf3f3703643180d79307c5e73015f31c31c7bc62a2e92204c",
+      "majority_baseline": 0.516084,
+      "manifest_sha256": "a9ea5d554ff1b14a8853ef26a2dfccf563e85a6f027d6ad68cb01a7f3ba8e56b",
+      "n_scorable": 715
+    },
+    "goemotions": {
+      "file": "goemotions_715_subset_2026-09-09.json",
+      "file_sha256": "dacab2c4db7fbbfccc26c7f969aca078c997a487fc6e679e9cc262a0ce21ed56",
+      "majority_baseline": 0.781701,
+      "manifest_sha256": "05d08ff5b4e18b7ac8e8a4148da41943251b25108751fcf0406d52594067267f",
+      "n_scorable": 623
+    }
+  },
+  "metric_policy_version": "1.0.0",
+  "parser_version": "1.0.0",
+  "purpose": "Authoritative 150-cell publication grid (descriptive scoring input)",
+  "safety_intercept_policy": "SAFETY_INTERCEPT terminal records are kept in the grid, reported per cell, and excluded from model attribution by MetricPolicy.exclude_safety_intercept_from_model_attribution=True.",
+  "safety_set_identical_across_cells": {
+    "dreaddit": true,
+    "goemotions": true
+  },
+  "sources": {
+    "pub_001_dreaddit_qwen": {
+      "attempt_lines": 10726,
+      "experiment_json_sha256": "e138e406258fb0178f4bb3d8fed2743f1802d566b42c09d9d2e2db678c32188b",
+      "final_assessments": 10725,
+      "index_lines": 10725,
+      "parse_status_counts": {
+        "ok": 10205,
+        "safety_intercept": 240,
+        "unparseable": 280
+      },
+      "parsed_output_sha256": "2d869b57c13650dcd990c7d28229dc4c4b4531525b3667f88c3a4d6ee9ad874f",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "9ae3a57fdf617f71223afba5cc4e0f5ec97db513df008661020781d968b627ac",
+      "raw_index_sha256": "c7acc64f9002c2973d38c7baf88d32a0fcb1c2eeae05f56e5af9ac8b530db5e7",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_001_dreaddit_qwen",
+      "source_run": "pub_001_dreaddit_qwen",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 10725
+    },
+    "pub_002_dreaddit_mistral": {
+      "attempt_lines": 10728,
+      "experiment_json_sha256": "d7f1b17951e2e4b3917930b92d47b6d5506bdee48341dc9b341bd2692ee2ac26",
+      "final_assessments": 10725,
+      "index_lines": 10725,
+      "parse_status_counts": {
+        "ok": 10483,
+        "safety_intercept": 240,
+        "unparseable": 2
+      },
+      "parsed_output_sha256": "0c7f584aa5f2046b9cbb3c2300ba7fb708688a8bd17d3067fab7fe5ad9e07f80",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "bc69fccdbe04f73306cba8c2d52ea556382b581a8129b9f46379240a3cc833dc",
+      "raw_index_sha256": "410bb67c559f5ab950aabab0bfc83edfdb230293858dbe46ff5c749914693618",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_002_dreaddit_mistral",
+      "source_run": "pub_002_dreaddit_mistral",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 10725
+    },
+    "pub_003_dreaddit_llama": {
+      "attempt_lines": 10875,
+      "experiment_json_sha256": "1223e640063c7b78ee0774bc411499f8156104e56bdca8207925dd0537564d90",
+      "final_assessments": 10725,
+      "index_lines": 10769,
+      "parse_status_counts": {
+        "ok": 10319,
+        "safety_intercept": 240,
+        "unparseable": 166
+      },
+      "parsed_output_sha256": "625745ead28279386382eaf85f0be132a245c618f5e36c1d80310e81bbee2f1b",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "44bdeca92156d50ec63928194e9c66fa632f9cabdbe6395f055e531d7e4fd3d2",
+      "raw_index_sha256": "272ee8f6840c1b09cf417df1400fbd2c4a2c0d71d9d54f4a81bf94e5832bd77b",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/publication_experiments_from_heba/runs/pub_003_dreaddit_llama",
+      "source_run": "pub_003_dreaddit_llama",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 10725
+    },
+    "pub_005_dreaddit_phi": {
+      "attempt_lines": 10743,
+      "experiment_json_sha256": "ff6cca52e0102772b5565b693d4b830b0f9ad63563fedf0c461a88ec5d9600fd",
+      "final_assessments": 10725,
+      "index_lines": 10726,
+      "parse_status_counts": {
+        "ok": 10334,
+        "safety_intercept": 240,
+        "unparseable": 151
+      },
+      "parsed_output_sha256": "8c485d76e4fe6df191219e3ce9dcc3da789576cbb5b024d750da04c3da68e24a",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "c3e584ef71c83e7f4c0bd074f0fef524cf8a799e2e143a8c379f4a20c9256fec",
+      "raw_index_sha256": "feb882765a826f6cfb77986586b49756713e60e9be343191a8ab931f9dbb0c59",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_005_dreaddit_phi",
+      "source_run": "pub_005_dreaddit_phi",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 10725
+    },
+    "pub_006_goemotions715_mistral": {
+      "attempt_lines": 9349,
+      "experiment_json_sha256": "651e2599338769d2274ecd10b443eb161bf82fb4e07810ccffdbebf3b64bfbd9",
+      "final_assessments": 9345,
+      "index_lines": 9346,
+      "parse_status_counts": {
+        "fail_unparseable": 27,
+        "ok": 2184,
+        "ok_empty_list": 7098,
+        "out_of_vocabulary": 21,
+        "safety_intercept": 15
+      },
+      "parsed_output_sha256": "f5f0e1a2fd4243217f8b766bd2392de4cbeacea76c5d1f3cb56570769e87d06a",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "04f96ca2ed642733941a87f3ce6bb43f9aead7244e206dad330a1400589896fe",
+      "raw_index_sha256": "2e95d3add434b1d156e7c30c36b8b4524a4290705ba1e31b94f9e3bce234d9b2",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_006_goemotions715_mistral",
+      "source_run": "pub_006_goemotions715_mistral",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 9345
+    },
+    "pub_007_goemotions715_qwen": {
+      "attempt_lines": 9417,
+      "experiment_json_sha256": "6d103c969f51f8ca66d9d0a7a6fc5ecf28b5c4cb7170cd160205d46dcbd0d849",
+      "final_assessments": 9345,
+      "index_lines": 9365,
+      "parse_status_counts": {
+        "ok": 1772,
+        "ok_empty_list": 7548,
+        "out_of_vocabulary": 10,
+        "safety_intercept": 15
+      },
+      "parsed_output_sha256": "5f8307a5464ac0b17740f2dec968e57714ff966d417dc64fd89d417f79f4862b",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "bc6cd1a554ea9dac7b74dc4bb3d6cdff0e19892915c873d9bc643d0f168434c3",
+      "raw_index_sha256": "277d071d76e58858e8c2c7a56aa71210b1eebdd6f6a6f42474b9ff29125cfeb0",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/publication_experiments_from_heba/runs/pub_007_goemotions715_qwen",
+      "source_run": "pub_007_goemotions715_qwen",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 9345
+    },
+    "pub_008_goemotions715_phi": {
+      "attempt_lines": 9412,
+      "experiment_json_sha256": "cee2809198f1681ea273120361bb92a1a54ea992ca3e589e83860675b323ffd8",
+      "final_assessments": 9345,
+      "index_lines": 9348,
+      "parse_status_counts": {
+        "fail_truncated": 167,
+        "fail_unparseable": 392,
+        "ok": 906,
+        "ok_empty_list": 7551,
+        "out_of_vocabulary": 314,
+        "safety_intercept": 15
+      },
+      "parsed_output_sha256": "b3d2e12b9cc85002b977913871b4f057ade80f3d439ff5de544a2d5ea434e562",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "fd9ebde77c81a17b1f0236ac5cd755438fab2569d1540fb210bb5ed9e0b00fde",
+      "raw_index_sha256": "48de728560a5a18d22734cd6dd2344288e1b9ae281a9bc4403836202dfee504e",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/publication_experiments_from_heba/runs/pub_008_goemotions715_phi",
+      "source_run": "pub_008_goemotions715_phi",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 9345
+    },
+    "pub_009_goemotions715_llama": {
+      "attempt_lines": 9853,
+      "experiment_json_sha256": "0cca97c002f00c90bd36087545eb1192ddab8a593fa5e8e833495f7e424aaf83",
+      "final_assessments": 9345,
+      "index_lines": 9480,
+      "parse_status_counts": {
+        "fail_truncated": 2,
+        "fail_unparseable": 29,
+        "ok": 2260,
+        "ok_empty_list": 6621,
+        "out_of_vocabulary": 418,
+        "safety_intercept": 15
+      },
+      "parsed_output_sha256": "c77c3eb1f308961975382f126973b485e01f40845616315af49e5e9e563a4d37",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "6fd4ddf67d55a272127dcc1325b23179360c86a2310a4b7dc4bf125162d5a3a1",
+      "raw_index_sha256": "2413edb296f010a0104a9f2e7e5ac2c3608f4b33ec9df1040ea4b173a6f805a3",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_009_goemotions715_llama",
+      "source_run": "pub_009_goemotions715_llama",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 9345
+    },
+    "pub_011_dreaddit_gemma_coreweave": {
+      "attempt_lines": 10847,
+      "experiment_json_sha256": "761f8f5c1e25993ed139f3376ede23c355e50de4501e1fba4c8679bd90efcb53",
+      "final_assessments": 10725,
+      "index_lines": 10746,
+      "parse_status_counts": {
+        "ok": 10485,
+        "safety_intercept": 240
+      },
+      "parsed_output_sha256": "5844b45025b2161c9fb57ee8d700934b9af56341e77f243b6255dd56df52d410",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "ec960299296d4f8cb26229ed0a62cb0965e6641bde4411c9eaf0d6875391cb21",
+      "raw_index_sha256": "0cd0a7520153eacaf1801fb53ab517d6896246451c350cfab1e4184f0531a7a1",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/publication_experiments_from_heba/runs/pub_011_dreaddit_gemma_coreweave",
+      "source_run": "pub_011_dreaddit_gemma_coreweave",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 10725
+    },
+    "pub_012_goemotions715_gemma_coreweave": {
+      "attempt_lines": 9468,
+      "experiment_json_sha256": "06c827fd4f1818ef7e24b06225cd2e730aaf7f0ff2e401c41473e5ef98eb3a19",
+      "final_assessments": 9345,
+      "index_lines": 9368,
+      "parse_status_counts": {
+        "fail_unparseable": 7,
+        "ok": 1006,
+        "ok_empty_list": 8317,
+        "safety_intercept": 15
+      },
+      "parsed_output_sha256": "e582648f802dc9dc3ce51eb92ee9d9a09bed45d6aa5d475db2f0604918fc833a",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "c4f5bbb7a8a2e34c62dd650ca9e14cbfbf46b87fb1865ea02657c4416ddc5266",
+      "raw_index_sha256": "0c05d07b1ad61f67966bba90e0768eb8c2a4f331b147e3b04cfd24b708782eb8",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_012_goemotions715_gemma_coreweave",
+      "source_run": "pub_012_goemotions715_gemma_coreweave",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 9345
+    },
+    "pub_013_dreaddit_gemma_coreweave_osc_run5": {
+      "attempt_lines": 719,
+      "experiment_json_sha256": "a0e13795b7f14252245d6b710405b451ede5f7490112b084a32aeaf529ce51b4",
+      "final_assessments": 715,
+      "index_lines": 715,
+      "parse_status_counts": {
+        "ok": 699,
+        "safety_intercept": 16
+      },
+      "parsed_output_sha256": "498cd304a5ec25d1659840d2562ec7303be68eabddec93cd6044fa3814623169",
+      "parser_version": "1.0.0",
+      "raw_attempts_sha256": "b5593d7484b188031e67d262b8d349d7d044dec6ede60f4ba0832f56ea256b2a",
+      "raw_index_sha256": "89daf6474cd5a6e7e00b63549bc6801ec3fd8e2528d0d8cab9a55c97aaea041c",
+      "run_dir": "/sessions/rcw-01tldftdzkuzryhbrh3dpogw/mnt/anxiosense/evaluation/publication_experiments/runs/pub_013_dreaddit_gemma_coreweave_osc_run5",
+      "source_run": "pub_013_dreaddit_gemma_coreweave_osc_run5",
+      "terminal_attempts_missing": 0,
+      "terminal_attempts_resolved": 715
+    }
+  },
+  "totals": {
+    "cells": 150,
+    "records": 100350
+  },
+  "validation": {
+    "n_problems": 0,
+    "passed": true,
+    "problems": []
+  }
+}

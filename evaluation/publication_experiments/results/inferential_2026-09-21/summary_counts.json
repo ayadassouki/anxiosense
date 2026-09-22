@@ -1,0 +1,253 @@
+{
+ "dreaddit": {
+  "rq1_acc_eff_holm_sig": 13,
+  "rq1_acc_eff_n": 30,
+  "rq1_acc_eff_raw_p_lt_0.05": 23,
+  "rq1_acc_eff_ci_excludes_0": 23,
+  "rq1_acc_eff_ci_vs_rawp_disagree": [],
+  "rq1_acc_eff_borderline_holm_0.02_0.10": [
+   "zero-shot-cot: Mistral Small 4 vs Phi-4 (Holm p 0.0420)"
+  ],
+  "rq1_macro_f1_holm_sig": 20,
+  "rq1_macro_f1_n": 30,
+  "rq1_macro_f1_raw_p_lt_0.05": 23,
+  "rq1_macro_f1_ci_excludes_0": 23,
+  "rq1_macro_f1_ci_vs_rawp_disagree": [],
+  "rq1_macro_f1_borderline_holm_0.02_0.10": [
+   "one-shot-cot: Gemma 4 31B vs Qwen3.5 27B (Holm p 0.0729)"
+  ],
+  "rq1_mcnemar_holm_sig": 15,
+  "rq1_acc_primary_vs_mcnemar_disagree": [
+   "zero-shot: Gemma 4 31B vs Phi-4 (primary False, McNemar True)",
+   "zero-shot: Mistral Small 4 vs Phi-4 (primary False, McNemar True)",
+   "zero-shot: Phi-4 vs Qwen3.5 27B (primary False, McNemar True)",
+   "zero-shot-cot: Mistral Small 4 vs Phi-4 (primary True, McNemar False)"
+  ],
+  "rq2_holm_sig_above": [
+   "Gemma 4 31B zero-shot",
+   "Gemma 4 31B zero-shot-cot",
+   "Gemma 4 31B one-shot-cot",
+   "Llama 4 Scout zero-shot",
+   "Llama 4 Scout zero-shot-cot",
+   "Llama 4 Scout one-shot-cot",
+   "Mistral Small 4 zero-shot",
+   "Mistral Small 4 zero-shot-cot",
+   "Mistral Small 4 one-shot-cot",
+   "Phi-4 zero-shot",
+   "Phi-4 zero-shot-cot",
+   "Phi-4 one-shot-cot",
+   "Qwen3.5 27B zero-shot",
+   "Qwen3.5 27B zero-shot-cot",
+   "Qwen3.5 27B one-shot-cot"
+  ],
+  "rq2_holm_sig_below": [],
+  "rq2_not_sig": [],
+  "rq2_mcnemar_sig": [
+   "Gemma 4 31B zero-shot",
+   "Gemma 4 31B zero-shot-cot",
+   "Gemma 4 31B one-shot-cot",
+   "Llama 4 Scout zero-shot",
+   "Llama 4 Scout zero-shot-cot",
+   "Llama 4 Scout one-shot-cot",
+   "Mistral Small 4 zero-shot",
+   "Mistral Small 4 zero-shot-cot",
+   "Mistral Small 4 one-shot-cot",
+   "Phi-4 zero-shot",
+   "Phi-4 zero-shot-cot",
+   "Phi-4 one-shot-cot",
+   "Qwen3.5 27B zero-shot",
+   "Qwen3.5 27B zero-shot-cot",
+   "Qwen3.5 27B one-shot-cot"
+  ],
+  "rq2_sensitivity_ci_excludes_0_above": 15,
+  "rq2_sensitivity_ci_excludes_0_below": 0,
+  "rq2_primary_ci_excludes_0_above": 15,
+  "rq2_primary_ci_excludes_0_below": 0
+ },
+ "goemotions": {
+  "rq1_acc_eff_holm_sig": 21,
+  "rq1_acc_eff_n": 30,
+  "rq1_acc_eff_raw_p_lt_0.05": 27,
+  "rq1_acc_eff_ci_excludes_0": 27,
+  "rq1_acc_eff_ci_vs_rawp_disagree": [],
+  "rq1_acc_eff_borderline_holm_0.02_0.10": [
+   "zero-shot: Gemma 4 31B vs Qwen3.5 27B (Holm p 0.0240)"
+  ],
+  "rq1_macro_f1_holm_sig": 0,
+  "rq1_macro_f1_n": 30,
+  "rq1_macro_f1_raw_p_lt_0.05": 3,
+  "rq1_macro_f1_ci_excludes_0": 2,
+  "rq1_macro_f1_ci_vs_rawp_disagree": [
+   "zero-shot: Gemma 4 31B vs Llama 4 Scout"
+  ],
+  "rq1_macro_f1_borderline_holm_0.02_0.10": [],
+  "rq1_mcnemar_holm_sig": 18,
+  "rq1_acc_primary_vs_mcnemar_disagree": [
+   "zero-shot: Llama 4 Scout vs Phi-4 (primary False, McNemar True)",
+   "zero-shot: Phi-4 vs Qwen3.5 27B (primary True, McNemar False)",
+   "one-shot-cot: Llama 4 Scout vs Phi-4 (primary True, McNemar False)",
+   "one-shot-cot: Mistral Small 4 vs Phi-4 (primary True, McNemar False)",
+   "one-shot-cot: Phi-4 vs Qwen3.5 27B (primary True, McNemar False)"
+  ],
+  "rq2_holm_sig_above": [
+   "Gemma 4 31B zero-shot",
+   "Gemma 4 31B zero-shot-cot"
+  ],
+  "rq2_holm_sig_below": [
+   "Llama 4 Scout zero-shot",
+   "Llama 4 Scout zero-shot-cot",
+   "Llama 4 Scout one-shot-cot",
+   "Phi-4 zero-shot",
+   "Phi-4 one-shot-cot"
+  ],
+  "rq2_not_sig": [
+   "Gemma 4 31B one-shot-cot",
+   "Mistral Small 4 zero-shot",
+   "Mistral Small 4 zero-shot-cot",
+   "Mistral Small 4 one-shot-cot",
+   "Phi-4 zero-shot-cot",
+   "Qwen3.5 27B zero-shot",
+   "Qwen3.5 27B zero-shot-cot",
+   "Qwen3.5 27B one-shot-cot"
+  ],
+  "rq2_mcnemar_sig": [
+   "Llama 4 Scout zero-shot",
+   "Llama 4 Scout zero-shot-cot"
+  ],
+  "rq2_sensitivity_ci_excludes_0_above": 3,
+  "rq2_sensitivity_ci_excludes_0_below": 6,
+  "rq2_primary_ci_excludes_0_above": 3,
+  "rq2_primary_ci_excludes_0_below": 6
+ },
+ "rounding_half_boundary_flags": [
+  [
+   "goemotions",
+   "rq2",
+   "ci_high",
+   "-0.02249999999999986"
+  ]
+ ],
+ "monte_carlo_sensitivity": [
+  {
+   "dataset": "dreaddit",
+   "family": "RQ1",
+   "comparison": "zero-shot-cot: Gemma 4 31B vs Phi-4 [macro_f1]",
+   "exceedances_k": 3,
+   "p_perm": 0.00039996000399960006,
+   "holm_p": 0.011998800119988003,
+   "holm_p_if_true_p_at_upper99": 0.029120580995916915,
+   "holm_p_if_true_p_at_lower99": 0.002616475601868455,
+   "decision_stable_at_0.05": true
+  },
+  {
+   "dataset": "dreaddit",
+   "family": "RQ1",
+   "comparison": "zero-shot-cot: Llama 4 Scout vs Phi-4 [macro_f1]",
+   "exceedances_k": 3,
+   "p_perm": 0.00039996000399960006,
+   "holm_p": 0.011998800119988003,
+   "holm_p_if_true_p_at_upper99": 0.029120580995916915,
+   "holm_p_if_true_p_at_lower99": 0.002616475601868455,
+   "decision_stable_at_0.05": true
+  },
+  {
+   "dataset": "dreaddit",
+   "family": "RQ1",
+   "comparison": "zero-shot-cot: Mistral Small 4 vs Phi-4 [acc_eff]",
+   "exceedances_k": 14,
+   "p_perm": 0.0014998500149985001,
+   "holm_p": 0.041995800419958006,
+   "holm_p_if_true_p_at_upper99": 0.07120827979285933,
+   "holm_p_if_true_p_at_lower99": 0.018996500843873478,
+   "decision_stable_at_0.05": false
+  },
+  {
+   "dataset": "dreaddit",
+   "family": "RQ1",
+   "comparison": "one-shot-cot: Gemma 4 31B vs Qwen3.5 27B [macro_f1]",
+   "exceedances_k": 26,
+   "p_perm": 0.0026997300269973002,
+   "holm_p": 0.07289271072892711,
+   "holm_p_if_true_p_at_upper99": 0.10936329702322187,
+   "holm_p_if_true_p_at_lower99": 0.042201454676726015,
+   "decision_stable_at_0.05": false
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ1",
+   "comparison": "zero-shot: Gemma 4 31B vs Qwen3.5 27B [acc_eff]",
+   "exceedances_k": 5,
+   "p_perm": 0.0005999400059994001,
+   "holm_p": 0.023997600239976002,
+   "holm_p_if_true_p_at_upper99": 0.05241267993233565,
+   "holm_p_if_true_p_at_lower99": 0.005999400059994001,
+   "decision_stable_at_0.05": false
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ1",
+   "comparison": "zero-shot-cot: Llama 4 Scout vs Mistral Small 4 [acc_eff]",
+   "exceedances_k": 2,
+   "p_perm": 0.00029997000299970003,
+   "holm_p": 0.012898710128987101,
+   "holm_p_if_true_p_at_upper99": 0.033613019866526914,
+   "holm_p_if_true_p_at_lower99": 0.0008913663900994888,
+   "decision_stable_at_0.05": true
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ1",
+   "comparison": "zero-shot-cot: Mistral Small 4 vs Qwen3.5 27B [acc_eff]",
+   "exceedances_k": 3,
+   "p_perm": 0.00039996000399960006,
+   "holm_p": 0.016798320167983202,
+   "holm_p_if_true_p_at_upper99": 0.04016631861505782,
+   "holm_p_if_true_p_at_lower99": 0.002616475601868455,
+   "decision_stable_at_0.05": true
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ1",
+   "comparison": "one-shot-cot: Llama 4 Scout vs Mistral Small 4 [acc_eff]",
+   "exceedances_k": 3,
+   "p_perm": 0.00039996000399960006,
+   "holm_p": 0.016798320167983202,
+   "holm_p_if_true_p_at_upper99": 0.04016631861505782,
+   "holm_p_if_true_p_at_lower99": 0.002616475601868455,
+   "decision_stable_at_0.05": true
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ2",
+   "comparison": "Gemma 4 31B zero-shot",
+   "exceedances_k": 42,
+   "p_perm": 0.004299570042995701,
+   "holm_p": 0.043995600439956005,
+   "holm_p_if_true_p_at_upper99": 0.05368865963516819,
+   "holm_p_if_true_p_at_lower99": 0.03126684449537432,
+   "decision_stable_at_0.05": false
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ2",
+   "comparison": "Gemma 4 31B zero-shot-cot",
+   "exceedances_k": 42,
+   "p_perm": 0.004299570042995701,
+   "holm_p": 0.043995600439956005,
+   "holm_p_if_true_p_at_upper99": 0.05368865963516819,
+   "holm_p_if_true_p_at_lower99": 0.03126684449537432,
+   "decision_stable_at_0.05": false
+  },
+  {
+   "dataset": "goemotions",
+   "family": "RQ2",
+   "comparison": "Llama 4 Scout one-shot-cot",
+   "exceedances_k": 39,
+   "p_perm": 0.003999600039996,
+   "holm_p": 0.043995600439956005,
+   "holm_p_if_true_p_at_upper99": 0.050504559498261076,
+   "holm_p_if_true_p_at_lower99": 0.02856796482392847,
+   "decision_stable_at_0.05": false
+  }
+ ]
+}
