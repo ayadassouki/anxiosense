@@ -3,8 +3,8 @@
 Clean harness for the RQ1–RQ3 publication runs. It wraps the existing AnxioSense
 system; it does not change it.
 
-**Status: infrastructure only. No publication run has been started. The dataset
-scope and several methodology questions are still with the supervisors.**
+**Status: publication evaluation completed. Final descriptive and inferential
+analysis artifacts are documented in the repository-level `REPLICATION.md`.**
 
 ## The one rule everything else follows
 
