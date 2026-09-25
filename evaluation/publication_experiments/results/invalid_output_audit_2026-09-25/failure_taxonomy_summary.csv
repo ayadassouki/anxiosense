@@ -1,0 +1,23 @@
+level,category,definition,count,pct_of_all_invalid,pct_of_classified_invalid,datasets,models,strategies,n_with_human_readable_prediction,n_structurally_recoverable
+primary,out_of_vocabulary_label,The payload parses cleanly and yields a first emotion that is not a key of the frozen ANXIOSENSE_TO_EVAL_CLASS map.,763,38.42,38.42,goemotions,Llama 4 Scout|Mistral Small 4|Phi-4|Qwen3.5 27B,one-shot-cot|zero-shot|zero-shot-cot,763,0
+primary,empty_object,"The payload is an empty JSON object `{}`. It parses but carries no `emotions` key, so it is not equivalent to `{""emotions"": []}`.",447,22.51,22.51,goemotions,Gemma 4 31B|Mistral Small 4|Phi-4,one-shot-cot|zero-shot|zero-shot-cot,0,0
+primary,malformed_json_escaping,"A structurally recognisable payload whose key/value delimiters are escaped (e.g. `reasoning\"":\""`), making the whole string invalid JSON even though the leading field is readable.",264,13.29,13.29,dreaddit,Phi-4|Qwen3.5 27B,zero-shot|zero-shot-cot,264,264
+primary,refusal_or_deflection,"The response declines the task, redirects to general advice, or asserts that no input was supplied.",227,11.43,11.43,dreaddit|goemotions,Llama 4 Scout|Mistral Small 4|Phi-4,one-shot-cot|zero-shot|zero-shot-cot,0,0
+primary,bare_string_in_object_position,,120,6.04,6.04,dreaddit,Llama 4 Scout,zero-shot|zero-shot-cot,120,120
+primary,prose_or_markdown_instead_of_required_json,The response is prose or markdown addressed to the reader rather than the required structured object.,93,4.68,4.68,dreaddit|goemotions,Llama 4 Scout|Phi-4,one-shot-cot|zero-shot|zero-shot-cot,0,0
+primary,repeated_or_restarted_json,"The model restarts the object mid-string one or more times, so brace depth never returns to zero and no balanced object can be extracted.",18,0.91,0.91,dreaddit|goemotions,Gemma 4 31B|Qwen3.5 27B,one-shot-cot|zero-shot|zero-shot-cot,17,17
+primary,missing_json_delimiter,"The opening `{` is absent or corrupted (line-continuation escapes, stray quotes), so no balanced object can be located.",17,0.86,0.86,dreaddit,Llama 4 Scout|Phi-4,one-shot-cot|zero-shot|zero-shot-cot,17,17
+primary,apparent_truncation,The payload ends mid-object or mid-array; the required value did not survive.,13,0.65,0.65,dreaddit|goemotions,Llama 4 Scout|Phi-4,one-shot-cot|zero-shot|zero-shot-cot,9,9
+primary,invalid_risk_level,A `risk_level` field is present but its value lies outside the allowed set (low|moderate|urgent).,9,0.45,0.45,dreaddit,Phi-4,zero-shot|zero-shot-cot,9,0
+primary,commentary_inside_structured_field,"Prose commentary is emitted inside a field that must contain structured values, so the field is not valid JSON.",6,0.3,0.3,goemotions,Llama 4 Scout|Phi-4,one-shot-cot|zero-shot-cot,5,0
+primary,off_task_schema,A structured object is emitted whose key set is disjoint from the required schema - the model answered a different task.,4,0.2,0.2,dreaddit|goemotions,Phi-4,one-shot-cot|zero-shot|zero-shot-cot,0,0
+primary,unescaped_quote_in_string,,3,0.15,0.15,dreaddit,Mistral Small 4|Phi-4,zero-shot|zero-shot-cot,3,3
+primary,missing_required_field,A parseable object is present but the required key (`risk_level` / `emotions`) is absent.,1,0.05,0.05,goemotions,Phi-4,zero-shot,0,0
+primary,malformed_json_other,"Not parseable by strict JSON, fence-stripping or balanced-object extraction, for a reason other than the signatures above.",1,0.05,0.05,goemotions,Phi-4,zero-shot,1,0
+secondary,prose_or_markdown_instead_of_required_json,See primary definition.,399,20.09,20.09,,,,,
+secondary,missing_required_field,See primary definition.,65,3.27,3.27,,,,,
+secondary,degenerate_repetition,A >=120-character window recurs at least three times in the response.,10,0.5,0.5,,,,,
+secondary,hallucination_confirmed,,4,0.2,0.2,,,,,
+secondary,description_instead_of_quotation_in_evidence,,3,0.15,0.15,,,,,
+secondary,commentary_inside_structured_field,See primary definition.,1,0.05,0.05,,,,,
+secondary,prompt_scaffolding_quoted_as_user_text,,1,0.05,0.05,,,,,

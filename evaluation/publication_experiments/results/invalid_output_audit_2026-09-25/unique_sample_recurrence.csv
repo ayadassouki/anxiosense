@@ -1,0 +1,23 @@
+dataset,model,strategy,invalid_assessment_records,invalid_rate_pct,unique_samples_affected,failed_1of5,failed_2of5,failed_3of5,failed_4of5,failed_5of5,pct_records_from_5of5_samples,raw_identical_groups,raw_similar_groups,raw_different_groups,raw_unknown_groups,primary_categories
+dreaddit,Llama 4 Scout,one-shot-cot,8,0.23,4,1,2,1,0,0,0.0,0,0,3,1,refusal_or_deflection=5; prose_or_markdown_instead_of_required_json=3
+dreaddit,Llama 4 Scout,zero-shot,106,3.03,80,61,15,2,1,1,4.7,1,0,18,61,bare_string_in_object_position=82; refusal_or_deflection=10; prose_or_markdown_instead_of_required_json=8; missing_json_delimiter=5; apparent_truncation=1
+dreaddit,Llama 4 Scout,zero-shot-cot,52,1.49,47,43,3,1,0,0,0.0,0,0,4,43,bare_string_in_object_position=38; prose_or_markdown_instead_of_required_json=8; refusal_or_deflection=5; missing_json_delimiter=1
+dreaddit,Mistral Small 4,zero-shot,1,0.03,1,1,0,0,0,0,0.0,0,0,0,1,unescaped_quote_in_string=1
+dreaddit,Mistral Small 4,zero-shot-cot,1,0.03,1,1,0,0,0,0,0.0,0,0,0,1,unescaped_quote_in_string=1
+dreaddit,Phi-4,one-shot-cot,16,0.46,14,13,0,1,0,0,0.0,0,0,1,13,prose_or_markdown_instead_of_required_json=5; apparent_truncation=5; refusal_or_deflection=4; missing_json_delimiter=2
+dreaddit,Phi-4,zero-shot,106,3.03,96,88,6,2,0,0,0.0,0,0,8,88,refusal_or_deflection=48; prose_or_markdown_instead_of_required_json=41; missing_json_delimiter=8; invalid_risk_level=4; apparent_truncation=3; off_task_schema=1; malformed_json_escaping=1
+dreaddit,Phi-4,zero-shot-cot,29,0.83,26,25,0,0,1,0,0.0,0,0,1,25,refusal_or_deflection=10; prose_or_markdown_instead_of_required_json=9; invalid_risk_level=5; apparent_truncation=2; unescaped_quote_in_string=1; off_task_schema=1; missing_json_delimiter=1
+dreaddit,Qwen3.5 27B,one-shot-cot,4,0.11,1,0,0,0,1,0,0.0,0,1,0,0,repeated_or_restarted_json=4
+dreaddit,Qwen3.5 27B,zero-shot,7,0.2,2,0,1,0,0,1,71.4,0,2,0,0,repeated_or_restarted_json=7
+dreaddit,Qwen3.5 27B,zero-shot-cot,269,7.7,65,7,6,2,6,44,81.8,2,1,55,7,malformed_json_escaping=263; repeated_or_restarted_json=6
+goemotions,Gemma 4 31B,one-shot-cot,7,0.23,7,7,0,0,0,0,0.0,0,0,0,7,empty_object=6; repeated_or_restarted_json=1
+goemotions,Llama 4 Scout,one-shot-cot,143,4.6,42,10,5,3,6,18,62.9,13,8,11,10,out_of_vocabulary_label=143
+goemotions,Llama 4 Scout,zero-shot,113,3.63,47,24,4,4,6,9,39.8,1,7,15,24,out_of_vocabulary_label=100; refusal_or_deflection=13
+goemotions,Llama 4 Scout,zero-shot-cot,193,6.21,71,23,12,13,8,15,38.9,3,2,43,23,out_of_vocabulary_label=175; refusal_or_deflection=6; prose_or_markdown_instead_of_required_json=5; commentary_inside_structured_field=5; apparent_truncation=2
+goemotions,Mistral Small 4,one-shot-cot,12,0.39,5,1,3,0,0,1,41.7,4,0,0,1,refusal_or_deflection=5; out_of_vocabulary_label=5; empty_object=2
+goemotions,Mistral Small 4,zero-shot,17,0.55,8,4,2,0,1,1,29.4,4,0,0,4,empty_object=11; out_of_vocabulary_label=6
+goemotions,Mistral Small 4,zero-shot-cot,19,0.61,6,1,1,2,0,2,52.6,3,2,0,1,out_of_vocabulary_label=10; empty_object=9
+goemotions,Phi-4,one-shot-cot,499,16.05,356,241,91,20,4,0,0.0,2,1,112,241,empty_object=419; out_of_vocabulary_label=51; refusal_or_deflection=25; prose_or_markdown_instead_of_required_json=2; commentary_inside_structured_field=1; off_task_schema=1
+goemotions,Phi-4,zero-shot,191,6.14,134,97,25,6,4,2,5.2,0,0,37,97,out_of_vocabulary_label=104; refusal_or_deflection=72; prose_or_markdown_instead_of_required_json=12; off_task_schema=1; missing_required_field=1; malformed_json_other=1
+goemotions,Phi-4,zero-shot-cot,183,5.88,105,58,26,14,4,3,8.2,0,0,47,58,out_of_vocabulary_label=159; refusal_or_deflection=24
+goemotions,Qwen3.5 27B,one-shot-cot,10,0.32,2,0,0,0,0,2,100.0,2,0,0,0,out_of_vocabulary_label=10
