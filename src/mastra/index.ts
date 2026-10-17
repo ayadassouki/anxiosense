@@ -13,6 +13,12 @@ import { anxietyScreeningAssessmentWorkflow } from './workflows/anxiety-screenin
 import { screeningReportGenerationAgent } from './agents/screening-report-generation-agent';
 import { crossAgentOutputValidationAgent } from './agents/cross-agent-output-validation-agent';
 
+// Hosted-demo switch. Tracing (DuckDB observability store) is ON unless
+// ANXIOSENSE_DISABLE_TRACING=true. Unset = identical to the experiment setup.
+// The hosted demo disables it: the DuckDB store grew memory while idle on Railway.
+// Tracing is passive; agents, workflow, RAG, /run and /evaluate are unaffected.
+const tracingEnabled = process.env.ANXIOSENSE_DISABLE_TRACING !== 'true';
+
 export const mastra = new Mastra({
   workflows: { anxiosenseWorkflow: anxietyScreeningAssessmentWorkflow },
   agents: {
@@ -29,25 +35,29 @@ export const mastra = new Mastra({
       id: "mastra-storage",
       url: "file:./mastra.db",
     }),
-    domains: {
-      observability: await new DuckDBStore().getStore('observability'),
-    }
+    ...(tracingEnabled
+      ? { domains: { observability: await new DuckDBStore().getStore('observability') } }
+      : {}),
   }),
   logger: new PinoLogger({
     name: 'Mastra',
     level: 'info',
   }),
-  observability: new Observability({
-    configs: {
-      default: {
-        serviceName: 'mastra',
-        exporters: [
-          new MastraStorageExporter(), // Persists observability events to local DuckDB storage only
-        ],
-        spanOutputProcessors: [
-          new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
-        ],
-      },
-    },
-  }),
+  ...(tracingEnabled
+    ? {
+        observability: new Observability({
+          configs: {
+            default: {
+              serviceName: 'mastra',
+              exporters: [
+                new MastraStorageExporter(), // Persists observability events to local DuckDB storage only
+              ],
+              spanOutputProcessors: [
+                new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
+              ],
+            },
+          },
+        }),
+      }
+    : {}),
 });
